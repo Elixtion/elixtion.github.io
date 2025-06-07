@@ -1,7 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Input Alert Example</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+    }
+    .input-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    input[type="text"] {
+      padding: 8px;
+      font-size: 1rem;
+      width: 250px;
+    }
+    button {
+      padding: 8px 12px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
 <body>
-<h1>Hello World</h1>
-<p>I'm hosted with GitHub Pages.</p>
+  <h1>Enter Text Below</h1>
+  <div class="input-container">
+    <input type="text" id="userInput" placeholder="Type something..." />
+    <button onclick="showText()">Show Text</button>
+  </div>
+
+  <script>
+    function showText() {
+      const input = document.getElementById('userInput').value;
+      alert("You entered: " + input);
+    }
+  </script>
 </body>
 </html>

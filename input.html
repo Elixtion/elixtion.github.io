@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scouting Input</title>
+  <style>
+    :root {
+      --bg-color: #121212;
+      --text-color: #f0f0f0;
+      --accent-color: #004b87;
+      --button-bg: #1e1e1e;
+      --button-hover: #2a2a2a;
+      --plus-color: #28a745;
+      --minus-color: #dc3545;
+    }
+
+    body {
+      font-family: sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .wrapper {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      background: #1a1a1a;
+      padding: 30px 50px;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .label {
+      font-size: 1.4rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .counter {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    button {
+      width: 60px;
+      height: 60px;
+      font-size: 2rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      color: white;
+    }
+
+    .plus {
+      background-color: var(--plus-color);
+    }
+
+    .plus:hover {
+      background-color: #218838;
+    }
+
+    .minus {
+      background-color: var(--minus-color);
+    }
+
+    .minus:hover {
+      background-color: #c82333;
+    }
+
+    .number {
+      font-size: 2.5rem;
+      font-weight: bold;
+      width: 80px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="label">Coral Attempted</div>
+    <div class="counter">
+      <button class="minus" onclick="changeCount(-1)">-</button>
+      <div class="number" id="count">0</div>
+      <button class="plus" onclick="changeCount(1)">+</button>
+    </div>
+  </div>
+
+  <script>
+    let count = 0;
+    function changeCount(delta) {
+      count += delta;
+      document.getElementById('count').textContent = count;
+    }
+  </script>
+</body>
+</html>
