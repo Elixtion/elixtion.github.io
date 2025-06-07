@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
-  <title>Scouting Input</title>
+  <title>FRC Scouting Input</title>
   <style>
     :root {
       --bg: #121212;
@@ -13,6 +13,7 @@
       --red: #cc3333;
       --cell: #1e1e1e;
       --button-bg: #333;
+      --turquoise: #5CB9A4;
     }
 
     body {
@@ -29,6 +30,7 @@
       background-color: var(--cell);
       border-radius: 12px;
       overflow: hidden;
+      margin-top: 20px;
     }
 
     th, td {
@@ -47,9 +49,16 @@
     }
 
     td.top-left {
-      background-color: var(--accent) !important;
       font-weight: bold;
       color: white;
+    }
+
+    .first-top-left {
+      background-color: var(--accent) !important;
+    }
+
+    .second-top-left {
+      background-color: var(--turquoise) !important;
     }
 
     .counter {
@@ -68,11 +77,11 @@
       cursor: pointer;
     }
 
-    .plus.scored {
+    .plus.pass {
       background-color: var(--green);
     }
 
-    .plus.missed {
+    .plus.fail {
       background-color: var(--red);
     }
 
@@ -100,6 +109,18 @@
       min-width: 100px;
     }
 
+    .standalone {
+      margin-top: 10px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .standalone .title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 1.2rem;
+    }
+
     @media (max-width: 600px) {
       th, td {
         padding: 10px;
@@ -124,83 +145,109 @@
         padding: 8px 12px;
         min-width: 80px;
       }
+
+      .standalone .title {
+        font-size: 1rem;
+      }
     }
   </style>
 </head>
 <body>
 
+  <!-- Standalone Dropped Coral -->
+  <div class="standalone">
+    <div class="title">Dropped Coral</div>
+    <div class="counter" data-type="dropped">
+      <div class="number">0</div>
+      <button class="plus fail" onclick="increment(this)">+</button>
+    </div>
+  </div>
+
+  <!-- Coral Level Table -->
   <table>
     <thead>
       <tr>
-        <td class="top-left">Level</td>
-        <th>Missed</th>
-        <th>Scored</th>
+        <td class="top-left first-top-left">Level</td>
+        <th>Fail</th>
+        <th>Pass</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <td class="level-label">L4</td>
-        <td>
-          <div class="counter" data-type="missed">
-            <div class="number">0</div>
-            <button class="plus missed" onclick="increment(this)">+</button>
-          </div>
-        </td>
-        <td>
-          <div class="counter" data-type="scored">
-            <div class="number">0</div>
-            <button class="plus scored" onclick="increment(this)">+</button>
-          </div>
-        </td>
+        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
       </tr>
       <tr>
         <td class="level-label">L3</td>
-        <td>
-          <div class="counter" data-type="missed">
-            <div class="number">0</div>
-            <button class="plus missed" onclick="increment(this)">+</button>
-          </div>
-        </td>
-        <td>
-          <div class="counter" data-type="scored">
-            <div class="number">0</div>
-            <button class="plus scored" onclick="increment(this)">+</button>
-          </div>
-        </td>
+        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
       </tr>
       <tr>
         <td class="level-label">L2</td>
-        <td>
-          <div class="counter" data-type="missed">
-            <div class="number">0</div>
-            <button class="plus missed" onclick="increment(this)">+</button>
-          </div>
-        </td>
-        <td>
-          <div class="counter" data-type="scored">
-            <div class="number">0</div>
-            <button class="plus scored" onclick="increment(this)">+</button>
-          </div>
-        </td>
+        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
       </tr>
       <tr>
         <td class="level-label">L1</td>
-        <td>
-          <div class="counter" data-type="missed">
-            <div class="number">0</div>
-            <button class="plus missed" onclick="increment(this)">+</button>
-          </div>
-        </td>
-        <td>
-          <div class="counter" data-type="scored">
-            <div class="number">0</div>
-            <button class="plus scored" onclick="increment(this)">+</button>
-          </div>
-        </td>
+        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
       </tr>
     </tbody>
   </table>
 
+  <!-- Second Table -->
+  <table>
+    <thead>
+      <tr>
+        <td class="top-left second-top-left">Location</td>
+        <th>Fail</th>
+        <th>Pass</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="level-label">Barge</td>
+        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+      </tr>
+      <tr>
+        <td class="level-label">Processor</td>
+        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Third Table -->
+  <table>
+    <thead>
+      <tr>
+        <td class="top-left second-top-left">Location</td>
+        <th>Fail</th>
+        <th>Pass</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="level-label">L3.5</td>
+        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+      </tr>
+      <tr>
+        <td class="level-label">L2.5</td>
+        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+      </tr>
+      <tr>
+        <td class="level-label">Ground</td>
+        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Undo/Redo Buttons -->
   <div class="actions">
     <button onclick="undo()">Undo</button>
     <button onclick="redo()">Redo</button>
@@ -217,8 +264,7 @@
       number.textContent = value + 1;
 
       const type = counter.getAttribute("data-type");
-      const row = button.closest("tr");
-
+      const row = button.closest("tr") || counter;
       history.push({ row, type });
       redoStack.length = 0;
     }
@@ -226,17 +272,17 @@
     function undo() {
       if (history.length === 0) return;
       const last = history.pop();
-      const counter = last.row.querySelector(`[data-type="${last.type}"] .number`);
-      const val = parseInt(counter.textContent);
-      if (val > 0) counter.textContent = val - 1;
+      const container = last.row.querySelector(`[data-type="${last.type}"] .number`);
+      const val = parseInt(container.textContent);
+      if (val > 0) container.textContent = val - 1;
       redoStack.push(last);
     }
 
     function redo() {
       if (redoStack.length === 0) return;
       const action = redoStack.pop();
-      const counter = action.row.querySelector(`[data-type="${action.type}"] .number`);
-      counter.textContent = parseInt(counter.textContent) + 1;
+      const container = action.row.querySelector(`[data-type="${action.type}"] .number`);
+      container.textContent = parseInt(container.textContent) + 1;
       history.push(action);
     }
   </script>
