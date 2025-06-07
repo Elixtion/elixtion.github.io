@@ -17,6 +17,7 @@
       --turquoise: #5CB9A4;
       --black: #000000;
       --blue: #007bff;
+      --yellow: #ffd700;
     }
 
     body {
@@ -137,15 +138,15 @@
       font-size: 1.2rem;
     }
 
-    .actions {
+    .actions, .setup-actions {
       margin-top: 20px;
       display: flex;
       justify-content: center;
       gap: 15px;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
     }
 
-    .actions button {
+    .actions button, .setup-actions button {
       padding: 10px 18px;
       font-size: 1rem;
       border: none;
@@ -153,7 +154,7 @@
       cursor: pointer;
       background-color: var(--button-bg);
       color: white;
-      min-width: 100px;
+      min-width: 120px;
       touch-action: manipulation;
     }
 
@@ -187,6 +188,11 @@
       font-size: 0.95rem;
       color: var(--blue);
       margin-top: 10px;
+    }
+
+    .highlight {
+      background-color: var(--yellow);
+      transition: background-color 1s ease;
     }
 
     @media (max-width: 600px) {
@@ -245,6 +251,11 @@
     const history = [];
     const redoStack = [];
 
+    function animateHighlight(element) {
+      element.classList.add("highlight");
+      setTimeout(() => element.classList.remove("highlight"), 1000);
+    }
+
     function renderTab(index) {
       currentTab = index;
       tabTitle.textContent = tabs[index];
@@ -282,12 +293,17 @@
 
         <label for="eventKeyInput">Event Key (e.g. 2025miket):</label>
         <input type="text" id="eventKeyInput" placeholder="Enter event key" />
-        <button onclick="fetchEventData()">Fetch & Cache Event</button>
-        <button onclick="clearCachedEvent()">Clear Cached Event</button>
+
+        <div class="setup-actions">
+          <button onclick="fetchEventData()">Fetch & Cache Event</button>
+          <button onclick="clearCachedEvent()">Clear Cached Event</button>
+        </div>
 
         <label for="matchNumberInput">Qualification Match #:</label>
         <input type="number" id="matchNumberInput" />
-        <button onclick="handleMatchNumberInput()">Load Teams</button>
+        <div class="setup-actions">
+          <button onclick="handleMatchNumberInput()">Load Teams</button>
+        </div>
 
         <div id="teamDropdownContainer" style="display:none;">
           <label for="teamDropdown">Select Team:</label>
@@ -296,6 +312,71 @@
 
         <div class="error" id="setupError" style="display:none;"></div>
       `;
+    }
+
+    async function fetchEventData() {
+      const key = document.getElementById("eventKeyInput").value.trim();
+      const error = document.getElementById("setupError");
+
+      try {
+        const res = await fetch(`https://www.thebluealliance.com/api/v3/event/${key}/matches`, {
+          headers: { 'X-TBA-Auth-Key': 'XB2LbDFDIrbXMJDOMhLPOiGr7CGfMzr8gXOFkyQFRmQJa73CsQZig3CcUx8x8mWv' }
+        });
+
+        if (!res.ok) throw new Error("Could not fetch event");
+
+        const matches = await res.json();
+        localStorage.setItem("cachedEvent", JSON.stringify({ eventKey: key, matches }));
+        const indicator = document.getElementById("cachedIndicator");
+        indicator.textContent = `Cached Event: ${key}`;
+        animateHighlight(indicator);
+      } catch (err) {
+        error.textContent = err.message;
+        error.style.display = "block";
+      }
+    }
+
+    function clearCachedEvent() {
+      localStorage.removeItem("cachedEvent");
+      const indicator = document.getElementById("cachedIndicator");
+      indicator.textContent = `No event currently cached.`;
+      animateHighlight(indicator);
+    }
+
+    function handleMatchNumberInput() {
+      const matchNum = parseInt(document.getElementById("matchNumberInput").value.trim());
+      const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
+      const error = document.getElementById("setupError");
+      const dropdown = document.getElementById("teamDropdown");
+      const container = document.getElementById("teamDropdownContainer");
+
+      error.style.display = "none";
+      container.style.display = "none";
+      dropdown.innerHTML = "";
+
+      if (!cached.matches || isNaN(matchNum)) {
+        error.textContent = "Please fetch event and enter valid match number.";
+        error.style.display = "block";
+        return;
+      }
+
+      const match = cached.matches.find(m => m.comp_level === "qm" && m.match_number === matchNum);
+      if (!match) {
+        error.textContent = "Match not found.";
+        error.style.display = "block";
+        return;
+      }
+
+      const stations = [
+        ...match.alliances.red.team_keys.map((team, i) => ({ label: `Red ${i + 1}`, team })),
+        ...match.alliances.blue.team_keys.map((team, i) => ({ label: `Blue ${i + 1}`, team }))
+      ];
+
+      dropdown.innerHTML = stations.map(
+        s => `<option value="${s.team}">${s.label} — ${s.team}</option>`
+      ).join("");
+
+      container.style.display = "block";
     }
 
     function renderScoutingTab(tab) {
@@ -376,6 +457,7 @@
       const counter = button.closest(".counter");
       const number = counter.querySelector(".number");
       number.textContent = parseInt(number.textContent) + 1;
+      animateHighlight(number);
 
       const type = counter.getAttribute("data-type");
       const row = button.closest("tr") || counter;
@@ -388,7 +470,10 @@
       const last = history.pop();
       const container = last.row.querySelector(`[data-type="${last.type}"] .number`);
       const val = parseInt(container.textContent);
-      if (val > 0) container.textContent = val - 1;
+      if (val > 0) {
+        container.textContent = val - 1;
+        animateHighlight(container);
+      }
       redoStack.push(last);
     }
 
@@ -397,68 +482,8 @@
       const action = redoStack.pop();
       const container = action.row.querySelector(`[data-type="${action.type}"] .number`);
       container.textContent = parseInt(container.textContent) + 1;
+      animateHighlight(container);
       history.push(action);
-    }
-
-    async function fetchEventData() {
-      const key = document.getElementById("eventKeyInput").value.trim();
-      const error = document.getElementById("setupError");
-
-      try {
-        const res = await fetch(`https://www.thebluealliance.com/api/v3/event/${key}/matches`, {
-          headers: { 'X-TBA-Auth-Key': 'XB2LbDFDIrbXMJDOMhLPOiGr7CGfMzr8gXOFkyQFRmQJa73CsQZig3CcUx8x8mWv' }
-        });
-
-        if (!res.ok) throw new Error("Could not fetch event");
-
-        const matches = await res.json();
-        localStorage.setItem("cachedEvent", JSON.stringify({ eventKey: key, matches }));
-        document.getElementById("cachedIndicator").textContent = `Cached Event: ${key}`;
-      } catch (err) {
-        error.textContent = err.message;
-        error.style.display = "block";
-      }
-    }
-
-    function clearCachedEvent() {
-      localStorage.removeItem("cachedEvent");
-      document.getElementById("cachedIndicator").textContent = `No event currently cached.`;
-    }
-
-    function handleMatchNumberInput() {
-      const matchNum = parseInt(document.getElementById("matchNumberInput").value.trim());
-      const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
-      const error = document.getElementById("setupError");
-      const dropdown = document.getElementById("teamDropdown");
-      const container = document.getElementById("teamDropdownContainer");
-
-      error.style.display = "none";
-      container.style.display = "none";
-      dropdown.innerHTML = "";
-
-      if (!cached.matches || isNaN(matchNum)) {
-        error.textContent = "Please fetch event and enter valid match number.";
-        error.style.display = "block";
-        return;
-      }
-
-      const match = cached.matches.find(m => m.comp_level === "qm" && m.match_number === matchNum);
-      if (!match) {
-        error.textContent = "Match not found.";
-        error.style.display = "block";
-        return;
-      }
-
-      const stations = [
-        ...match.alliances.red.team_keys.map((team, i) => ({ label: `Red ${i + 1}`, team })),
-        ...match.alliances.blue.team_keys.map((team, i) => ({ label: `Blue ${i + 1}`, team }))
-      ];
-
-      dropdown.innerHTML = stations.map(
-        s => `<option value="${s.team}">${s.label} — ${s.team}</option>`
-      ).join("");
-
-      container.style.display = "block";
     }
 
     renderTab(currentTab);
