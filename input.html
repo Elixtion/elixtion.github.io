@@ -26,8 +26,8 @@
     }
 
     .tab-nav {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
       background-color: #1a1a1a;
       padding: 0.75rem 1rem;
@@ -37,6 +37,7 @@
     .nav-button {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
       background: none;
       border: none;
@@ -46,14 +47,14 @@
       touch-action: manipulation;
     }
 
-    .hidden {
+    .nav-button.hidden {
       visibility: hidden;
     }
 
     .tab-title {
       text-align: center;
-      flex-grow: 1;
       font-weight: bold;
+      justify-self: center;
     }
 
     .tab-content {
@@ -197,7 +198,7 @@
 
   <div class="tab-nav">
     <button id="leftArrow" class="nav-button" onclick="prevTab()"></button>
-    <div class="tab-title" id="tab-title">TeleOP</div>
+    <div class="tab-title" id="tab-title">Setup</div>
     <button id="rightArrow" class="nav-button" onclick="nextTab()"></button>
   </div>
 
@@ -205,7 +206,7 @@
 
   <script>
     const tabs = ['Setup', 'Pre-Match', 'Auton', 'TeleOP', 'Endgame'];
-    let currentTab = 3;
+    let currentTab = 0;
 
     const tabTitle = document.getElementById("tab-title");
     const tabContent = document.getElementById("tab-content");
@@ -221,7 +222,6 @@
       redoStack.length = 0;
       history.length = 0;
 
-      // Arrow display logic
       leftArrow.classList.toggle('hidden', index === 0);
       rightArrow.classList.toggle('hidden', index === tabs.length - 1);
       leftArrow.innerHTML = index > 0 ? `&#8592; ${tabs[index - 1]}` : '';
@@ -348,7 +348,6 @@
       });
     }
 
-    // Initial render
     renderTab(currentTab);
   </script>
 </body>
