@@ -6,51 +6,50 @@
   <title>Scouting Input</title>
   <style>
     :root {
-      --bg-color: #121212;
-      --text-color: #f0f0f0;
-      --plus-color: #28a745;
-      --minus-color: #dc3545;
-      --minus-disabled: #555;
-      --cell-bg: #1e1e1e;
+      --bg: #121212;
+      --text: #f0f0f0;
+      --accent: #834980;
+      --green: #28a745;
+      --red: #cc3333;
+      --cell: #1e1e1e;
+      --button-bg: #333;
     }
 
     body {
+      background-color: var(--bg);
+      color: var(--text);
       font-family: sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
       margin: 0;
       padding: 1rem;
     }
 
-    .table-container {
-      overflow-x: auto;
-      max-width: 100%;
-    }
-
     table {
       width: 100%;
-      min-width: 600px;
       border-collapse: collapse;
-      background-color: var(--cell-bg);
+      background-color: var(--cell);
       border-radius: 12px;
       overflow: hidden;
     }
 
     th, td {
-      padding: 15px;
+      padding: 12px;
       text-align: center;
       border: 1px solid #333;
     }
 
     th {
       background-color: #222;
-      font-size: 1rem;
     }
 
-    .level-label {
-      font-weight: bold;
+    td.level-label {
       background-color: #181818;
-      font-size: 1rem;
+      font-weight: bold;
+    }
+
+    td.top-left {
+      background-color: var(--accent);
+      font-weight: bold;
+      color: white;
     }
 
     .counter {
@@ -60,39 +59,44 @@
       gap: 10px;
     }
 
-    button {
-      width: 44px;
-      height: 44px;
-      font-size: 1.2rem;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      color: white;
-      transition: background-color 0.2s;
-    }
-
     .plus {
-      background-color: var(--plus-color);
+      border: none;
+      color: white;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 1rem;
+      cursor: pointer;
     }
 
-    .plus:hover {
-      background-color: #218838;
+    .plus.scored {
+      background-color: var(--green);
     }
 
-    .minus {
-      background-color: var(--minus-color);
-    }
-
-    .minus.disabled {
-      background-color: var(--minus-disabled);
-      cursor: not-allowed;
+    .plus.missed {
+      background-color: var(--red);
     }
 
     .number {
-      min-width: 32px;
+      min-width: 30px;
       font-size: 1.2rem;
-      text-align: center;
+    }
+
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .actions button {
+      padding: 10px 18px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background-color: var(--button-bg);
+      color: white;
     }
 
     @media (max-width: 600px) {
@@ -101,141 +105,130 @@
         font-size: 0.9rem;
       }
 
-      button {
-        width: 38px;
-        height: 38px;
-        font-size: 1rem;
+      .plus {
+        padding: 8px;
+        font-size: 0.9rem;
       }
 
-      .number {
-        font-size: 1rem;
-        min-width: 28px;
+      .actions {
+        flex-direction: column;
+        align-items: center;
       }
     }
   </style>
 </head>
 <body>
 
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th></th>
-          <th>Coral Attempted</th>
-          <th>Coral Scored</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Rows -->
-        <tr>
-          <td class="level-label">L4</td>
-          <td>
-            <div class="counter" data-counter="attempted">
-              <button class="minus" onclick="changeCount(this, -1)">-</button>
-              <div class="number">0</div>
-              <button class="plus" onclick="changeCount(this, 1)">+</button>
-            </div>
-          </td>
-          <td>
-            <div class="counter" data-counter="scored">
-              <button class="minus" onclick="changeCount(this, -1)">-</button>
-              <div class="number">0</div>
-              <button class="plus" onclick="changeCount(this, 1)">+</button>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td class="level-label">L3</td>
-          <td>
-            <div class="counter" data-counter="attempted">
-              <button class="minus" onclick="changeCount(this, -1)">-</button>
-              <div class="number">0</div>
-              <button class="plus" onclick="changeCount(this, 1)">+</button>
-            </div>
-          </td>
-          <td>
-            <div class="counter" data-counter="scored">
-              <button class="minus" onclick="changeCount(this, -1)">-</button>
-              <div class="number">0</div>
-              <button class="plus" onclick="changeCount(this, 1)">+</button>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td class="level-label">L2</td>
-          <td>
-            <div class="counter" data-counter="attempted">
-              <button class="minus" onclick="changeCount(this, -1)">-</button>
-              <div class="number">0</div>
-              <button class="plus" onclick="changeCount(this, 1)">+</button>
-            </div>
-          </td>
-          <td>
-            <div class="counter" data-counter="scored">
-              <button class="minus" onclick="changeCount(this, -1)">-</button>
-              <div class="number">0</div>
-              <button class="plus" onclick="changeCount(this, 1)">+</button>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td class="level-label">L1</td>
-          <td>
-            <div class="counter" data-counter="attempted">
-              <button class="minus" onclick="changeCount(this, -1)">-</button>
-              <div class="number">0</div>
-              <button class="plus" onclick="changeCount(this, 1)">+</button>
-            </div>
-          </td>
-          <td>
-            <div class="counter" data-counter="scored">
-              <button class="minus" onclick="changeCount(this, -1)">-</button>
-              <div class="number">0</div>
-              <button class="plus" onclick="changeCount(this, 1)">+</button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <table>
+    <thead>
+      <tr>
+        <td class="top-left">Level</td>
+        <th>Missed</th>
+        <th>Scored</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="level-label">L4</td>
+        <td>
+          <div class="counter" data-type="missed">
+            <div class="number">0</div>
+            <button class="plus missed" onclick="increment(this)">+</button>
+          </div>
+        </td>
+        <td>
+          <div class="counter" data-type="scored">
+            <div class="number">0</div>
+            <button class="plus scored" onclick="increment(this)">+</button>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td class="level-label">L3</td>
+        <td>
+          <div class="counter" data-type="missed">
+            <div class="number">0</div>
+            <button class="plus missed" onclick="increment(this)">+</button>
+          </div>
+        </td>
+        <td>
+          <div class="counter" data-type="scored">
+            <div class="number">0</div>
+            <button class="plus scored" onclick="increment(this)">+</button>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td class="level-label">L2</td>
+        <td>
+          <div class="counter" data-type="missed">
+            <div class="number">0</div>
+            <button class="plus missed" onclick="increment(this)">+</button>
+          </div>
+        </td>
+        <td>
+          <div class="counter" data-type="scored">
+            <div class="number">0</div>
+            <button class="plus scored" onclick="increment(this)">+</button>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td class="level-label">L1</td>
+        <td>
+          <div class="counter" data-type="missed">
+            <div class="number">0</div>
+            <button class="plus missed" onclick="increment(this)">+</button>
+          </div>
+        </td>
+        <td>
+          <div class="counter" data-type="scored">
+            <div class="number">0</div>
+            <button class="plus scored" onclick="increment(this)">+</button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="actions">
+    <button onclick="undo()">Undo</button>
+    <button onclick="redo()">Redo</button>
   </div>
 
   <script>
-    function changeCount(button, delta) {
-      const counter = button.closest("[data-counter]");
-      const display = counter.querySelector(".number");
-      const minusBtn = counter.querySelector(".minus");
+    const history = [];
+    const redoStack = [];
 
-      let count = parseInt(display.textContent);
-      if (count === 0 && delta < 0) return;
+    function increment(button) {
+      const counter = button.closest(".counter");
+      const number = counter.querySelector(".number");
+      const value = parseInt(number.textContent);
+      number.textContent = value + 1;
 
-      count += delta;
-      if (count < 0) count = 0;
-      display.textContent = count;
+      const type = counter.getAttribute("data-type");
+      const row = button.closest("tr");
 
-      // Toggle minus button state
-      if (count === 0) {
-        minusBtn.classList.add("disabled");
-      } else {
-        minusBtn.classList.remove("disabled");
-      }
-
-      // If it's a SCORING counter and incrementing, update attempted too
-      if (delta > 0 && counter.dataset.counter === "scored") {
-        const row = counter.closest("tr");
-        const attemptedCounter = row.querySelector('[data-counter="attempted"] .number');
-        const attemptedMinus = row.querySelector('[data-counter="attempted"] .minus');
-        let attemptedValue = parseInt(attemptedCounter.textContent);
-        attemptedValue += 1;
-        attemptedCounter.textContent = attemptedValue;
-        attemptedMinus.classList.remove("disabled");
-      }
+      history.push({ row, type });
+      redoStack.length = 0;
     }
 
-    // Initialize all minus buttons
-    document.querySelectorAll("[data-counter]").forEach(counter => {
-      const minusBtn = counter.querySelector(".minus");
-      minusBtn.classList.add("disabled");
-    });
+    function undo() {
+      if (history.length === 0) return;
+      const last = history.pop();
+      const counter = last.row.querySelector(`[data-type="${last.type}"] .number`);
+      const val = parseInt(counter.textContent);
+      if (val > 0) counter.textContent = val - 1;
+      redoStack.push(last);
+    }
+
+    function redo() {
+      if (redoStack.length === 0) return;
+      const action = redoStack.pop();
+      const counter = action.row.querySelector(`[data-type="${action.type}"] .number`);
+      counter.textContent = parseInt(counter.textContent) + 1;
+      history.push(action);
+    }
   </script>
 
 </body>
