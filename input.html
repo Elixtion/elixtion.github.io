@@ -14,6 +14,7 @@
       --cell: #1e1e1e;
       --button-bg: #333;
       --turquoise: #5CB9A4;
+      --black: #000000;
     }
 
     body {
@@ -61,6 +62,10 @@
       background-color: var(--turquoise) !important;
     }
 
+    .third-top-left {
+      background-color: var(--black) !important;
+    }
+
     .counter {
       display: flex;
       justify-content: center;
@@ -83,6 +88,10 @@
 
     .plus.fail {
       background-color: var(--red);
+    }
+
+    .coral-algae {
+      background-color: var(--red) !important;
     }
 
     .number {
@@ -109,18 +118,6 @@
       min-width: 100px;
     }
 
-    .standalone {
-      margin-top: 10px;
-      margin-bottom: 30px;
-      text-align: center;
-    }
-
-    .standalone .title {
-      font-weight: bold;
-      margin-bottom: 10px;
-      font-size: 1.2rem;
-    }
-
     @media (max-width: 600px) {
       th, td {
         padding: 10px;
@@ -145,23 +142,10 @@
         padding: 8px 12px;
         min-width: 80px;
       }
-
-      .standalone .title {
-        font-size: 1rem;
-      }
     }
   </style>
 </head>
 <body>
-
-  <!-- Standalone Dropped Coral -->
-  <div class="standalone">
-    <div class="title">Dropped Coral</div>
-    <div class="counter" data-type="dropped">
-      <div class="number">0</div>
-      <button class="plus fail" onclick="increment(this)">+</button>
-    </div>
-  </div>
 
   <!-- Coral Level Table -->
   <table>
@@ -223,26 +207,18 @@
   <table>
     <thead>
       <tr>
-        <td class="top-left second-top-left">Location</td>
-        <th>Fail</th>
-        <th>Pass</th>
+        <td class="top-left third-top-left">Drop</td>
+        <th>Count</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td class="level-label">L3.5</td>
-        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+        <td class="level-label">Coral</td>
+        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus coral-algae" onclick="increment(this)">+</button></div></td>
       </tr>
       <tr>
-        <td class="level-label">L2.5</td>
-        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-      </tr>
-      <tr>
-        <td class="level-label">Ground</td>
-        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+        <td class="level-label">Algae</td>
+        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus coral-algae" onclick="increment(this)">+</button></div></td>
       </tr>
     </tbody>
   </table>
