@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
-  <title>FRC Scouting Input</title>
+  <title>FRC Scouting Web App</title>
   <style>
     :root {
       --bg: #121212;
@@ -22,6 +22,41 @@
       color: var(--text);
       font-family: sans-serif;
       margin: 0;
+      padding: 0;
+    }
+
+    .tab-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #1a1a1a;
+      padding: 0.75rem 1rem;
+      font-size: 1.25rem;
+    }
+
+    .nav-button {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .hidden {
+      visibility: hidden;
+    }
+
+    .tab-title {
+      text-align: center;
+      flex-grow: 1;
+      font-weight: bold;
+    }
+
+    .tab-content {
       padding: 1rem;
     }
 
@@ -151,96 +186,124 @@
         padding: 8px 12px;
         min-width: 80px;
       }
+
+      .nav-button {
+        font-size: 0.9rem;
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- Coral Level Table -->
-  <table>
-    <thead>
-      <tr>
-        <td class="top-left first-top-left">Level</td>
-        <th>Fail</th>
-        <th>Pass</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td class="level-label">L4</td>
-        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-      </tr>
-      <tr>
-        <td class="level-label">L3</td>
-        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-      </tr>
-      <tr>
-        <td class="level-label">L2</td>
-        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-      </tr>
-      <tr>
-        <td class="level-label">L1</td>
-        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Second Table -->
-  <table>
-    <thead>
-      <tr>
-        <td class="top-left second-top-left">Location</td>
-        <th>Fail</th>
-        <th>Pass</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td class="level-label">Barge</td>
-        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-      </tr>
-      <tr>
-        <td class="level-label">Processor</td>
-        <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Third Table -->
-  <table>
-    <thead>
-      <tr>
-        <td class="top-left third-top-left">Item</td>
-        <th>Count</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td class="level-label">Coral</td>
-        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus coral-algae" onclick="increment(this)">+</button></div></td>
-      </tr>
-      <tr>
-        <td class="level-label">Algae</td>
-        <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus coral-algae" onclick="increment(this)">+</button></div></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Undo/Redo Buttons -->
-  <div class="actions">
-    <button onclick="undo()">Undo</button>
-    <button onclick="redo()">Redo</button>
+  <div class="tab-nav">
+    <button id="leftArrow" class="nav-button" onclick="prevTab()"></button>
+    <div class="tab-title" id="tab-title">TeleOP</div>
+    <button id="rightArrow" class="nav-button" onclick="nextTab()"></button>
   </div>
 
+  <div class="tab-content" id="tab-content"></div>
+
   <script>
+    const tabs = ['Setup', 'Pre-Match', 'Auton', 'TeleOP', 'Endgame'];
+    let currentTab = 3;
+
+    const tabTitle = document.getElementById("tab-title");
+    const tabContent = document.getElementById("tab-content");
+    const leftArrow = document.getElementById("leftArrow");
+    const rightArrow = document.getElementById("rightArrow");
+
     const history = [];
     const redoStack = [];
+
+    function renderTab(index) {
+      currentTab = index;
+      tabTitle.textContent = tabs[index];
+      redoStack.length = 0;
+      history.length = 0;
+
+      // Arrow display logic
+      leftArrow.classList.toggle('hidden', index === 0);
+      rightArrow.classList.toggle('hidden', index === tabs.length - 1);
+      leftArrow.innerHTML = index > 0 ? `&#8592; ${tabs[index - 1]}` : '';
+      rightArrow.innerHTML = index < tabs.length - 1 ? `${tabs[index + 1]} &#8594;` : '';
+
+      if (tabs[index] !== 'TeleOP') {
+        tabContent.innerHTML = `<h2>${tabs[index]}</h2>`;
+        return;
+      }
+
+      tabContent.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <td class="top-left first-top-left">Level</td>
+              <th>Fail</th>
+              <th>Pass</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${['L4', 'L3', 'L2', 'L1'].map(level => `
+              <tr>
+                <td class="level-label">${level}</td>
+                <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+                <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <table>
+          <thead>
+            <tr>
+              <td class="top-left second-top-left">Location</td>
+              <th>Fail</th>
+              <th>Pass</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${['Barge', 'Processor'].map(loc => `
+              <tr>
+                <td class="level-label">${loc}</td>
+                <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+                <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <table>
+          <thead>
+            <tr>
+              <td class="top-left third-top-left">Item</td>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${['Coral', 'Algae'].map(item => `
+              <tr>
+                <td class="level-label">${item}</td>
+                <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus coral-algae" onclick="increment(this)">+</button></div></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="actions">
+          <button onclick="undo()">Undo</button>
+          <button onclick="redo()">Redo</button>
+        </div>
+      `;
+
+      preventDoubleTap();
+    }
+
+    function prevTab() {
+      if (currentTab > 0) renderTab(currentTab - 1);
+    }
+
+    function nextTab() {
+      if (currentTab < tabs.length - 1) renderTab(currentTab + 1);
+    }
 
     function increment(button) {
       const counter = button.closest(".counter");
@@ -271,19 +334,22 @@
       history.push(action);
     }
 
-    // Prevent double-tap zoom on iOS
-    document.querySelectorAll("button").forEach(button => {
-      let lastTap = 0;
-      button.addEventListener("touchend", e => {
-        const currentTime = new Date().getTime();
-        const tapLength = currentTime - lastTap;
-        if (tapLength < 300 && tapLength > 0) {
-          e.preventDefault();
-        }
-        lastTap = currentTime;
+    function preventDoubleTap() {
+      document.querySelectorAll("button").forEach(button => {
+        let lastTap = 0;
+        button.addEventListener("touchend", e => {
+          const currentTime = new Date().getTime();
+          const tapLength = currentTime - lastTap;
+          if (tapLength < 300 && tapLength > 0) {
+            e.preventDefault();
+          }
+          lastTap = currentTime;
+        });
       });
-    });
-  </script>
+    }
 
+    // Initial render
+    renderTab(currentTab);
+  </script>
 </body>
 </html>
