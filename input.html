@@ -40,6 +40,13 @@
       border: 1px solid #333;
     }
 
+    th:first-child,
+    td:first-child {
+      max-width: 100px;
+      width: 100px;
+      word-break: break-word;
+    }
+
     th {
       background-color: #222;
     }
@@ -80,6 +87,7 @@
       padding: 10px;
       font-size: 1rem;
       cursor: pointer;
+      touch-action: manipulation;
     }
 
     .plus.pass {
@@ -116,6 +124,7 @@
       background-color: var(--button-bg);
       color: white;
       min-width: 100px;
+      touch-action: manipulation;
     }
 
     @media (max-width: 600px) {
@@ -207,7 +216,7 @@
   <table>
     <thead>
       <tr>
-        <td class="top-left third-top-left">Drop</td>
+        <td class="top-left third-top-left">Item</td>
         <th>Count</th>
       </tr>
     </thead>
@@ -261,6 +270,19 @@
       container.textContent = parseInt(container.textContent) + 1;
       history.push(action);
     }
+
+    // Prevent double-tap zoom on iOS
+    document.querySelectorAll("button").forEach(button => {
+      let lastTap = 0;
+      button.addEventListener("touchend", e => {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 300 && tapLength > 0) {
+          e.preventDefault();
+        }
+        lastTap = currentTime;
+      });
+    });
   </script>
 
 </body>
