@@ -163,6 +163,33 @@
       touch-action: manipulation;
     }
 
+    select, input[type="text"], input[type="number"] {
+      margin-top: 15px;
+      background-color: var(--cell);
+      color: var(--text);
+      border: 1px solid #444;
+      border-radius: 8px;
+      font-size: 1rem;
+      padding: 8px 10px;
+      width: 100%;
+      max-width: 300px;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 1rem;
+      user-select: none;
+    }
+
+    .error {
+      color: var(--red);
+      margin-top: 10px;
+    }
+
     @media (max-width: 600px) {
       th, td {
         padding: 10px;
@@ -191,6 +218,11 @@
       .nav-button {
         font-size: 0.9rem;
       }
+
+      select, input[type="text"], input[type="number"] {
+        width: 100%;
+        font-size: 1rem;
+      }
     }
   </style>
 </head>
@@ -205,7 +237,7 @@
   <div class="tab-content" id="tab-content"></div>
 
   <script>
-    const tabs = ['Setup', 'Pre-Match', 'Auton', 'TeleOP', 'Endgame'];
+    const tabs = ['Setup', 'Pre-Match', 'Auton', 'TeleOP', 'Endgame', 'Upload'];
     let currentTab = 0;
 
     const tabTitle = document.getElementById("tab-title");
@@ -213,8 +245,105 @@
     const leftArrow = document.getElementById("leftArrow");
     const rightArrow = document.getElementById("rightArrow");
 
+    // History / redo stacks for counters (for TeleOP and Auton)
     const history = [];
     const redoStack = [];
+
+    // Setup tab variables
+    let currentTeams = [];
+    let selectedTeam = null;
+
+    function renderSetupTab() {
+      tabContent.innerHTML = `
+        <label for="eventKey">Event Key (ex: 2025miket):</label>
+        <input type="text" id="eventKey" placeholder="Enter event key" autocomplete="off" />
+
+        <label for="qualMatchNum">Qualification Match Number:</label>
+        <input type="number" id="qualMatchNum" placeholder="Enter qualification match number" min="1" />
+
+        <button id="fetchTeamsBtn">Fetch Teams in Match</button>
+
+        <div id="teamSelectContainer" style="margin-top:15px; display:none;">
+          <label for="teamSelect">Select Team:</label>
+          <select id="teamSelect"></select>
+        </div>
+
+        <div id="setupError" class="error" style="display:none;"></div>
+      `;
+
+      document.getElementById("fetchTeamsBtn").addEventListener("click", fetchTeamsForMatch);
+      document.getElementById("teamSelect").addEventListener("change", (e) => {
+        selectedTeam = e.target.value;
+      });
+    }
+
+    async function fetchTeamsForMatch() {
+      const eventKey = document.getElementById("eventKey").value.trim();
+      const qualMatchNum = document.getElementById("qualMatchNum").value.trim();
+      const errorDiv = document.getElementById("setupError");
+      const teamSelectContainer = document.getElementById("teamSelectContainer");
+      const teamSelect = document.getElementById("teamSelect");
+
+      errorDiv.style.display = "none";
+      teamSelectContainer.style.display = "none";
+      teamSelect.innerHTML = "";
+      currentTeams = [];
+      selectedTeam = null;
+
+      if (!eventKey) {
+        errorDiv.textContent = "Please enter a valid event key.";
+        errorDiv.style.display = "block";
+        return;
+      }
+      if (!qualMatchNum || isNaN(qualMatchNum) || qualMatchNum < 1) {
+        errorDiv.textContent = "Please enter a valid qualification match number.";
+        errorDiv.style.display = "block";
+        return;
+      }
+
+      try {
+        // TBA API endpoint for event matches
+        const response = await fetch(`https://www.thebluealliance.com/api/v3/event/${eventKey}/matches`, {
+
+          headers: {
+            'X-TBA-Auth-Key': 'XB2LbDFDIrbXMJDOMhLPOiGr7CGfMzr8gXOFkyQFRmQJa73CsQZig3CcUx8x8mWv'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+
+        const matches = await response.json();
+
+        // Filter qualification matches only
+        const qualMatches = matches.filter(m => m.comp_level === "qm" && m.match_number === Number(qualMatchNum));
+        if (qualMatches.length === 0) {
+          errorDiv.textContent = `No qualification match ${qualMatchNum} found at event ${eventKey}.`;
+          errorDiv.style.display = "block";
+          return;
+        }
+
+        // Each match has alliances with teams array: alliance.blue/ red with teams: e.g. "frc254"
+        const match = qualMatches[0];
+        const teams = [...match.alliances.red.team_keys, ...match.alliances.blue.team_keys];
+
+
+        if (teams.length !== 6) {
+          errorDiv.textContent = `Unexpected number of teams (${teams.length}) in match.`;
+          errorDiv.style.display = "block";
+          return;
+        }
+
+        currentTeams = teams;
+        teamSelect.innerHTML = teams.map(team => `<option value="${team}">${team.replace("frc", "")}</option>`).join("");
+        teamSelectContainer.style.display = "block";
+        selectedTeam = teams[0];
+      } catch (error) {
+        errorDiv.textContent = "Failed to fetch teams: " + error.message;
+        errorDiv.style.display = "block";
+      }
+    }
 
     function renderTab(index) {
       currentTab = index;
@@ -227,74 +356,90 @@
       leftArrow.innerHTML = index > 0 ? `&#8592; ${tabs[index - 1]}` : '';
       rightArrow.innerHTML = index < tabs.length - 1 ? `${tabs[index + 1]} &#8594;` : '';
 
-      if (tabs[index] !== 'TeleOP') {
-        tabContent.innerHTML = `<h2>${tabs[index]}</h2>`;
+      if (tabs[index] === 'Setup') {
+        renderSetupTab();
         return;
       }
 
-      tabContent.innerHTML = `
-        <table>
-          <thead>
-            <tr>
-              <td class="top-left first-top-left">Level</td>
-              <th>Fail</th>
-              <th>Pass</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${['L4', 'L3', 'L2', 'L1'].map(level => `
+      if (tabs[index] === 'TeleOP' || tabs[index] === 'Auton') {
+        tabContent.innerHTML = `
+          ${tabs[index] === 'Auton' ? `
+            <label for="startingPos">Starting Pos:</label>
+            <select id="startingPos" name="startingPos">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+          ` : ''}
+
+          <table>
+            <thead>
               <tr>
-                <td class="level-label">${level}</td>
-                <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-                <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+                <td class="top-left first-top-left">Level</td>
+                <th>Fail</th>
+                <th>Pass</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${['L4', 'L3', 'L2', 'L1'].map(level => `
+                <tr>
+                  <td class="level-label">${level}</td>
+                  <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+                  <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
 
-        <table>
-          <thead>
-            <tr>
-              <td class="top-left second-top-left">Location</td>
-              <th>Fail</th>
-              <th>Pass</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${['Barge', 'Processor'].map(loc => `
+          <table>
+            <thead>
               <tr>
-                <td class="level-label">${loc}</td>
-                <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-                <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+                <td class="top-left second-top-left">Location</td>
+                <th>Fail</th>
+                <th>Pass</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${['Barge', 'Processor'].map(loc => `
+                <tr>
+                  <td class="level-label">${loc}</td>
+                  <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+                  <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
 
-        <table>
-          <thead>
-            <tr>
-              <td class="top-left third-top-left">Item</td>
-              <th>Count</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${['Coral', 'Algae'].map(item => `
+          <table>
+            <thead>
               <tr>
-                <td class="level-label">${item}</td>
-                <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus coral-algae" onclick="increment(this)">+</button></div></td>
+                <td class="top-left third-top-left">Item</td>
+                <th>Count</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${['Coral', 'Algae'].map(item => `
+                <tr>
+                  <td class="level-label">${item}</td>
+                  <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus coral-algae" onclick="increment(this)">+</button></div></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
 
-        <div class="actions">
-          <button onclick="undo()">Undo</button>
-          <button onclick="redo()">Redo</button>
-        </div>
-      `;
+          <div class="actions">
+            <button onclick=" ()">Undo</button>
+            <button onclick="redo()">Redo</button>
+          </div>
+        `;
+        preventDoubleTap();
+        return;
+      }
 
-      preventDoubleTap();
+      // Other tabs
+      tabContent.innerHTML = `<h2>${tabs[index]}</h2>`;
     }
 
     function prevTab() {
