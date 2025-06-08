@@ -35,36 +35,6 @@
       background-color: #1a1a1a;
       padding: 0.75rem 1rem;
       font-size: 1.25rem;
-      position: relative;
-    }
-
-    .tab-nav {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr auto; /* Added auto for the back button */
-      align-items: center;
-      background-color: #1a1a1a;
-      padding: 0.75rem 1rem;
-      font-size: 1.25rem;
-      position: relative; /* Ensures positioning context for the back button */
-    }
-
-    .back-to-main-button {
-      background: none;
-      border: none;
-      color: var(--blue);
-      font-size: 1rem;
-      cursor: pointer;
-      touch-action: manipulation;
-      position: absolute; /* Make it align to the left side */
-      left: 1rem; /* Align it to the left */
-      top: 50%; /* Vertically center it */
-      transform: translateY(-50%); /* Adjust for perfect vertical centering */
-      z-index: 10; /* Keep it above other content */
-    }
-
-    .nav-button,
-    .tab-title {
-      display: inline-block; /* Ensure these elements stay in the same line */
     }
 
     .nav-button {
@@ -80,14 +50,8 @@
       visibility: hidden;
     }
 
-    .back-to-main-button {
-      background: none;
-      border: none;
+    .nav-button.back-to-main {
       color: var(--blue);
-      font-size: 1rem;
-      cursor: pointer;
-      touch-action: manipulation;
-      justify-self: start;
     }
 
     .pre-match-container {
@@ -320,6 +284,28 @@ label {
       transition: background-color 0.5s ease; /* Keeps the fade-out smooth */
     }
 
+    /* Back Button Styles */
+    .back-button-container {
+      position: absolute;
+      top: 90px; /* Just below the tab navigation bar */
+      left: 1rem; /* Aligns it to the left */
+      z-index: 10; /* Ensures the button is above other content */
+    }
+
+    .back-button {
+      background-color: var(--button-bg);
+      color: white;
+      font-size: 1rem;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none; /* No underline on hover */
+    }
+
     @media (max-width: 600px) {
       th, td {
         padding: 10px;
@@ -390,37 +376,32 @@ label {
       }, 1000); // Remove both classes after 1s
     }
 
-    function updateBackButton() {
-      const tabNav = document.querySelector('.tab-nav');
-      
-      // Remove existing back button if it exists
-      const existingBackButton = tabNav.querySelector('.back-to-main-button');
-      if (existingBackButton) {
-        existingBackButton.remove();
-      }
-
-      // Only show the "Back to Mainscreen" button on the setup tab
+    function updateNavigationButtons() {
       if (currentTab === 0) {
-        const backButton = document.createElement("button");
-        backButton.classList.add("back-to-main-button");
-        backButton.innerHTML = `← Mainscreen`;
-        backButton.onclick = goToMainScreen;
-        
-        // Append the back button to the nav (it will be positioned absolutely)
-        tabNav.appendChild(backButton);
+        // Setup tab - show "Back to Mainscreen" on the left
+        leftArrow.innerHTML = '← Mainscreen';
+        leftArrow.classList.add('back-to-main');
+        leftArrow.classList.remove('hidden');
+        leftArrow.onclick = goToMainScreen;
+      } else {
+        // Other tabs - show previous tab navigation
+        leftArrow.classList.remove('back-to-main');
+        leftArrow.classList.toggle('hidden', currentTab === 0);
+        leftArrow.innerHTML = currentTab > 0 ? `← ${tabs[currentTab - 1]}` : '';
+        leftArrow.onclick = prevTab;
       }
+      
+      // Right arrow behavior remains the same
+      rightArrow.classList.toggle('hidden', currentTab === tabs.length - 1);
+      rightArrow.innerHTML = currentTab < tabs.length - 1 ? `${tabs[currentTab + 1]} →` : '';
     }
 
     function renderTab(index) {
       currentTab = index;
       tabTitle.textContent = tabs[index];
-      leftArrow.classList.toggle('hidden', index === 0);
-      rightArrow.classList.toggle('hidden', index === tabs.length - 1);
-      leftArrow.innerHTML = index > 0 ? `← ${tabs[index - 1]}` : '';
-      rightArrow.innerHTML = index < tabs.length - 1 ? `${tabs[index + 1]} →` : '';
-
-      // Update back button visibility
-      updateBackButton();
+      
+      // Update navigation buttons
+      updateNavigationButtons();
 
       if (tabs[index] === 'Setup') return renderSetupTab();
       if (tabs[index] === 'Pre-Match') return renderPreMatchTab();
@@ -546,7 +527,7 @@ label {
       const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
       const selectedTeam = document.getElementById("teamDropdown") ? document.getElementById("teamDropdown").value : null;
       
-      let allianceColor = 'blue'; // default
+      let allianceColor = 'red'; // default
       let imageSrc = "C:\\Users\\aarav\\Downloads\\redSetupImage.png"; // default
       
       // Determine alliance color if we have match data and selected team
