@@ -63,9 +63,11 @@
 }
 
 #startingPosImg {
-  max-width: 200px;  /* Adjust as necessary */
-  max-height: 200px; /* Adjust as necessary */
-  object-fit: contain; /* Ensures the image keeps its aspect ratio */
+  width: 100%;
+  max-width: 400px;
+  max-height: 400px;
+  height: auto;
+  object-fit: contain;
 }
 
 #startingPosSlider {
@@ -525,7 +527,25 @@ label {
 
     function renderPreMatchTab() {
       const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
-      const cachedMatch = cached.matches ? cached.matches[0] : null; // Example logic to get the first match, modify if needed
+      const selectedTeam = document.getElementById("teamDropdown") ? document.getElementById("teamDropdown").value : null;
+      
+      let allianceColor = 'red'; // default
+      let imageSrc = "C:\\Users\\aarav\\Downloads\\redSetupImage.png"; // default
+      
+      // Determine alliance color if we have match data and selected team
+      if (cached.matches && selectedTeam) {
+        const matchNum = parseInt(document.getElementById("matchNumberInput")?.value || "1");
+        const match = cached.matches.find(m => m.comp_level === "qm" && m.match_number === matchNum);
+        
+        if (match) {
+          // Check if team is in blue alliance
+          if (match.alliances.blue.team_keys.includes(selectedTeam)) {
+            allianceColor = 'blue';
+            imageSrc = "C:\\Users\\aarav\\Downloads\\blueSetupImage.png";
+          }
+          // If not in blue, it must be in red (since team selection is from match data)
+        }
+      }
 
       tabContent.innerHTML = `
         <div class="pre-match-container">
@@ -533,7 +553,7 @@ label {
           <input type="checkbox" id="noShowCheckbox" onchange="toggleNoShow()" />
           <div id="noShowText" style="display: none;">N/A</div>
 
-          <div class="pre-load-container" style="display: none;">
+          <div class="pre-load-container">
             <label for="preLoadSelect">Pre-Load:</label>
             <select id="preLoadSelect">
               <option value="yes">Yes</option>
@@ -541,37 +561,15 @@ label {
             </select>
           </div>
 
-          <div class="starting-position-container" style="display: none;">
+          <div class="starting-position-container">
             <label for="startingPosImage">Starting Position:</label>
             <div id="startingPosImage">
-              <img src="" alt="Starting Position" id="startingPosImg" style="max-width: 200px; max-height: 200px;"/>
+              <img src="${imageSrc}" alt="Starting Position" id="startingPosImg" />
             </div>
             <input type="range" id="startingPosSlider" min="1" max="5" value="1" />
           </div>
         </div>
       `;
-
-      if (cachedMatch) {
-        // Example logic for showing team info (Red or Blue alliance)
-        const selectedTeam = localStorage.getItem("selectedTeam"); // Assuming you store the selected team in localStorage
-        let allianceColor = 'blue';  // Default to Blue
-        
-        if (cachedMatch.alliances.red.team_keys.includes(selectedTeam)) {
-          allianceColor = 'red';
-        }
-
-        const imageSrc = allianceColor === "red" ? "C:\\Users\\aarav\\Downloads\\redSetupImage.png" : "C:\\Users\\aarav\\Downloads\\blueSetupImage.png";  // Replace with actual image paths
-        document.getElementById("startingPosImg").src = imageSrc;
-
-        // Set display for the Pre-Load and Starting Position based on No Show
-        if (document.getElementById("noShowCheckbox").checked) {
-          document.querySelector('.pre-load-container').style.display = 'none';
-          document.querySelector('.starting-position-container').style.display = 'none';
-        } else {
-          document.querySelector('.pre-load-container').style.display = 'block';
-          document.querySelector('.starting-position-container').style.display = 'block';
-        }
-      }
     }
 
     function toggleNoShow() {
