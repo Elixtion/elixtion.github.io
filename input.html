@@ -50,6 +50,69 @@
       visibility: hidden;
     }
 
+    .pre-match-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#startingPosImage {
+  margin-top: 20px;
+  text-align: center;
+}
+
+#startingPosImg {
+  max-width: 200px;  /* Adjust as necessary */
+  max-height: 200px; /* Adjust as necessary */
+  object-fit: contain; /* Ensures the image keeps its aspect ratio */
+}
+
+#startingPosSlider {
+  margin-top: 10px;
+  width: 50%;
+}
+
+input[type="checkbox"] {
+  margin-top: 10px;
+}
+
+.pre-load-container,
+.starting-position-container {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+select {
+  margin-top: 10px;
+  background-color: var(--cell);
+  color: var(--text);
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 1rem;
+}
+
+input[type="range"] {
+  margin-top: 10px;
+}
+
+label {
+  font-weight: bold;
+  font-size: 1rem;
+  margin-top: 10px;
+}
+
+#noShowText {
+  color: var(--yellow);
+  font-size: 1.2rem;
+  margin-top: 10px;
+}
+
+
+
     .tab-title {
       text-align: center;
       font-weight: bold;
@@ -144,6 +207,21 @@
       justify-content: center;
       gap: 15px;
       flex-wrap: wrap;
+      align-items: center;
+    }
+
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      max-width: 320px; /* Prevents the inputs from becoming too wide */
+    }
+
+    .tab-content {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
     }
 
     .actions button, .setup-actions button {
@@ -186,13 +264,40 @@
 
     .cached-info {
       font-size: 0.95rem;
-      color: var(--blue);
+      color: var(--white);
       margin-top: 10px;
     }
 
     .highlight {
-      background-color: var(--yellow);
-      transition: background-color 1s ease;
+      background-color: var(--blue);
+      transition: background-color 0.5s ease;
+    }
+
+    .highlight.fade-out {
+      background-color: transparent; /* Returns to transparent for fade-out */
+      transition: background-color 0.5s ease; /* Keeps the fade-out smooth */
+    }
+
+    /* Back Button Styles */
+    .back-button-container {
+      position: absolute;
+      top: 90px; /* Just below the tab navigation bar */
+      left: 1rem; /* Aligns it to the left */
+      z-index: 10; /* Ensures the button is above other content */
+    }
+
+    .back-button {
+      background-color: var(--button-bg);
+      color: white;
+      font-size: 1rem;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none; /* No underline on hover */
     }
 
     @media (max-width: 600px) {
@@ -253,7 +358,38 @@
 
     function animateHighlight(element) {
       element.classList.add("highlight");
-      setTimeout(() => element.classList.remove("highlight"), 1000);
+
+      // Wait for 0.5s to start fading out
+      setTimeout(() => {
+        element.classList.add("fade-out"); // Start fading out
+      }, 500); // Wait for 0.5s
+
+      // Remove the highlight after 1 second (which includes the 0.5s fade-in + 0.5s fade-out)
+      setTimeout(() => {
+        element.classList.remove("highlight", "fade-out");
+      }, 1000); // Remove both classes after 1s
+    }
+
+    function updateBackButton() {
+      // Remove existing back button if it exists
+      const existingBackButton = document.querySelector('.back-button-container');
+      if (existingBackButton) {
+        existingBackButton.remove();
+      }
+
+      // Only show the "Back to Mainscreen" button on the setup tab
+      if (currentTab === 0) {
+        const backButtonContainer = document.createElement("div");
+        backButtonContainer.classList.add("back-button-container");
+
+        const backButton = document.createElement("button");
+        backButton.classList.add("back-button");
+        backButton.innerHTML = `← Back To Mainscreen`;
+        backButton.onclick = goToMainScreen;
+
+        backButtonContainer.appendChild(backButton);
+        document.body.appendChild(backButtonContainer);
+      }
     }
 
     function renderTab(index) {
@@ -264,7 +400,11 @@
       leftArrow.innerHTML = index > 0 ? `← ${tabs[index - 1]}` : '';
       rightArrow.innerHTML = index < tabs.length - 1 ? `${tabs[index + 1]} →` : '';
 
+      // Update back button visibility
+      updateBackButton();
+
       if (tabs[index] === 'Setup') return renderSetupTab();
+      if (tabs[index] === 'Pre-Match') return renderPreMatchTab();
       if (tabs[index] === 'TeleOP' || tabs[index] === 'Auton') return renderScoutingTab(tabs[index]);
 
       tabContent.innerHTML = `<h2>${tabs[index]}</h2>`;
@@ -291,7 +431,7 @@
       tabContent.innerHTML = `
         <div class="cached-info" id="cachedIndicator">${cachedMsg}</div>
 
-        <label for="eventKeyInput">Event Key (e.g. 2025miket):</label>
+        <label for="eventKeyInput">Event Key (e.g. 2025flor):</label>
         <input type="text" id="eventKeyInput" placeholder="Enter event key" />
 
         <div class="setup-actions">
@@ -312,6 +452,10 @@
 
         <div class="error" id="setupError" style="display:none;"></div>
       `;
+    }
+
+    function goToMainScreen() {
+      window.location.href = "index.html"; // Redirect to the main site
     }
 
     async function fetchEventData() {
@@ -377,6 +521,74 @@
       ).join("");
 
       container.style.display = "block";
+    }
+
+    function renderPreMatchTab() {
+      const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
+      const cachedMatch = cached.matches ? cached.matches[0] : null; // Example logic to get the first match, modify if needed
+
+      tabContent.innerHTML = `
+        <div class="pre-match-container">
+          <label for="noShowCheckbox">No Show:</label>
+          <input type="checkbox" id="noShowCheckbox" onchange="toggleNoShow()" />
+          <div id="noShowText" style="display: none;">N/A</div>
+
+          <div class="pre-load-container" style="display: none;">
+            <label for="preLoadSelect">Pre-Load:</label>
+            <select id="preLoadSelect">
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+
+          <div class="starting-position-container" style="display: none;">
+            <label for="startingPosImage">Starting Position:</label>
+            <div id="startingPosImage">
+              <img src="" alt="Starting Position" id="startingPosImg" style="max-width: 200px; max-height: 200px;"/>
+            </div>
+            <input type="range" id="startingPosSlider" min="1" max="5" value="1" />
+          </div>
+        </div>
+      `;
+
+      if (cachedMatch) {
+        // Example logic for showing team info (Red or Blue alliance)
+        const selectedTeam = localStorage.getItem("selectedTeam"); // Assuming you store the selected team in localStorage
+        let allianceColor = 'blue';  // Default to Blue
+        
+        if (cachedMatch.alliances.red.team_keys.includes(selectedTeam)) {
+          allianceColor = 'red';
+        }
+
+        const imageSrc = allianceColor === "red" ? "C:\\Users\\aarav\\Downloads\\redSetupImage.png" : "C:\\Users\\aarav\\Downloads\\blueSetupImage.png";  // Replace with actual image paths
+        document.getElementById("startingPosImg").src = imageSrc;
+
+        // Set display for the Pre-Load and Starting Position based on No Show
+        if (document.getElementById("noShowCheckbox").checked) {
+          document.querySelector('.pre-load-container').style.display = 'none';
+          document.querySelector('.starting-position-container').style.display = 'none';
+        } else {
+          document.querySelector('.pre-load-container').style.display = 'block';
+          document.querySelector('.starting-position-container').style.display = 'block';
+        }
+      }
+    }
+
+    function toggleNoShow() {
+      const noShowCheckbox = document.getElementById("noShowCheckbox");
+      const noShowText = document.getElementById("noShowText");
+
+      if (noShowCheckbox.checked) {
+        // Hide all Pre-Match content except the No-Show checkbox
+        document.querySelector('.pre-load-container').style.display = 'none';
+        document.querySelector('.starting-position-container').style.display = 'none';
+        noShowText.style.display = 'block'; // Show N/A text
+      } else {
+        // Show the Pre-Match content again
+        document.querySelector('.pre-load-container').style.display = 'block';
+        document.querySelector('.starting-position-container').style.display = 'block';
+        noShowText.style.display = 'none'; // Hide N/A text
+      }
     }
 
     function renderScoutingTab(tab) {
