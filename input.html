@@ -306,6 +306,19 @@ label {
       text-decoration: none; /* No underline on hover */
     }
 
+    .no-show-container {
+      display: flex;
+      align-items: center; /* Align the text and checkbox horizontally */
+      gap: 10px; /* Add some space between the checkbox and the label */
+      margin-top: 10px; /* Adjust top margin */
+    }
+
+    input[type="checkbox"].no-show-checkbox {
+      width: 20px; /* Adjust size of checkbox */
+      height: 20px;
+      margin-right: 10px; /* Space between checkbox and label */
+    }
+
     @media (max-width: 600px) {
       th, td {
         padding: 10px;
@@ -547,9 +560,12 @@ label {
 
       tabContent.innerHTML = `
         <div class="pre-match-container">
+        <div class="no-show-container">
           <label for="noShowCheckbox">No Show:</label>
-          <input type="checkbox" id="noShowCheckbox" onchange="toggleNoShow()" />
-          <div id="noShowText" style="display: none;">N/A</div>
+          <input type="checkbox" id="noShowCheckbox" class="no-show-checkbox" onchange="toggleNoShow()" />
+          
+        </div>
+        <div id="noShowText" style="display: none;">N/A</div>
 
           <div class="pre-load-container">
             <label for="preLoadSelect">Pre-Load:</label>
