@@ -744,96 +744,96 @@
     }
 
     function renderPreMatchTab() {
-  const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
-  const savedTeam = loadData(STORAGE_KEYS.selectedTeam, '');
-  const savedNoShow = loadData(STORAGE_KEYS.noShow, false);
-  const savedPreLoad = loadData(STORAGE_KEYS.preLoad, 'yes'); // Load immediately
-  const savedStartingPos = loadData(STORAGE_KEYS.startingPos, '1'); // Load immediately
-  
-  let allianceColor = 'red'; // default
-  let imageSrc = "C:\\Users\\aarav\\Downloads\\redSetupImage.png"; // default
-  
-  // Determine alliance color if we have match data and selected team
-  if (cached.matches && savedTeam) {
-    const matchNum = parseInt(loadData(STORAGE_KEYS.matchNumber, '1'));
-    const match = cached.matches.find(m => m.comp_level === "qm" && m.match_number === matchNum);
-    
-    if (match) {
-      // Check if team is in blue alliance
-      if (match.alliances.blue.team_keys.includes(savedTeam)) {
-        allianceColor = 'blue';
-        imageSrc = "C:\\Users\\aarav\\Downloads\\blueSetupImage.png";
+      const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
+      const savedTeam = loadData(STORAGE_KEYS.selectedTeam, '');
+      const savedNoShow = loadData(STORAGE_KEYS.noShow, false);
+      const savedPreLoad = loadData(STORAGE_KEYS.preLoad, 'yes'); // Load immediately
+      const savedStartingPos = loadData(STORAGE_KEYS.startingPos, '1'); // Load immediately
+      
+      let allianceColor = 'red'; // default
+      let imageSrc = "C:\\Users\\aarav\\Downloads\\redSetupImage.png"; // default
+      
+      // Determine alliance color if we have match data and selected team
+      if (cached.matches && savedTeam) {
+        const matchNum = parseInt(loadData(STORAGE_KEYS.matchNumber, '1'));
+        const match = cached.matches.find(m => m.comp_level === "qm" && m.match_number === matchNum);
+        
+        if (match) {
+          // Check if team is in blue alliance
+          if (match.alliances.blue.team_keys.includes(savedTeam)) {
+            allianceColor = 'blue';
+            imageSrc = "C:\\Users\\aarav\\Downloads\\blueSetupImage.png";
+          }
+          // If not in blue, it must be in red (since team selection is from match data)
+        }
       }
-      // If not in blue, it must be in red (since team selection is from match data)
+
+      // Conditionally render content based on no-show state with saved values
+      const preLoadContent = savedNoShow ? '' : `
+        <div class="pre-load-container">
+          <label for="preLoadSelect">Pre-Load:</label>
+          <select id="preLoadSelect">
+            <option value="yes" ${savedPreLoad === 'yes' ? 'selected' : ''}>Yes</option>
+            <option value="no" ${savedPreLoad === 'no' ? 'selected' : ''}>No</option>
+          </select>
+        </div>`;
+
+      const startingPosContent = savedNoShow ? '' : `
+        <div class="starting-position-container">
+          <label for="startingPosImage">Starting Position:</label>
+          <div id="startingPosImage">
+            <img src="${imageSrc}" alt="Starting Position" id="startingPosImg" />
+          </div>
+
+          <!-- Replaced slider with a dropdown for numbers 1 to 5 -->
+          <label for="startingPosDropdown">Choose Starting Position:</label>
+          <select id="startingPosDropdown">
+            <option value="1" ${savedStartingPos === '1' ? 'selected' : ''}>1</option>
+            <option value="2" ${savedStartingPos === '2' ? 'selected' : ''}>2</option>
+            <option value="3" ${savedStartingPos === '3' ? 'selected' : ''}>3</option>
+            <option value="4" ${savedStartingPos === '4' ? 'selected' : ''}>4</option>
+            <option value="5" ${savedStartingPos === '5' ? 'selected' : ''}>5</option>
+          </select>
+        </div>`;
+
+      const noShowTextContent = savedNoShow ? '<div id="noShowText">N/A</div>' : '<div id="noShowText" style="display: none;">N/A</div>';
+
+      tabContent.innerHTML = `
+        <div class="pre-match-container">
+          <div class="no-show-container">
+            <label for="noShowCheckbox">No Show:</label>
+            <input type="checkbox" id="noShowCheckbox" class="no-show-checkbox" ${savedNoShow ? 'checked' : ''} onchange="toggleNoShow()" />
+          </div>
+          ${noShowTextContent}
+          ${preLoadContent}
+          ${startingPosContent}
+        </div>
+      `;
+
+      // Add event listeners without setTimeout delay
+      const noShowCheckbox = document.getElementById("noShowCheckbox");
+      const preLoadSelect = document.getElementById("preLoadSelect");
+      const startingPosDropdown = document.getElementById("startingPosDropdown");
+
+      if (noShowCheckbox) {
+        noShowCheckbox.addEventListener('change', () => {
+          saveData(STORAGE_KEYS.noShow, noShowCheckbox.checked);
+          toggleNoShow();
+        });
+      }
+
+      if (preLoadSelect) {
+        preLoadSelect.addEventListener('change', () => {
+          saveData(STORAGE_KEYS.preLoad, preLoadSelect.value);
+        });
+      }
+
+      if (startingPosDropdown) {
+        startingPosDropdown.addEventListener('change', () => {
+          saveData(STORAGE_KEYS.startingPos, startingPosDropdown.value);
+        });
+      }
     }
-  }
-
-  // Conditionally render content based on no-show state with saved values
-  const preLoadContent = savedNoShow ? '' : `
-    <div class="pre-load-container">
-      <label for="preLoadSelect">Pre-Load:</label>
-      <select id="preLoadSelect">
-        <option value="yes" ${savedPreLoad === 'yes' ? 'selected' : ''}>Yes</option>
-        <option value="no" ${savedPreLoad === 'no' ? 'selected' : ''}>No</option>
-      </select>
-    </div>`;
-
-  const startingPosContent = savedNoShow ? '' : `
-    <div class="starting-position-container">
-      <label for="startingPosImage">Starting Position:</label>
-      <div id="startingPosImage">
-        <img src="${imageSrc}" alt="Starting Position" id="startingPosImg" />
-      </div>
-
-      <!-- Replaced slider with a dropdown for numbers 1 to 5 -->
-      <label for="startingPosDropdown">Choose Starting Position:</label>
-      <select id="startingPosDropdown">
-        <option value="1" ${savedStartingPos === '1' ? 'selected' : ''}>1</option>
-        <option value="2" ${savedStartingPos === '2' ? 'selected' : ''}>2</option>
-        <option value="3" ${savedStartingPos === '3' ? 'selected' : ''}>3</option>
-        <option value="4" ${savedStartingPos === '4' ? 'selected' : ''}>4</option>
-        <option value="5" ${savedStartingPos === '5' ? 'selected' : ''}>5</option>
-      </select>
-    </div>`;
-
-  const noShowTextContent = savedNoShow ? '<div id="noShowText">N/A</div>' : '<div id="noShowText" style="display: none;">N/A</div>';
-
-  tabContent.innerHTML = `
-    <div class="pre-match-container">
-      <div class="no-show-container">
-        <label for="noShowCheckbox">No Show:</label>
-        <input type="checkbox" id="noShowCheckbox" class="no-show-checkbox" ${savedNoShow ? 'checked' : ''} onchange="toggleNoShow()" />
-      </div>
-      ${noShowTextContent}
-      ${preLoadContent}
-      ${startingPosContent}
-    </div>
-  `;
-
-  // Add event listeners without setTimeout delay
-  const noShowCheckbox = document.getElementById("noShowCheckbox");
-  const preLoadSelect = document.getElementById("preLoadSelect");
-  const startingPosDropdown = document.getElementById("startingPosDropdown");
-
-  if (noShowCheckbox) {
-    noShowCheckbox.addEventListener('change', () => {
-      saveData(STORAGE_KEYS.noShow, noShowCheckbox.checked);
-      toggleNoShow();
-    });
-  }
-
-  if (preLoadSelect) {
-    preLoadSelect.addEventListener('change', () => {
-      saveData(STORAGE_KEYS.preLoad, preLoadSelect.value);
-    });
-  }
-
-  if (startingPosDropdown) {
-    startingPosDropdown.addEventListener('change', () => {
-      saveData(STORAGE_KEYS.startingPos, startingPosDropdown.value);
-    });
-  }
-}
 
     function toggleNoShow() {
       const noShowCheckbox = document.getElementById("noShowCheckbox");
@@ -846,100 +846,100 @@
     }
 
     function renderScoutingTab(tab) {
-  const isAuton = tab === 'Auton';
-  
-  // Load saved data immediately
-  const savedAutonStartingPos = loadData(STORAGE_KEYS.autonStartingPos, '1');
-  const savedCounters = isAuton ? 
-    loadData(STORAGE_KEYS.autonCounters, {}) : 
-    loadData(STORAGE_KEYS.teleopCounters, {});
+      const isAuton = tab === 'Auton';
+      
+      // Load saved data immediately
+      const savedAutonStartingPos = loadData(STORAGE_KEYS.autonStartingPos, '1');
+      const savedCounters = isAuton   ? 
+        loadData(STORAGE_KEYS.autonCounters, {}) : 
+        loadData(STORAGE_KEYS.teleopCounters, {});
 
-  // Function to get saved counter value
-  function getCounterValue(tableIndex, rowIndex, counterType) {
-    const key = `table${tableIndex}_row${rowIndex}_${counterType}`;
-    return savedCounters[key] || 0;
-  }
+      // Function to get saved counter value
+      function getCounterValue(tableIndex, rowIndex, counterType) {
+        const key = `table${tableIndex}_row${rowIndex}_${counterType}`;
+        return savedCounters[key] || 0;
+      }
 
-  tabContent.innerHTML = `
-    ${isAuton ? `
-    <label for="startingPos">Starting Pos:</label>
-    <select id="startingPos">
-      <option value="1" ${savedAutonStartingPos === '1' ? 'selected' : ''}>1</option>
-      <option value="2" ${savedAutonStartingPos === '2' ? 'selected' : ''}>2</option>
-      <option value="3" ${savedAutonStartingPos === '3' ? 'selected' : ''}>3</option>
-      <option value="4" ${savedAutonStartingPos === '4' ? 'selected' : ''}>4</option>
-      <option value="5" ${savedAutonStartingPos === '5' ? 'selected' : ''}>5</option>
-    </select>
-    ` : ''}
+      tabContent.innerHTML = `
+        ${isAuton ? `
+        <label for="startingPos">Starting Pos:</label>
+        <select id="startingPos">
+          <option value="1" ${savedAutonStartingPos === '1' ? 'selected' : ''}>1</option>
+          <option value="2" ${savedAutonStartingPos === '2' ? 'selected' : ''}>2</option>
+          <option value="3" ${savedAutonStartingPos === '3' ? 'selected' : ''}>3</option>
+          <option value="4" ${savedAutonStartingPos === '4' ? 'selected' : ''}>4</option>
+          <option value="5" ${savedAutonStartingPos === '5' ? 'selected' : ''}>5</option>
+        </select>
+        ` : ''}
 
-    <table>
-      <thead>
-        <tr>
-          <td class="top-left first-top-left">Level</td>
-          <th>Fail</th>
-          <th>Pass</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${['L4', 'L3', 'L2', 'L1'].map((level, rowIndex) => `
-          <tr>
-            <td class="level-label">${level}</td>
-            <td><div class="counter" data-type="fail"><div class="number">${getCounterValue(0, rowIndex + 1, 'fail')}</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-            <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(0, rowIndex + 1, 'pass')}</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
+        <table>
+          <thead>
+            <tr>
+              <td class="top-left first-top-left">Level</td>
+              <th>Fail</th>
+              <th>Pass</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${['L4', 'L3', 'L2', 'L1'].map((level, rowIndex) => `
+              <tr>
+                <td class="level-label">${level}</td>
+                <td><div class="counter" data-type="fail"><div class="number">${getCounterValue(0, rowIndex + 1, 'fail')}</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+                <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(0, rowIndex + 1, 'pass')}</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
 
-    <table>
-      <thead>
-        <tr>
-          <td class="top-left second-top-left">Location</td>
-          <th>Fail</th>
-          <th>Pass</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${['Barge', 'Processor'].map((loc, rowIndex) => `
-          <tr>
-            <td class="level-label">${loc}</td>
-            <td><div class="counter" data-type="fail"><div class="number">${getCounterValue(1, rowIndex + 1, 'fail')}</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-            <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(1, rowIndex + 1, 'pass')}</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
+        <table>
+          <thead>
+            <tr>
+              <td class="top-left second-top-left">Location</td>
+              <th>Fail</th>
+              <th>Pass</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${['Barge', 'Processor'].map((loc, rowIndex) => `
+              <tr>
+                <td class="level-label">${loc}</td>
+                <td><div class="counter" data-type="fail"><div class="number">${getCounterValue(1, rowIndex + 1, 'fail')}</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+                <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(1, rowIndex + 1, 'pass')}</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
 
-    <table>
-      <thead>
-        <tr>
-          <td class="top-left third-top-left">Item Dropped</td>
-          <th>Count</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${['Coral', 'Algae'].map((item, rowIndex) => `
-          <tr>
-            <td class="level-label">${item}</td>
-            <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(2, rowIndex + 1, 'pass')}</div><button class="plus coral-algae" onclick="increment(this)">+</button></div></td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
+        <table>
+          <thead>
+            <tr>
+              <td class="top-left third-top-left">Item Dropped</td>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${['Coral', 'Algae'].map((item, rowIndex) => `
+              <tr>
+                <td class="level-label">${item}</td>
+                <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(2, rowIndex + 1, 'pass')}</div><button class="plus coral-algae" onclick="increment(this)">+</button></div></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
 
-    <div class="actions">
-      <button onclick="undo()">Undo</button>
-      <button onclick="redo()">Redo</button>
-    </div>
-  `;
+        <div class="actions">
+          <button onclick="undo()">Undo</button>
+          <button onclick="redo()">Redo</button>
+        </div>
+      `;
 
-  // Add event listener for auton starting position without setTimeout
-  if (isAuton) {
-    const autonStartingPos = document.getElementById("startingPos");
-    if (autonStartingPos) {
-      autonStartingPos.addEventListener('change', () => {
-        saveData(STORAGE_KEYS.autonStartingPos, autonStartingPos.value);
-      });
+      // Add event listener for auton starting position without setTimeout
+      if (isAuton) {
+        const autonStartingPos = document.getElementById("startingPos");
+        if (autonStartingPos) {
+          autonStartingPos.addEventListener('change', () => {
+            saveData(STORAGE_KEYS.autonStartingPos, autonStartingPos.value);
+          });
+        }
+      }
     }
-  }
-}
 
     function increment(button) {
       const counter = button.closest(".counter");
