@@ -751,7 +751,7 @@
       const savedStartingPos = loadData(STORAGE_KEYS.startingPos, '1'); // Load immediately
       
       let allianceColor = 'red'; // default
-      let imageSrc = "https://i.imgur.com/GrRzcj2.png"; // default
+      let imageSrc = "https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/redSetupImage.png"; // default
       
       // Determine alliance color if we have match data and selected team
       if (cached.matches && savedTeam) {
@@ -762,7 +762,7 @@
           // Check if team is in blue alliance
           if (match.alliances.blue.team_keys.includes(savedTeam)) {
             allianceColor = 'blue';
-            imageSrc = "https://i.imgur.com/g8G6Tnj.png";
+            imageSrc = "https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/blueSetupImage.png";
           }
           // If not in blue, it must be in red (since team selection is from match data)
         }
