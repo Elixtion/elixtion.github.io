@@ -55,69 +55,79 @@
     }
 
     .pre-match-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
 
-#startingPosImage {
-  margin-top: 20px;
-  text-align: center;
-}
+    #startingPosImage {
+      margin-top: 20px;
+      text-align: center;
+    }
 
-#startingPosImg {
-  width: 100%;
-  max-width: 400px;
-  max-height: 400px;
-  height: auto;
-  object-fit: contain;
-}
+    #startingPosImg {
+      width: 100%;
+      max-width: 400px;
+      max-height: 400px;
+      height: auto;
+      object-fit: contain;
+    }
 
-#startingPosSlider {
-  margin-top: 10px;
-  width: 50%;
-}
+    #startingPosSlider {
+      margin-top: 10px;
+      width: 50%;
+    }
 
-input[type="checkbox"] {
-  margin-top: 10px;
-}
+    input[type="checkbox"] {
+      margin-top: 10px;
+    }
 
-.pre-load-container,
-.starting-position-container {
-  margin-top: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
+    .pre-load-container,
+    .starting-position-container {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
-select {
-  margin-top: 10px;
-  background-color: var(--cell);
-  color: var(--text);
-  border: 1px solid #444;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 1rem;
-}
+    select {
+      margin-top: 10px;
+      background-color: var(--cell);
+      color: var(--text);
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 1rem;
+    }
 
-input[type="range"] {
-  margin-top: 10px;
-}
+    input[type="range"] {
+      margin-top: 10px;
+    }
 
-label {
-  font-weight: bold;
-  font-size: 1rem;
-  margin-top: 10px;
-}
+    label {
+      font-weight: bold;
+      font-size: 1rem;
+      margin-top: 10px;
+    }
 
-#noShowText {
-  color: var(--yellow);
-  font-size: 1.2rem;
-  margin-top: 10px;
-}
+    #noShowText {
+      color: var(--yellow);
+      font-size: 1.2rem;
+      margin-top: 10px;
+    }
 
-
+    /* Adjust the dropdown for Starting Position */
+    #startingPosDropdown {
+      margin-top: 10px;
+      background-color: var(--cell);
+      color: var(--text);
+      border: 1px solid #444;
+      border-radius: 8px;
+      font-size: 1rem;
+      padding: 8px 10px;
+      width: 50%;
+    }
 
     .tab-title {
       text-align: center;
@@ -314,10 +324,10 @@ label {
     }
 
     input[type="checkbox"].no-show-checkbox {
-      width: 17px; /* Adjust size of checkbox */
-      height: 17px;
-      margin-right: 10px; /* Space between checkbox and label */
-      margin-top: 13px;
+      width: 18px; /* Adjust size of checkbox */
+      height: 18px;
+      margin-right: 7px; /* Space between checkbox and label */
+      margin-top: 17px;
     }
 
     @media (max-width: 600px) {
@@ -376,6 +386,84 @@ label {
     const history = [];
     const redoStack = [];
 
+    // Data storage keys
+    const STORAGE_KEYS = {
+      // Setup data
+      matchNumber: 'scoutingData_matchNumber',
+      selectedTeam: 'scoutingData_selectedTeam',
+      
+      // Pre-Match data
+      noShow: 'scoutingData_noShow',
+      preLoad: 'scoutingData_preLoad',
+      startingPos: 'scoutingData_startingPos',
+      
+      // Auton data
+      autonStartingPos: 'scoutingData_autonStartingPos',
+      autonCounters: 'scoutingData_autonCounters',
+      
+      // TeleOP data
+      teleopCounters: 'scoutingData_teleopCounters',
+      
+      // Endgame data (if needed)
+      endgameData: 'scoutingData_endgameData'
+    };
+
+    // Default values
+    const DEFAULT_VALUES = {
+      matchNumber: '',
+      selectedTeam: '',
+      noShow: false,
+      preLoad: 'yes',
+      startingPos: '1',
+      autonStartingPos: '1',
+      autonCounters: {},
+      teleopCounters: {},
+      endgameData: {}
+    };
+
+    // Save data to localStorage
+    function saveData(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (e) {
+        console.error('Error saving data:', e);
+      }
+    }
+
+    // Load data from localStorage
+    function loadData(key, defaultValue = null) {
+      try {
+        const stored = localStorage.getItem(key);
+        return stored ? JSON.parse(stored) : defaultValue;
+      } catch (e) {
+        console.error('Error loading data:', e);
+        return defaultValue;
+      }
+    }
+
+    // Save counter data
+    function saveCounters(tabName) {
+      const counters = {};
+      const numberElements = document.querySelectorAll('.counter .number');
+      
+      numberElements.forEach((element, index) => {
+        const counter = element.closest('.counter');
+        const row = counter.closest('tr');
+        const table = counter.closest('table');
+        
+        // Create unique identifier for each counter
+        const tableIndex = Array.from(document.querySelectorAll('table')).indexOf(table);
+        const rowIndex = Array.from(table.querySelectorAll('tr')).indexOf(row);
+        const counterType = counter.getAttribute('data-type');
+        
+        const key = `table${tableIndex}_row${rowIndex}_${counterType}`;
+        counters[key] = parseInt(element.textContent) || 0;
+      });
+      
+      const storageKey = tabName === 'Auton' ? STORAGE_KEYS.autonCounters : STORAGE_KEYS.teleopCounters;
+      saveData(storageKey, counters);
+    }
+
     function animateHighlight(element) {
       element.classList.add("highlight");
 
@@ -411,6 +499,11 @@ label {
     }
 
     function renderTab(index) {
+      // Save current tab data before switching
+      if (currentTab !== index) {
+        saveCurrentTabData();
+      }
+      
       currentTab = index;
       tabTitle.textContent = tabs[index];
       
@@ -422,6 +515,35 @@ label {
       if (tabs[index] === 'TeleOP' || tabs[index] === 'Auton') return renderScoutingTab(tabs[index]);
 
       tabContent.innerHTML = `<h2>${tabs[index]}</h2>`;
+    }
+
+    function saveCurrentTabData() {
+      const currentTabName = tabs[currentTab];
+      
+      if (currentTabName === 'Setup') {
+        const matchInput = document.getElementById("matchNumberInput");
+        const teamDropdown = document.getElementById("teamDropdown");
+        
+        if (matchInput) saveData(STORAGE_KEYS.matchNumber, matchInput.value);
+        if (teamDropdown) saveData(STORAGE_KEYS.selectedTeam, teamDropdown.value);
+        
+      } else if (currentTabName === 'Pre-Match') {
+        const noShowCheckbox = document.getElementById("noShowCheckbox");
+        const preLoadSelect = document.getElementById("preLoadSelect");
+        const startingPosDropdown = document.getElementById("startingPosDropdown");
+        
+        if (noShowCheckbox) saveData(STORAGE_KEYS.noShow, noShowCheckbox.checked);
+        if (preLoadSelect) saveData(STORAGE_KEYS.preLoad, preLoadSelect.value);
+        if (startingPosDropdown) saveData(STORAGE_KEYS.startingPos, startingPosDropdown.value);
+        
+      } else if (currentTabName === 'Auton') {
+        const autonStartingPos = document.getElementById("startingPos");
+        if (autonStartingPos) saveData(STORAGE_KEYS.autonStartingPos, autonStartingPos.value);
+        saveCounters('Auton');
+        
+      } else if (currentTabName === 'TeleOP') {
+        saveCounters('TeleOP');
+      }
     }
 
     function prevTab() {
@@ -441,6 +563,30 @@ label {
     function renderSetupTab() {
       const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
       const cachedMsg = cached.eventKey ? `Cached Event: ${cached.eventKey}` : `No event currently cached.`;
+      
+      // Load saved setup data immediately
+      const savedMatchNumber = loadData(STORAGE_KEYS.matchNumber, '');
+      const savedTeam = loadData(STORAGE_KEYS.selectedTeam, '');
+
+      // Check if we should show team dropdown
+      const shouldShowTeamDropdown = savedMatchNumber && cached.matches;
+      let teamOptions = '';
+      
+      if (shouldShowTeamDropdown) {
+        const matchNum = parseInt(savedMatchNumber);
+        const match = cached.matches.find(m => m.comp_level === "qm" && m.match_number === matchNum);
+        
+        if (match) {
+          const stations = [
+            ...match.alliances.red.team_keys.map((team, i) => ({ label: `Red ${i + 1}`, team })),
+            ...match.alliances.blue.team_keys.map((team, i) => ({ label: `Blue ${i + 1}`, team }))
+          ];
+          
+          teamOptions = stations.map(
+            s => `<option value="${s.team}" ${s.team === savedTeam ? 'selected' : ''}>${s.label} — ${s.team}</option>`
+          ).join("");
+        }
+      }
 
       tabContent.innerHTML = `
         <div class="cached-info" id="cachedIndicator">${cachedMsg}</div>
@@ -454,21 +600,49 @@ label {
         </div>
 
         <label for="matchNumberInput">Qualification Match #:</label>
-        <input type="number" id="matchNumberInput" />
+        <input type="number" id="matchNumberInput" value="${savedMatchNumber}" />
         <div class="setup-actions">
           <button onclick="handleMatchNumberInput()">Load Teams</button>
+          <button onclick="resetScoutingData()">Reset Data</button>
         </div>
 
-        <div id="teamDropdownContainer" style="display:none;">
+        <div id="teamDropdownContainer" style="display:${shouldShowTeamDropdown ? 'block' : 'none'};">
           <label for="teamDropdown">Select Team:</label>
-          <select id="teamDropdown"></select>
+          <select id="teamDropdown">${teamOptions}</select>
         </div>
 
         <div class="error" id="setupError" style="display:none;"></div>
       `;
+
+      // Add event listeners
+      // In renderSetupTab(), replace the setTimeout section with:
+      // Add event listeners immediately
+      const matchInput = document.getElementById("matchNumberInput");
+      const teamDropdown = document.getElementById("teamDropdown");
+
+      if (matchInput) {
+        matchInput.addEventListener('input', () => {
+          saveData(STORAGE_KEYS.matchNumber, matchInput.value);
+        });
+      }
+
+      if (teamDropdown) {
+        // Store the initially selected team to detect changes
+        const initialTeam = teamDropdown.value;
+        
+        teamDropdown.addEventListener('change', () => {
+          const newTeam = teamDropdown.value;
+          // Only reset if team actually changed
+          if (newTeam !== initialTeam && initialTeam) {
+            resetScoutingDataSilent();
+          }
+          saveData(STORAGE_KEYS.selectedTeam, newTeam);
+        });
+      }
     }
 
     function goToMainScreen() {
+      saveCurrentTabData(); // Save before leaving
       window.location.href = "index.html"; // Redirect to the main site
     }
 
@@ -485,6 +659,8 @@ label {
 
         const matches = await res.json();
         localStorage.setItem("cachedEvent", JSON.stringify({ eventKey: key, matches }));
+        // Reset scouting data when new event is cached
+        resetScoutingDataSilent();
         const indicator = document.getElementById("cachedIndicator");
         indicator.textContent = `Cached Event: ${key}`;
         animateHighlight(indicator);
@@ -496,21 +672,56 @@ label {
 
     function clearCachedEvent() {
       localStorage.removeItem("cachedEvent");
+      // Reset scouting data when event cache is cleared
+      resetScoutingDataSilent();
       const indicator = document.getElementById("cachedIndicator");
       indicator.textContent = `No event currently cached.`;
       animateHighlight(indicator);
+    }
+
+    function resetScoutingData() {
+      // Clear all scouting data except event key
+      Object.values(STORAGE_KEYS).forEach(key => {
+        localStorage.removeItem(key);
+      });
+
+      // Reset UI elements in current tab
+      const matchInput = document.getElementById("matchNumberInput");
+      const teamDropdown = document.getElementById("teamDropdown");
+      const container = document.getElementById("teamDropdownContainer");
+
+      if (matchInput) matchInput.value = '';
+      if (teamDropdown) teamDropdown.innerHTML = '';
+      if (container) container.style.display = 'none';
+
+      // Show confirmation
+      const indicator = document.getElementById("cachedIndicator");
+      const originalText = indicator.textContent;
+      indicator.textContent = "Scouting data reset successfully!";
+      animateHighlight(indicator);
+      
+      setTimeout(() => {
+        indicator.textContent = originalText;
+      }, 2000);
+    }
+
+    function resetScoutingDataSilent() {
+      // Clear all scouting data except event key and setup data
+      const keysToKeep = [STORAGE_KEYS.matchNumber, STORAGE_KEYS.selectedTeam];
+      
+      Object.values(STORAGE_KEYS).forEach(key => {
+        if (!keysToKeep.includes(key)) {
+          localStorage.removeItem(key);
+        }
+      });
     }
 
     function handleMatchNumberInput() {
       const matchNum = parseInt(document.getElementById("matchNumberInput").value.trim());
       const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
       const error = document.getElementById("setupError");
-      const dropdown = document.getElementById("teamDropdown");
-      const container = document.getElementById("teamDropdownContainer");
 
       error.style.display = "none";
-      container.style.display = "none";
-      dropdown.innerHTML = "";
 
       if (!cached.matches || isNaN(matchNum)) {
         error.textContent = "Please fetch event and enter valid match number.";
@@ -525,158 +736,210 @@ label {
         return;
       }
 
-      const stations = [
-        ...match.alliances.red.team_keys.map((team, i) => ({ label: `Red ${i + 1}`, team })),
-        ...match.alliances.blue.team_keys.map((team, i) => ({ label: `Blue ${i + 1}`, team }))
-      ];
-
-      dropdown.innerHTML = stations.map(
-        s => `<option value="${s.team}">${s.label} — ${s.team}</option>`
-      ).join("");
-
-      container.style.display = "block";
+      // Reset scouting data when new match is loaded
+      resetScoutingDataSilent();
+      // Save match number and re-render to show team dropdown
+      saveData(STORAGE_KEYS.matchNumber, matchNum.toString());
+      renderSetupTab();
     }
 
     function renderPreMatchTab() {
-      const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
-      const selectedTeam = document.getElementById("teamDropdown") ? document.getElementById("teamDropdown").value : null;
-      
-      let allianceColor = 'red'; // default
-      let imageSrc = "C:\\Users\\aarav\\Downloads\\redSetupImage.png"; // default
-      
-      // Determine alliance color if we have match data and selected team
-      if (cached.matches && selectedTeam) {
-        const matchNum = parseInt(document.getElementById("matchNumberInput")?.value || "1");
-        const match = cached.matches.find(m => m.comp_level === "qm" && m.match_number === matchNum);
-        
-        if (match) {
-          // Check if team is in blue alliance
-          if (match.alliances.blue.team_keys.includes(selectedTeam)) {
-            allianceColor = 'blue';
-            imageSrc = "C:\\Users\\aarav\\Downloads\\blueSetupImage.png";
-          }
-          // If not in blue, it must be in red (since team selection is from match data)
-        }
+  const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
+  const savedTeam = loadData(STORAGE_KEYS.selectedTeam, '');
+  const savedNoShow = loadData(STORAGE_KEYS.noShow, false);
+  const savedPreLoad = loadData(STORAGE_KEYS.preLoad, 'yes'); // Load immediately
+  const savedStartingPos = loadData(STORAGE_KEYS.startingPos, '1'); // Load immediately
+  
+  let allianceColor = 'red'; // default
+  let imageSrc = "C:\\Users\\aarav\\Downloads\\redSetupImage.png"; // default
+  
+  // Determine alliance color if we have match data and selected team
+  if (cached.matches && savedTeam) {
+    const matchNum = parseInt(loadData(STORAGE_KEYS.matchNumber, '1'));
+    const match = cached.matches.find(m => m.comp_level === "qm" && m.match_number === matchNum);
+    
+    if (match) {
+      // Check if team is in blue alliance
+      if (match.alliances.blue.team_keys.includes(savedTeam)) {
+        allianceColor = 'blue';
+        imageSrc = "C:\\Users\\aarav\\Downloads\\blueSetupImage.png";
       }
-
-      tabContent.innerHTML = `
-        <div class="pre-match-container">
-        <div class="no-show-container">
-          <label for="noShowCheckbox">No Show:</label>
-          <input type="checkbox" id="noShowCheckbox" class="no-show-checkbox" onchange="toggleNoShow()" />
-          
-        </div>
-        <div id="noShowText" style="display: none;">N/A</div>
-
-          <div class="pre-load-container">
-            <label for="preLoadSelect">Pre-Load:</label>
-            <select id="preLoadSelect">
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
-            </select>
-          </div>
-
-          <div class="starting-position-container">
-            <label for="startingPosImage">Starting Position:</label>
-            <div id="startingPosImage">
-              <img src="${imageSrc}" alt="Starting Position" id="startingPosImg" />
-            </div>
-            <input type="range" id="startingPosSlider" min="1" max="5" value="1" />
-          </div>
-        </div>
-      `;
+      // If not in blue, it must be in red (since team selection is from match data)
     }
+  }
+
+  // Conditionally render content based on no-show state with saved values
+  const preLoadContent = savedNoShow ? '' : `
+    <div class="pre-load-container">
+      <label for="preLoadSelect">Pre-Load:</label>
+      <select id="preLoadSelect">
+        <option value="yes" ${savedPreLoad === 'yes' ? 'selected' : ''}>Yes</option>
+        <option value="no" ${savedPreLoad === 'no' ? 'selected' : ''}>No</option>
+      </select>
+    </div>`;
+
+  const startingPosContent = savedNoShow ? '' : `
+    <div class="starting-position-container">
+      <label for="startingPosImage">Starting Position:</label>
+      <div id="startingPosImage">
+        <img src="${imageSrc}" alt="Starting Position" id="startingPosImg" />
+      </div>
+
+      <!-- Replaced slider with a dropdown for numbers 1 to 5 -->
+      <label for="startingPosDropdown">Choose Starting Position:</label>
+      <select id="startingPosDropdown">
+        <option value="1" ${savedStartingPos === '1' ? 'selected' : ''}>1</option>
+        <option value="2" ${savedStartingPos === '2' ? 'selected' : ''}>2</option>
+        <option value="3" ${savedStartingPos === '3' ? 'selected' : ''}>3</option>
+        <option value="4" ${savedStartingPos === '4' ? 'selected' : ''}>4</option>
+        <option value="5" ${savedStartingPos === '5' ? 'selected' : ''}>5</option>
+      </select>
+    </div>`;
+
+  const noShowTextContent = savedNoShow ? '<div id="noShowText">N/A</div>' : '<div id="noShowText" style="display: none;">N/A</div>';
+
+  tabContent.innerHTML = `
+    <div class="pre-match-container">
+      <div class="no-show-container">
+        <label for="noShowCheckbox">No Show:</label>
+        <input type="checkbox" id="noShowCheckbox" class="no-show-checkbox" ${savedNoShow ? 'checked' : ''} onchange="toggleNoShow()" />
+      </div>
+      ${noShowTextContent}
+      ${preLoadContent}
+      ${startingPosContent}
+    </div>
+  `;
+
+  // Add event listeners without setTimeout delay
+  const noShowCheckbox = document.getElementById("noShowCheckbox");
+  const preLoadSelect = document.getElementById("preLoadSelect");
+  const startingPosDropdown = document.getElementById("startingPosDropdown");
+
+  if (noShowCheckbox) {
+    noShowCheckbox.addEventListener('change', () => {
+      saveData(STORAGE_KEYS.noShow, noShowCheckbox.checked);
+      toggleNoShow();
+    });
+  }
+
+  if (preLoadSelect) {
+    preLoadSelect.addEventListener('change', () => {
+      saveData(STORAGE_KEYS.preLoad, preLoadSelect.value);
+    });
+  }
+
+  if (startingPosDropdown) {
+    startingPosDropdown.addEventListener('change', () => {
+      saveData(STORAGE_KEYS.startingPos, startingPosDropdown.value);
+    });
+  }
+}
 
     function toggleNoShow() {
       const noShowCheckbox = document.getElementById("noShowCheckbox");
-      const noShowText = document.getElementById("noShowText");
-
-      if (noShowCheckbox.checked) {
-        // Hide all Pre-Match content except the No-Show checkbox
-        document.querySelector('.pre-load-container').style.display = 'none';
-        document.querySelector('.starting-position-container').style.display = 'none';
-        noShowText.style.display = 'block'; // Show N/A text
-      } else {
-        // Show the Pre-Match content again
-        document.querySelector('.pre-load-container').style.display = 'block';
-        document.querySelector('.starting-position-container').style.display = 'block';
-        noShowText.style.display = 'none'; // Hide N/A text
+      
+      if (noShowCheckbox) {
+        // Save the state and re-render the entire tab to avoid flashing
+        saveData(STORAGE_KEYS.noShow, noShowCheckbox.checked);
+        renderPreMatchTab(); // Re-render the entire tab with correct state
       }
     }
 
     function renderScoutingTab(tab) {
-      const isAuton = tab === 'Auton';
+  const isAuton = tab === 'Auton';
+  
+  // Load saved data immediately
+  const savedAutonStartingPos = loadData(STORAGE_KEYS.autonStartingPos, '1');
+  const savedCounters = isAuton ? 
+    loadData(STORAGE_KEYS.autonCounters, {}) : 
+    loadData(STORAGE_KEYS.teleopCounters, {});
 
-      tabContent.innerHTML = `
-        ${isAuton ? `
-        <label for="startingPos">Starting Pos:</label>
-        <select id="startingPos">
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4">4</option>
-          <option value="5">5</option>
-        </select>
-        ` : ''}
+  // Function to get saved counter value
+  function getCounterValue(tableIndex, rowIndex, counterType) {
+    const key = `table${tableIndex}_row${rowIndex}_${counterType}`;
+    return savedCounters[key] || 0;
+  }
 
-        <table>
-          <thead>
-            <tr>
-              <td class="top-left first-top-left">Level</td>
-              <th>Fail</th>
-              <th>Pass</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${['L4', 'L3', 'L2', 'L1'].map(level => `
-              <tr>
-                <td class="level-label">${level}</td>
-                <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-                <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
+  tabContent.innerHTML = `
+    ${isAuton ? `
+    <label for="startingPos">Starting Pos:</label>
+    <select id="startingPos">
+      <option value="1" ${savedAutonStartingPos === '1' ? 'selected' : ''}>1</option>
+      <option value="2" ${savedAutonStartingPos === '2' ? 'selected' : ''}>2</option>
+      <option value="3" ${savedAutonStartingPos === '3' ? 'selected' : ''}>3</option>
+      <option value="4" ${savedAutonStartingPos === '4' ? 'selected' : ''}>4</option>
+      <option value="5" ${savedAutonStartingPos === '5' ? 'selected' : ''}>5</option>
+    </select>
+    ` : ''}
 
-        <table>
-          <thead>
-            <tr>
-              <td class="top-left second-top-left">Location</td>
-              <th>Fail</th>
-              <th>Pass</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${['Barge', 'Processor'].map(loc => `
-              <tr>
-                <td class="level-label">${loc}</td>
-                <td><div class="counter" data-type="fail"><div class="number">0</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-                <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
+    <table>
+      <thead>
+        <tr>
+          <td class="top-left first-top-left">Level</td>
+          <th>Fail</th>
+          <th>Pass</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${['L4', 'L3', 'L2', 'L1'].map((level, rowIndex) => `
+          <tr>
+            <td class="level-label">${level}</td>
+            <td><div class="counter" data-type="fail"><div class="number">${getCounterValue(0, rowIndex + 1, 'fail')}</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+            <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(0, rowIndex + 1, 'pass')}</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
 
-        <table>
-          <thead>
-            <tr>
-              <td class="top-left third-top-left">Item Dropped</td>
-              <th>Count</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${['Coral', 'Algae'].map(item => `
-              <tr>
-                <td class="level-label">${item}</td>
-                <td><div class="counter" data-type="pass"><div class="number">0</div><button class="plus coral-algae" onclick="increment(this)">+</button></div></td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
+    <table>
+      <thead>
+        <tr>
+          <td class="top-left second-top-left">Location</td>
+          <th>Fail</th>
+          <th>Pass</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${['Barge', 'Processor'].map((loc, rowIndex) => `
+          <tr>
+            <td class="level-label">${loc}</td>
+            <td><div class="counter" data-type="fail"><div class="number">${getCounterValue(1, rowIndex + 1, 'fail')}</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+            <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(1, rowIndex + 1, 'pass')}</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
 
-        <div class="actions">
-          <button onclick="undo()">Undo</button>
-          <button onclick="redo()">Redo</button>
-        </div>
-      `;
+    <table>
+      <thead>
+        <tr>
+          <td class="top-left third-top-left">Item Dropped</td>
+          <th>Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${['Coral', 'Algae'].map((item, rowIndex) => `
+          <tr>
+            <td class="level-label">${item}</td>
+            <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(2, rowIndex + 1, 'pass')}</div><button class="plus coral-algae" onclick="increment(this)">+</button></div></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+
+    <div class="actions">
+      <button onclick="undo()">Undo</button>
+      <button onclick="redo()">Redo</button>
+    </div>
+  `;
+
+  // Add event listener for auton starting position without setTimeout
+  if (isAuton) {
+    const autonStartingPos = document.getElementById("startingPos");
+    if (autonStartingPos) {
+      autonStartingPos.addEventListener('change', () => {
+        saveData(STORAGE_KEYS.autonStartingPos, autonStartingPos.value);
+      });
     }
+  }
+}
 
     function increment(button) {
       const counter = button.closest(".counter");
@@ -688,6 +951,12 @@ label {
       const row = button.closest("tr") || counter;
       history.push({ row, type });
       redoStack.length = 0;
+
+      // Save counters after increment
+      const currentTabName = tabs[currentTab];
+      if (currentTabName === 'Auton' || currentTabName === 'TeleOP') {
+        saveCounters(currentTabName);
+      }
     }
 
     function undo() {
@@ -700,6 +969,12 @@ label {
         animateHighlight(container);
       }
       redoStack.push(last);
+
+      // Save counters after undo
+      const currentTabName = tabs[currentTab];
+      if (currentTabName === 'Auton' || currentTabName === 'TeleOP') {
+        saveCounters(currentTabName);
+      }
     }
 
     function redo() {
@@ -709,7 +984,109 @@ label {
       container.textContent = parseInt(container.textContent) + 1;
       animateHighlight(container);
       history.push(action);
+
+      // Save counters after redo
+      const currentTabName = tabs[currentTab];
+      if (currentTabName === 'Auton' || currentTabName === 'TeleOP') {
+        saveCounters(currentTabName);
+      }
     }
+
+    // Function to get all scouting data for export
+    function getAllScoutingData() {
+      // Make sure current tab data is saved
+      saveCurrentTabData();
+      
+      return {
+        // Setup data
+        matchNumber: loadData(STORAGE_KEYS.matchNumber, ''),
+        selectedTeam: loadData(STORAGE_KEYS.selectedTeam, ''),
+        
+        // Pre-Match data
+        noShow: loadData(STORAGE_KEYS.noShow, false),
+        preLoad: loadData(STORAGE_KEYS.preLoad, 'yes'),
+        startingPos: loadData(STORAGE_KEYS.startingPos, '1'),
+        
+        // Auton data
+        autonStartingPos: loadData(STORAGE_KEYS.autonStartingPos, '1'),
+        autonCounters: loadData(STORAGE_KEYS.autonCounters, {}),
+        
+        // TeleOP data
+        teleopCounters: loadData(STORAGE_KEYS.teleopCounters, {}),
+        
+        // Endgame data
+        endgameData: loadData(STORAGE_KEYS.endgameData, {}),
+        
+        // Timestamp
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    // Function to export data as CSV format
+    function exportToCSV() {
+      const data = getAllScoutingData();
+      
+      // Create CSV headers
+      const headers = [
+        'Timestamp',
+        'Match Number',
+        'Team',
+        'No Show',
+        'Pre Load',
+        'Starting Position',
+        'Auton Starting Position'
+      ];
+      
+      // Add counter headers
+      const autonCounters = data.autonCounters;
+      const teleopCounters = data.teleopCounters;
+      
+      // Add auton counter headers
+      Object.keys(autonCounters).forEach(key => {
+        headers.push(`Auton ${key}`);
+      });
+      
+      // Add teleop counter headers
+      Object.keys(teleopCounters).forEach(key => {
+        headers.push(`TeleOP ${key}`);
+      });
+      
+      // Create CSV row
+      const row = [
+        data.timestamp,
+        data.matchNumber,
+        data.selectedTeam,
+        data.noShow,
+        data.preLoad,
+        data.startingPos,
+        data.autonStartingPos
+      ];
+      
+      // Add auton counter values
+      Object.keys(autonCounters).forEach(key => {
+        row.push(autonCounters[key]);
+      });
+      
+      // Add teleop counter values
+      Object.keys(teleopCounters).forEach(key => {
+        row.push(teleopCounters[key]);
+      });
+      
+      // Combine headers and row
+      const csvContent = [headers.join(','), row.join(',')].join('\n');
+      
+      return csvContent;
+    }
+
+    // Save data when page is about to unload
+    window.addEventListener('beforeunload', () => {
+      saveCurrentTabData();
+    });
+
+    // Save data periodically
+    setInterval(() => {
+      saveCurrentTabData();
+    }, 30000); // Save every 30 seconds
 
     renderTab(currentTab);
   </script>
