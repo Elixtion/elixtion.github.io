@@ -1078,6 +1078,19 @@
       saveCurrentTabData();
     }, 30000); // Save every 30 seconds
 
+    if ('serviceWorker' in navigator) {
+      // Register the service worker when the page loads
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(registration => {
+            console.log('Service Worker registered with scope:', registration.scope);
+          })
+          .catch(error => {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+
     renderTab(currentTab);
   </script>
 </body>
