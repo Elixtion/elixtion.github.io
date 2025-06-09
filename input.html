@@ -751,7 +751,7 @@
       const savedStartingPos = loadData(STORAGE_KEYS.startingPos, '1'); // Load immediately
       
       let allianceColor = 'red'; // default
-      let imageSrc = "C:\\Users\\aarav\\Downloads\\redSetupImage.png"; // default
+      let imageSrc = "https://i.imgur.com/GrRzcj2.png"; // default
       
       // Determine alliance color if we have match data and selected team
       if (cached.matches && savedTeam) {
@@ -762,7 +762,7 @@
           // Check if team is in blue alliance
           if (match.alliances.blue.team_keys.includes(savedTeam)) {
             allianceColor = 'blue';
-            imageSrc = "C:\\Users\\aarav\\Downloads\\blueSetupImage.png";
+            imageSrc = "https://i.imgur.com/g8G6Tnj.png";
           }
           // If not in blue, it must be in red (since team selection is from match data)
         }
@@ -846,7 +846,7 @@
     }
 
     function renderScoutingTab(tab) {
-      const isAuton = tab === 'Auton';
+      const isAuton = false;
       
       // Load saved data immediately
       const savedAutonStartingPos = loadData(STORAGE_KEYS.autonStartingPos, '1');
@@ -861,16 +861,6 @@
       }
 
       tabContent.innerHTML = `
-        ${isAuton ? `
-        <label for="startingPos">Starting Pos:</label>
-        <select id="startingPos">
-          <option value="1" ${savedAutonStartingPos === '1' ? 'selected' : ''}>1</option>
-          <option value="2" ${savedAutonStartingPos === '2' ? 'selected' : ''}>2</option>
-          <option value="3" ${savedAutonStartingPos === '3' ? 'selected' : ''}>3</option>
-          <option value="4" ${savedAutonStartingPos === '4' ? 'selected' : ''}>4</option>
-          <option value="5" ${savedAutonStartingPos === '5' ? 'selected' : ''}>5</option>
-        </select>
-        ` : ''}
 
         <table>
           <thead>
