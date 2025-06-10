@@ -535,7 +535,7 @@
       if (tabs[index] === 'Pre-Match') return renderPreMatchTab();
       if (tabs[index] === 'Auton') return renderAutonTab();
       if (tabs[index] === 'TeleOP') return renderTeleOPTab();
-      
+      if (tabs[index] === 'Upload') return renderUploadTab();      
 
       tabContent.innerHTML = `<h2>${tabs[index]}</h2>`;
     }
@@ -897,7 +897,7 @@
                 <td><div class="counter" data-type="fail"><div class="number">${getCounterValue(0, rowIndex + 1, 'fail')}</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
                 <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(0, rowIndex + 1, 'pass')}</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
               </tr>`).join('')}
-          </tbody>
+          </tbody> 
         </table>
 
         <table>
@@ -1013,6 +1013,141 @@
       `;
     }
 
+    function renderUploadTab() {
+      const data = getAllScoutingData();
+      const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
+      const eventKey = cached.eventKey || 'No event cached';
+      
+      // Format the data for display with proper naming and sections
+      const setupData = [
+        { label: 'Event Key', value: eventKey },
+        { label: 'Timestamp', value: data.timestamp },
+      ];
+      
+      const preMatchData = [
+        { label: 'Match Number', value: data.matchNumber || 'Not set' },
+        { label: 'Selected Team', value: data.selectedTeam || 'Not set' },
+        { label: 'No Show', value: data.noShow ? 'Yes' : 'No' },
+        { label: 'Pre Load', value: data.preLoad },
+        { label: 'Starting Position', value: data.startingPos },
+      ];
+      
+      const autonData = [
+        { label: 'Auton Starting Position', value: data.autonStartingPos }
+      ];
+      
+      // Add formatted auton counter data
+      Object.entries(data.autonCounters).forEach(([key, value]) => {
+        const formattedKey = formatCounterKey('Auton', key);
+        autonData.push({ label: formattedKey, value: value });
+      });
+      
+      const teleopData = [];
+      // Add formatted teleop counter data
+      Object.entries(data.teleopCounters).forEach(([key, value]) => {
+        const formattedKey = formatCounterKey('TeleOP', key);
+        teleopData.push({ label: formattedKey, value: value });
+      });
+      
+      // Helper function to generate section HTML
+      const generateSection = (title, data) => `
+        <div style="margin-bottom: 20px;">
+          <h4 style="color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid var(--accent); padding-bottom: 5px;">${title}</h4>
+          ${data.map(item => 
+            `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #333;">
+              <span style="font-weight: bold;">${item.label}:</span>
+              <span>${item.value}</span>
+            </div>`
+          ).join('')}
+        </div>
+      `;
+      
+      tabContent.innerHTML = `
+        <div style="max-width: 500px; width: 100%;">
+          <h3 style="text-align: center; margin-bottom: 20px;">Scouting Data Summary</h3>
+          ${generateSection('Setup', setupData)}
+          ${generateSection('Pre-Match', preMatchData)}
+          ${autonData.length > 1 ? generateSection('Autonomous', autonData) : ''}
+          ${teleopData.length > 0 ? generateSection('TeleOP', teleopData) : ''}
+          
+          <div class="actions" style="margin-top: 30px;">
+            <button onclick="downloadCSV()">Download CSV</button>
+            <button onclick="copyToClipboard()">Copy Data</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function formatCounterKey(phase, key) {
+      // Parse the key format: table0_row1_fail
+      const parts = key.split('_');
+      const tableIndex = parseInt(parts[0].replace('table', ''));
+      const rowIndex = parseInt(parts[1].replace('row', ''));
+      const type = parts[2];
+      
+      if (tableIndex === 0) {
+        // Level scoring: table0_row1_fail -> coral_L4_fail
+        const levels = ['L4', 'L3', 'L2', 'L1'];
+        return `${phase} coral_${levels[rowIndex - 1]}_${type}`;
+      } else if (tableIndex === 1) {
+        // Location scoring: table1_row1_fail -> algae_barge_fail
+        const locations = ['barge', 'proc'];
+        return `${phase} algae_${locations[rowIndex - 1]}_${type}`;
+      } else if (tableIndex === 2) {
+        // Drop counting: table2_row1_pass -> drop_coral_count
+        const items = ['coral', 'algae'];
+        return `${phase} drop_${items[rowIndex - 1]}_count`;
+      }
+      
+      return `${phase} ${key}`;
+    }
+
+    function downloadCSV() {
+      const csvContent = exportToCSV();
+      
+      // Create a more detailed CSV with auto-fit instructions in filename
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `scouting_data_autofit_${Date.now()}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show instructions for auto-fit
+        setTimeout(() => {
+          alert('CSV downloaded! To auto-fit columns in Excel/Google Sheets:\n\nExcel: Select all columns → Home tab → Format → AutoFit Column Width\nGoogle Sheets: Select all columns → Right-click → Resize columns A-Z');
+        }, 500);
+      }
+    }
+
+    function copyToClipboard() {
+      const data = getAllScoutingData();
+      const textData = Object.entries(data)
+        .map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`)
+        .join('\n');
+      
+      navigator.clipboard.writeText(textData).then(() => {
+        // Show temporary success message
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        button.style.backgroundColor = 'var(--green)';
+        
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.style.backgroundColor = 'var(--button-bg)';
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+        alert('Failed to copy data to clipboard');
+      });
+    }
+
     function increment(button) {
       const counter = button.closest(".counter");
       const number = counter.querySelector(".number");
@@ -1097,9 +1232,12 @@
     // Function to export data as CSV format
     function exportToCSV() {
       const data = getAllScoutingData();
+      const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
+      const eventKey = cached.eventKey || 'No event cached';
       
       // Create CSV headers
       const headers = [
+        'Event Key',
         'Timestamp',
         'Match Number',
         'Team',
@@ -1109,22 +1247,23 @@
         'Auton Starting Position'
       ];
       
-      // Add counter headers
+      // Add formatted counter headers
       const autonCounters = data.autonCounters;
       const teleopCounters = data.teleopCounters;
       
-      // Add auton counter headers
+      // Add auton counter headers with proper formatting
       Object.keys(autonCounters).forEach(key => {
-        headers.push(`Auton ${key}`);
+        headers.push(formatCounterKey('Auton', key));
       });
       
-      // Add teleop counter headers
+      // Add teleop counter headers with proper formatting
       Object.keys(teleopCounters).forEach(key => {
-        headers.push(`TeleOP ${key}`);
+        headers.push(formatCounterKey('TeleOP', key));
       });
       
       // Create CSV row
       const row = [
+        eventKey,
         data.timestamp,
         data.matchNumber,
         data.selectedTeam,
