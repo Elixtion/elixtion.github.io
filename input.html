@@ -533,7 +533,9 @@
 
       if (tabs[index] === 'Setup') return renderSetupTab();
       if (tabs[index] === 'Pre-Match') return renderPreMatchTab();
-      if (tabs[index] === 'TeleOP' || tabs[index] === 'Auton') return renderScoutingTab(tabs[index]);
+      if (tabs[index] === 'Auton') return renderAutonTab();
+      if (tabs[index] === 'TeleOP') return renderTeleOPTab();
+      
 
       tabContent.innerHTML = `<h2>${tabs[index]}</h2>`;
     }
@@ -869,14 +871,9 @@
       }
     }
 
-    function renderScoutingTab(tab) {
-      const isAuton = false;
-      
+    function renderAutonTab() {
       // Load saved data immediately
-      const savedAutonStartingPos = loadData(STORAGE_KEYS.autonStartingPos, '1');
-      const savedCounters = isAuton   ? 
-        loadData(STORAGE_KEYS.autonCounters, {}) : 
-        loadData(STORAGE_KEYS.teleopCounters, {});
+      const savedCounters = loadData(STORAGE_KEYS.autonCounters, {});
 
       // Function to get saved counter value
       function getCounterValue(tableIndex, rowIndex, counterType) {
@@ -885,7 +882,6 @@
       }
 
       tabContent.innerHTML = `
-
         <table>
           <thead>
             <tr>
@@ -943,16 +939,78 @@
           <button onclick="redo()">Redo</button>
         </div>
       `;
+    }
 
-      // Add event listener for auton starting position without setTimeout
-      if (isAuton) {
-        const autonStartingPos = document.getElementById("startingPos");
-        if (autonStartingPos) {
-          autonStartingPos.addEventListener('change', () => {
-            saveData(STORAGE_KEYS.autonStartingPos, autonStartingPos.value);
-          });
-        }
+    function renderTeleOPTab() {
+      const isAuton = false;
+      
+      // Load saved data immediately
+      const savedCounters = loadData(STORAGE_KEYS.teleopCounters, {});
+
+      // Function to get saved counter value
+      function getCounterValue(tableIndex, rowIndex, counterType) {
+        const key = `table${tableIndex}_row${rowIndex}_${counterType}`;
+        return savedCounters[key] || 0;
       }
+
+      tabContent.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <td class="top-left first-top-left">Level</td>
+              <th>Fail</th>
+              <th>Pass</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${['L4', 'L3', 'L2', 'L1'].map((level, rowIndex) => `
+              <tr>
+                <td class="level-label">${level}</td>
+                <td><div class="counter" data-type="fail"><div class="number">${getCounterValue(0, rowIndex + 1, 'fail')}</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+                <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(0, rowIndex + 1, 'pass')}</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+
+        <table>
+          <thead>
+            <tr>
+              <td class="top-left second-top-left">Location</td>
+              <th>Fail</th>
+              <th>Pass</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${['Barge', 'Processor'].map((loc, rowIndex) => `
+              <tr>
+                <td class="level-label">${loc}</td>
+                <td><div class="counter" data-type="fail"><div class="number">${getCounterValue(1, rowIndex + 1, 'fail')}</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
+                <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(1, rowIndex + 1, 'pass')}</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+
+        <table>
+          <thead>
+            <tr>
+              <td class="top-left third-top-left">Item Dropped</td>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${['Coral', 'Algae'].map((item, rowIndex) => `
+              <tr>
+                <td class="level-label">${item}</td>
+                <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(2, rowIndex + 1, 'pass')}</div><button class="plus coral-algae" onclick="increment(this)">+</button></div></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+
+        <div class="actions">
+          <button onclick="undo()">Undo</button>
+          <button onclick="redo()">Redo</button>
+        </div>
+      `;
     }
 
     function increment(button) {
