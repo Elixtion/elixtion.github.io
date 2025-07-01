@@ -61,6 +61,52 @@
       justify-content: center;
     }
 
+    /* Toggle button inside top-right cell */
+    .table-toggle {
+      width: 100%;
+      height: 100%;
+      background-color: var(--yellow);
+      border: none;
+      border-radius: 0;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: black;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+
+    /* Counter buttons (pass/fail and yellow toggle) */
+    .plus,
+    .plus.toggle-minus {
+      width: 48px;
+      height: 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background-color 0.2s ease;
+    }
+
+    .plus.pass {
+      background-color: var(--green);
+      color: white;
+    }
+
+    .plus.fail {
+      background-color: var(--red);
+      color: white;
+    }
+
+    .plus.toggle-minus {
+      background-color: var(--yellow);
+      color: black;
+    }
+
+
+
+
+
     #startingPosImage {
       margin-top: 20px;
       text-align: center;
@@ -211,7 +257,7 @@
       gap: 10px;
     }
 
-    .plus {
+    /*.plus {
       border: none;
       color: white;
       border-radius: 8px;
@@ -227,7 +273,7 @@
 
     .plus.fail {
       background-color: var(--red);
-    }
+    }*/
 
     .coral-algae {
       background-color: var(--red) !important;
@@ -871,147 +917,107 @@
       }
     }
 
-    function renderAutonTab() {
-      // Load saved data immediately
-      const savedCounters = loadData(STORAGE_KEYS.autonCounters, {});
-
-      // Function to get saved counter value
-      function getCounterValue(tableIndex, rowIndex, counterType) {
+    function renderCounterTable(titleClass, title, rows, tableIndex, savedCounters, isDropTable = false) {
+      function getCounterValue(rowIndex, counterType) {
         const key = `table${tableIndex}_row${rowIndex}_${counterType}`;
         return savedCounters[key] || 0;
       }
 
+      const columnsHeader = isDropTable
+        ? `<th>Count</th><th style="width: 48px; height: 48px;"></th>`
+        : `<th>Fail</th><th>Pass</th><th style="width: 48px; height: 48px;"></th>`;
+
+      const bodyRows = rows.map((label, rowIndex) => {
+        const rowLabel = `<td class="level-label">${label}</td>`;
+        const countCell = (type) => `
+          <td>
+            <div class="counter" data-type="${type}">
+              <div class="number">${getCounterValue(rowIndex + 1, type)}</div>
+              <button class="plus ${isDropTable ? 'coral-algae' : type}" onclick="counterAction(this, ${tableIndex})">+</button>
+            </div>
+          </td>`;
+
+        return `<tr>${rowLabel}${
+          isDropTable ? countCell('pass') + `<td></td>` : countCell('fail') + countCell('pass') + `<td></td>`
+        }</tr>`;
+      }).join('');
+
+      return `
+        <table data-table-index="${tableIndex}">
+          <thead>
+            <tr>
+              <td class="top-left ${titleClass}">${title}</td>
+              ${columnsHeader}
+            </tr>
+          </thead>
+          <tbody>
+            ${bodyRows}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="${isDropTable ? 2 : 3}"></td>
+              <td>
+                <button class="table-toggle" onclick="toggleTableMode(${tableIndex}, this)">–</button>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+    }
+
+
+
+
+    
+
+    const tableModes = {};
+
+    function toggleTableMode(tableIndex, toggleBtn) {
+      const table = document.querySelector(`table[data-table-index="${tableIndex}"]`);
+      if (!table) return;
+
+      const isMinus = !tableModes[tableIndex];
+      tableModes[tableIndex] = isMinus;
+
+      const buttons = table.querySelectorAll("button.plus");
+      buttons.forEach(btn => {
+        if (isMinus) {
+          btn.classList.add("toggle-minus");
+          btn.classList.remove("pass", "fail");
+          btn.textContent = "–";
+        } else {
+          btn.classList.remove("toggle-minus");
+
+          const type = btn.closest(".counter").getAttribute("data-type");
+          btn.classList.add(type);
+          btn.textContent = "+";
+        }
+      });
+
+      toggleBtn.textContent = isMinus ? "+" : "–"; // Flip toggle symbol
+    }
+
+
+
+
+    function renderAutonTab() {
+      const savedCounters = loadData(STORAGE_KEYS.autonCounters, {});
       tabContent.innerHTML = `
-        <table>
-          <thead>
-            <tr>
-              <td class="top-left first-top-left">Level</td>
-              <th>Fail</th>
-              <th>Pass</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${['L4', 'L3', 'L2', 'L1'].map((level, rowIndex) => `
-              <tr>
-                <td class="level-label">${level}</td>
-                <td><div class="counter" data-type="fail"><div class="number">${getCounterValue(0, rowIndex + 1, 'fail')}</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-                <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(0, rowIndex + 1, 'pass')}</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-              </tr>`).join('')}
-          </tbody> 
-        </table>
-
-        <table>
-          <thead>
-            <tr>
-              <td class="top-left second-top-left">Location</td>
-              <th>Fail</th>
-              <th>Pass</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${['Barge', 'Processor'].map((loc, rowIndex) => `
-              <tr>
-                <td class="level-label">${loc}</td>
-                <td><div class="counter" data-type="fail"><div class="number">${getCounterValue(1, rowIndex + 1, 'fail')}</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-                <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(1, rowIndex + 1, 'pass')}</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-
-        <table>
-          <thead>
-            <tr>
-              <td class="top-left third-top-left">Item Dropped</td>
-              <th>Count</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${['Coral', 'Algae'].map((item, rowIndex) => `
-              <tr>
-                <td class="level-label">${item}</td>
-                <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(2, rowIndex + 1, 'pass')}</div><button class="plus coral-algae" onclick="increment(this)">+</button></div></td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-
-        <div class="actions">
-          <button onclick="undo()">Undo</button>
-          <button onclick="redo()">Redo</button>
-        </div>
+        ${renderCounterTable('first-top-left', 'Level', ['L4', 'L3', 'L2', 'L1'], 0, savedCounters)}
+        ${renderCounterTable('second-top-left', 'Location', ['Barge', 'Processor'], 1, savedCounters)}
+        ${renderCounterTable('third-top-left', 'Item Dropped', ['Coral', 'Algae'], 2, savedCounters, true)}
       `;
     }
 
     function renderTeleOPTab() {
-      const isAuton = false;
-      
-      // Load saved data immediately
       const savedCounters = loadData(STORAGE_KEYS.teleopCounters, {});
-
-      // Function to get saved counter value
-      function getCounterValue(tableIndex, rowIndex, counterType) {
-        const key = `table${tableIndex}_row${rowIndex}_${counterType}`;
-        return savedCounters[key] || 0;
-      }
-
       tabContent.innerHTML = `
-        <table>
-          <thead>
-            <tr>
-              <td class="top-left first-top-left">Level</td>
-              <th>Fail</th>
-              <th>Pass</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${['L4', 'L3', 'L2', 'L1'].map((level, rowIndex) => `
-              <tr>
-                <td class="level-label">${level}</td>
-                <td><div class="counter" data-type="fail"><div class="number">${getCounterValue(0, rowIndex + 1, 'fail')}</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-                <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(0, rowIndex + 1, 'pass')}</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-
-        <table>
-          <thead>
-            <tr>
-              <td class="top-left second-top-left">Location</td>
-              <th>Fail</th>
-              <th>Pass</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${['Barge', 'Processor'].map((loc, rowIndex) => `
-              <tr>
-                <td class="level-label">${loc}</td>
-                <td><div class="counter" data-type="fail"><div class="number">${getCounterValue(1, rowIndex + 1, 'fail')}</div><button class="plus fail" onclick="increment(this)">+</button></div></td>
-                <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(1, rowIndex + 1, 'pass')}</div><button class="plus pass" onclick="increment(this)">+</button></div></td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-
-        <table>
-          <thead>
-            <tr>
-              <td class="top-left third-top-left">Item Dropped</td>
-              <th>Count</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${['Coral', 'Algae'].map((item, rowIndex) => `
-              <tr>
-                <td class="level-label">${item}</td>
-                <td><div class="counter" data-type="pass"><div class="number">${getCounterValue(2, rowIndex + 1, 'pass')}</div><button class="plus coral-algae" onclick="increment(this)">+</button></div></td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-
-        <div class="actions">
-          <button onclick="undo()">Undo</button>
-          <button onclick="redo()">Redo</button>
-        </div>
+        ${renderCounterTable('first-top-left', 'Level', ['L4', 'L3', 'L2', 'L1'], 0, savedCounters)}
+        ${renderCounterTable('second-top-left', 'Location', ['Barge', 'Processor'], 1, savedCounters)}
+        ${renderCounterTable('third-top-left', 'Item Dropped', ['Coral', 'Algae'], 2, savedCounters, true)}
       `;
     }
+
 
     function renderUploadTab() {
       const data = getAllScoutingData();
@@ -1148,23 +1154,29 @@
       });
     }
 
-    function increment(button) {
+    function counterAction(button, tableIndex) {
       const counter = button.closest(".counter");
       const number = counter.querySelector(".number");
-      number.textContent = parseInt(number.textContent) + 1;
+      let value = parseInt(number.textContent);
+
+      const isMinus = tableModes[tableIndex];
+      if (isMinus) {
+        value = Math.max(0, value - 1);
+      } else {
+        value += 1;
+      }
+
+      number.textContent = value;
       animateHighlight(number);
 
-      const type = counter.getAttribute("data-type");
-      const row = button.closest("tr") || counter;
-      history.push({ row, type });
-      redoStack.length = 0;
-
-      // Save counters after increment
       const currentTabName = tabs[currentTab];
       if (currentTabName === 'Auton' || currentTabName === 'TeleOP') {
         saveCounters(currentTabName);
       }
     }
+
+
+
 
     function undo() {
       if (history.length === 0) return;
