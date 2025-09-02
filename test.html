@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B600%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B600%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>CrowdScout</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style type="text/tailwindcss">
+    :root {
+      --primary-50: #f7fdf0;
+      --primary-100: #eefad9;
+      --primary-200: #dff6ba;
+      --primary-300: #c9eea7;
+      --primary-400: #b1e48b;
+      --primary-500: #99e550;
+      --primary-600: #74c13a;
+      --primary-700: #58962e;
+      --primary-800: #447526;
+      --primary-900: #396122;
+      --primary-950: #1b350e;
+      --secondary-50: #f2f7f5;
+      --secondary-100: #e4eee9;
+      --secondary-200: #c9ddd4;
+      --secondary-300: #a7c6b9;
+      --secondary-400: #82ab9a;
+      --secondary-500: #658e7f;
+      --secondary-600: #527366;
+      --secondary-700: #445f55;
+      --secondary-800: #384d45;
+      --secondary-900: #30413a;
+      --secondary-950: #1a2420;
+      --surface-0: #111312;
+      --surface-50: #171a18;
+      --surface-100: #262e2a;
+      --surface-200: #3f4e46;
+      --surface-300: #576e62;
+      --surface-400: #6e8e7d;
+      --surface-500: #8cae9d;
+      --surface-600: #a9c8b9;
+      --surface-700: #c6e0d4;
+      --surface-800: #e2f4ea;
+      --surface-900: #f1faf5;
+      --surface-950: #ffffff;
+    }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="bg-[var(--surface-0)] text-[var(--surface-900)]">
+<div class="relative flex size-full min-h-screen flex-col" style='font-family: Inter, "Noto Sans", sans-serif;'>
+<div class="flex h-full grow flex-col">
+<header class="sticky top-0 z-20 flex items-center justify-between whitespace-nowrap border-b border-[var(--surface-100)] bg-[var(--surface-0)]/80 px-10 py-4 backdrop-blur-lg">
+<div class="flex items-center gap-10">
+<a class="flex items-center gap-3 text-[var(--surface-950)]" href="#">
+<svg class="h-8 w-8 text-[var(--primary-500)]" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M13.8261 30.5736C16.7203 29.8826 20.2244 29.4783 24 29.4783C27.7756 29.4783 31.2797 29.8826 34.1739 30.5736C36.9144 31.2278 39.9967 32.7669 41.3563 33.8352L24.8486 7.36089C24.4571 6.73303 23.5429 6.73303 23.1514 7.36089L6.64374 33.8352C8.00331 32.7669 11.0856 31.2278 13.8261 30.5736Z" fill="currentColor"></path>
+<path clip-rule="evenodd" d="M39.998 35.764C39.9944 35.7463 39.9875 35.7155 39.9748 35.6706C39.9436 35.5601 39.8949 35.4259 39.8346 35.2825C39.8168 35.2403 39.7989 35.1993 39.7813 35.1602C38.5103 34.2887 35.9788 33.0607 33.7095 32.5189C30.9875 31.8691 27.6413 31.4783 24 31.4783C20.3587 31.4783 17.0125 31.8691 14.2905 32.5189C12.0012 33.0654 9.44505 34.3104 8.18538 35.1832C8.17384 35.2075 8.16216 35.233 8.15052 35.2592C8.09919 35.3751 8.05721 35.4886 8.02977 35.589C8.00356 35.6848 8.00039 35.7333 8.00004 35.7388C8.00004 35.739 8 35.7393 8.00004 35.7388C8.00004 35.7641 8.0104 36.0767 8.68485 36.6314C9.34546 37.1746 10.4222 37.7531 11.9291 38.2772C14.9242 39.319 19.1919 40 24 40C28.8081 40 33.0758 39.319 36.0709 38.2772C37.5778 37.7531 38.6545 37.1746 39.3151 36.6314C39.9006 36.1499 39.9857 35.8511 39.998 35.764ZM4.95178 32.7688L21.4543 6.30267C22.6288 4.4191 25.3712 4.41909 26.5457 6.30267L43.0534 32.777C43.0709 32.8052 43.0878 32.8338 43.104 32.8629L41.3563 33.8352C43.104 32.8629 43.1038 32.8626 43.104 32.8629L43.1051 32.865L43.1065 32.8675L43.1101 32.8739L43.1199 32.8918C43.1276 32.906 43.1377 32.9246 43.1497 32.9473C43.1738 32.9925 43.2062 33.0545 43.244 33.1299C43.319 33.2792 43.4196 33.489 43.5217 33.7317C43.6901 34.1321 44 34.9311 44 35.7391C44 37.4427 43.003 38.7775 41.8558 39.7209C40.6947 40.6757 39.1354 41.4464 37.385 42.0552C33.8654 43.2794 29.133 44 24 44C18.867 44 14.1346 43.2794 10.615 42.0552C8.86463 41.4464 7.30529 40.6757 6.14419 39.7209C4.99695 38.7775 3.99999 37.4427 3.99999 35.7391C3.99999 34.8725 4.29264 34.0922 4.49321 33.6393C4.60375 33.3898 4.71348 33.1804 4.79687 33.0311C4.83898 32.9556 4.87547 32.8935 4.9035 32.8471C4.91754 32.8238 4.92954 32.8043 4.93916 32.7889L4.94662 32.777L4.95178 32.7688ZM35.9868 29.004L24 9.77997L12.0131 29.004C12.4661 28.8609 12.9179 28.7342 13.3617 28.6282C16.4281 27.8961 20.0901 27.4783 24 27.4783C27.9099 27.4783 31.5719 27.8961 34.6383 28.6282C35.082 28.7342 35.5339 28.8609 35.9868 29.004Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+<h1 class="text-xl font-bold">CrowdScout</h1>
+</a>
+<nav class="flex items-center gap-2">
+<a class="relative rounded-md px-4 py-2 text-sm font-semibold text-[var(--surface-500)] transition-colors hover:text-[var(--surface-950)]" href="#">Teams</a>
+<a class="relative rounded-md px-4 py-2 text-sm font-semibold text-[var(--surface-500)] transition-colors hover:text-[var(--surface-950)]" href="#">Events</a>
+<a class="relative rounded-md px-4 py-2 text-sm font-semibold text-[var(--surface-500)] transition-colors hover:text-[var(--surface-950)]" href="#">Matches</a>
+</nav>
+</div>
+<div class="flex flex-1 items-center justify-end gap-4">
+<label class="relative flex w-full max-w-xs">
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--surface-500)]">
+<span class="material-symbols-outlined text-xl"> search </span>
+</div>
+<input class="h-10 w-full rounded-md border border-transparent bg-[var(--surface-50)] py-2 pl-10 pr-4 text-sm text-[var(--surface-950)] placeholder:text-[var(--surface-500)] transition-colors focus:border-[var(--primary-500)] focus:bg-[var(--surface-0)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" placeholder="Search" value=""/>
+</label>
+<button class="flex h-10 flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md bg-[var(--surface-950)] px-4 text-sm font-semibold text-black transition-colors hover:bg-[var(--surface-800)]">
+<span>Input Data</span>
+<span class="material-symbols-outlined text-xl"> open_in_new </span>
+</button>
+<button class="flex-shrink-0">
+<img class="h-10 w-10 rounded-full object-cover transition-transform duration-300 hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBiA5_1VQl4STx1MWIZVk5renjUM8AGmrvkEewODWMHn85JDKb5QcEx74lAxPDY9vkQOU_pTePdXyX1Q3Ts0sjweOyD9IAnNCq4wtzQF_b3SkIFHaS57luVhxdPjRrUFfE_vJjnhQrKKvlSpVJc0BH9S7lCc8Q9NCbxAWqztcxM6FC9u_464lKQ-8Y-9xgHc7711WSPljUSGndEQqgIEotedpUDp_qQdUfLAiSNlSP-m8qca28JVsyG-TYqzpahzyiJnOxdQXPy9To"/>
+</button>
+</div>
+</header>
+<main class="flex-1 px-10 py-12">
+<div class="mx-auto max-w-7xl">
+<div class="@container">
+<div class="@[480px]:p-4">
+<div class="relative flex min-h-[480px] flex-col items-start justify-end overflow-hidden rounded-2xl bg-cover bg-center bg-no-repeat px-4 pb-10 shadow-2xl shadow-black/30 @[480px]:px-10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDXwpVjuNorxiuUAExlL7E_FITVBy_0jgqJSTJE1v-aXB1ydHcmKAju5QNsFUuYiU15_nPN-wK_pnVl32MoqHPPbwwBiQLZfTLRCYtyz3hFB7ibXK_pySqIMOmD58wvufjrtNMv91_3I8_ICZgzXh2PkrcKWxmsXmNgJ2leF0dBTOvRodnqCOeJea_IJhb2eGJD5p_m-cSBUynpByv4wrHwr_WAtSxmi0Hl96QdpRbhQ5WCCCkxigMEsins1UxjeK3nDcOe7FNn13w");'>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+<div class="relative z-10 flex animate-fadeIn flex-col gap-4 text-left">
+<h1 class="text-4xl font-extrabold tracking-tighter text-white @[480px]:text-7xl">Unlock the Power of CrowdScout</h1>
+<p class="max-w-2xl text-base text-[var(--surface-300)] @[480px]:text-xl">
+                    Transform raw data into actionable intelligence with our intuitive analytics platform. Gain a competitive edge by understanding your audience, optimizing your strategies, and driving growth.
+                  </p>
+<button class="flex h-12 w-fit cursor-pointer items-center justify-center rounded-lg bg-[var(--primary-500)] px-6 text-base font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40">
+<span class="truncate">Get Started</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-12 py-24">
+<div class="flex flex-col gap-4 text-center">
+<h2 class="text-5xl font-extrabold tracking-tighter text-white">Key Features</h2>
+<p class="mx-auto max-w-2xl text-lg text-[var(--surface-400)]">
+                Our platform offers a comprehensive suite of tools to analyze and visualize your data effectively.
+              </p>
+</div>
+<div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+<div class="group flex flex-col gap-4 rounded-xl border border-[var(--surface-100)] bg-gradient-to-br from-[var(--surface-50)] to-[var(--surface-0)] p-6 transition-all duration-300 hover:border-[var(--primary-700)] hover:shadow-2xl hover:shadow-[var(--primary-900)]/50">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--primary-900)] text-[var(--primary-300)] transition-all duration-300 group-hover:bg-[var(--primary-500)] group-hover:text-[var(--primary-950)]">
+<span class="material-symbols-outlined text-3xl"> bar_chart_4_bars </span>
+</div>
+<div class="flex flex-col gap-2">
+<h3 class="text-xl font-bold text-white">Interactive Dashboards</h3>
+<p class="text-[var(--surface-400)]">Create dynamic and customizable dashboards to track key metrics and trends in real-time.</p>
+</div>
+</div>
+<div class="group flex flex-col gap-4 rounded-xl border border-[var(--surface-100)] bg-gradient-to-br from-[var(--surface-50)] to-[var(--surface-0)] p-6 transition-all duration-300 hover:border-[var(--primary-700)] hover:shadow-2xl hover:shadow-[var(--primary-900)]/50">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--primary-900)] text-[var(--primary-300)] transition-all duration-300 group-hover:bg-[var(--primary-500)] group-hover:text-[var(--primary-950)]">
+<span class="material-symbols-outlined text-3xl"> groups </span>
+</div>
+<div class="flex flex-col gap-2">
+<h3 class="text-xl font-bold text-white">Team Collaboration</h3>
+<p class="text-[var(--surface-400)]">Collaborate seamlessly with your team, share insights, and work together to achieve your goals.</p>
+</div>
+</div>
+<div class="group flex flex-col gap-4 rounded-xl border border-[var(--surface-100)] bg-gradient-to-br from-[var(--surface-50)] to-[var(--surface-0)] p-6 transition-all duration-300 hover:border-[var(--primary-700)] hover:shadow-2xl hover:shadow-[var(--primary-900)]/50">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--primary-900)] text-[var(--primary-300)] transition-all duration-300 group-hover:bg-[var(--primary-500)] group-hover:text-[var(--primary-950)]">
+<span class="material-symbols-outlined text-3xl"> search </span>
+</div>
+<div class="flex flex-col gap-2">
+<h3 class="text-xl font-bold text-white">Advanced Search</h3>
+<p class="text-[var(--surface-400)]">Quickly find specific data points and trends with our powerful search functionality.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-12 py-16">
+<div class="flex flex-col gap-4 text-center">
+<h2 class="text-5xl font-extrabold tracking-tighter text-white">Visualize Your Data</h2>
+<p class="mx-auto max-w-2xl text-lg text-[var(--surface-400)]">
+                Transform complex data into clear and compelling visualizations that tell a story.
+              </p>
+</div>
+<div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+<div class="flex flex-col gap-4 group">
+<div class="w-full overflow-hidden rounded-lg border border-[var(--surface-100)] transition-all duration-300 group-hover:border-[var(--primary-600)] group-hover:shadow-2xl group-hover:shadow-[var(--primary-800)]/40">
+<img class="h-auto w-full object-cover transition-transform duration-300 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-eH_T8yQMTaA6sYTfDwDSUq6RxNZdDPfQp2ow_SaMZGPmzpqGeb8M2FHnuBAoW05EIXPfdFEt2isnD58vul0EJNgNKXNmUVI_FhcV92SEinO88mNS0LwF8yrlDxXednq-_gkNWvwyfgg3inww79SQzplVJ9D5Y8brswxwGCCWhcJedHMkRxXUpdi3vcd6oZmaba4GHZDtyfdQUSutO8r9b7gNFxi5m42xNkzp6yk0M_LELqR6l9sphZGVsWvVxVwNDSCiRxdtU58"/>
+</div>
+<div>
+<h3 class="text-lg font-semibold text-white">Customizable Charts</h3>
+<p class="text-[var(--surface-400)]">
+                    Choose from a variety of chart types and customize them to match your brand and reporting needs.
+                  </p>
+</div>
+</div>
+<div class="flex flex-col gap-4 group">
+<div class="w-full overflow-hidden rounded-lg border border-[var(--surface-100)] transition-all duration-300 group-hover:border-[var(--primary-600)] group-hover:shadow-2xl group-hover:shadow-[var(--primary-800)]/40">
+<img class="h-auto w-full object-cover transition-transform duration-300 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBr2XkRX9wM7yF04OHePT4VaYHP1Vh4QvvhDkW5nwR6toaxHu0ZfsavkpIQDs4O512aB0Nobtq1ELuOkuuNFcVRUZObkMowf4OlpR6ov2Dwprave3zZ8xKSQUOoTtjinop2cJwjT52dEMfW_t_XV5-b5TSLuVjx9IZ7yeq-g2O5W-66e3aV9ithmuQDKqjWRkFe1mR1lLUIz-uP0EuYVRG-X-CL-AGWYigjQxWq08cu7ZUcXqnj5VIQxp4n6d-iwHVD3Yq28IXvrqA"/>
+</div>
+<div>
+<h3 class="text-lg font-semibold text-white">Data Exploration</h3>
+<p class="text-[var(--surface-400)]">
+                    Dive deep into your data with interactive exploration tools that allow you to uncover hidden patterns.
+                  </p>
+</div>
+</div>
+<div class="flex flex-col gap-4 group">
+<div class="w-full overflow-hidden rounded-lg border border-[var(--surface-100)] transition-all duration-300 group-hover:border-[var(--primary-600)] group-hover:shadow-2xl group-hover:shadow-[var(--primary-800)]/40">
+<img class="h-auto w-full object-cover transition-transform duration-300 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3ZulpB-nR-mJCTpC_B2NG4-n9DE-V835FlI9GqpBuSsHk1btB28qYwgSoE6tOkZ-rxddtBAiJHCeMkcIsn8SNNA9lcMhc0FEWasAsiBYKtEbhc_fcW89DY4Prp7OTIr36v_R39Wt-lAHtinskRjaK9ZzeEhgDvjpxloe4eP5REeKFO4891uhNwoHe_7kLFS3iqgXLnOqDmQMKrQBUkwWiIRRth9Zki5uMrshu3XIFoqEF0lbnsKCK1nvtVfpkjs2R7cIIuHN_w5c"/>
+</div>
+<div>
+<h3 class="text-lg font-semibold text-white">Reporting &amp; Sharing</h3>
+<p class="text-[var(--surface-400)]">
+                    Generate reports and share your insights with stakeholders in a clear and concise format.
+                  </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="border-t border-[var(--surface-100)] bg-transparent">
+<div class="mx-auto max-w-7xl px-10 py-12">
+<div class="flex flex-col items-center justify-between gap-8 md:flex-row">
+<div class="flex flex-col items-center gap-2 md:items-start">
+<div class="flex items-center gap-2">
+<svg class="h-6 w-6 text-[var(--primary-500)]" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M13.8261 30.5736C16.7203 29.8826 20.2244 29.4783 24 29.4783C27.7756 29.4783 31.2797 29.8826 34.1739 30.5736C36.9144 31.2278 39.9967 32.7669 41.3563 33.8352L24.8486 7.36089C24.4571 6.73303 23.5429 6.73303 23.1514 7.36089L6.64374 33.8352C8.00331 32.7669 11.0856 31.2278 13.8261 30.5736Z" fill="currentColor"></path>
+<path clip-rule="evenodd" d="M39.998 35.764C39.9944 35.7463 39.9875 35.7155 39.9748 35.6706C39.9436 35.5601 39.8949 35.4259 39.8346 35.2825C39.8168 35.2403 39.7989 35.1993 39.7813 35.1602C38.5103 34.2887 35.9788 33.0607 33.7095 32.5189C30.9875 31.8691 27.6413 31.4783 24 31.4783C20.3587 31.4783 17.0125 31.8691 14.2905 32.5189C12.0012 33.0654 9.44505 34.3104 8.18538 35.1832C8.17384 35.2075 8.16216 35.233 8.15052 35.2592C8.09919 35.3751 8.05721 35.4886 8.02977 35.589C8.00356 35.6848 8.00039 35.7333 8.00004 35.7388C8.00004 35.739 8 35.7393 8.00004 35.7388C8.00004 35.7641 8.0104 36.0767 8.68485 36.6314C9.34546 37.1746 10.4222 37.7531 11.9291 38.2772C14.9242 39.319 19.1919 40 24 40C28.8081 40 33.0758 39.319 36.0709 38.2772C37.5778 37.7531 38.6545 37.1746 39.3151 36.6314C39.9006 36.1499 39.9857 35.8511 39.998 35.764ZM4.95178 32.7688L21.4543 6.30267C22.6288 4.4191 25.3712 4.41909 26.5457 6.30267L43.0534 32.777C43.0709 32.8052 43.0878 32.8338 43.104 32.8629L41.3563 33.8352C43.104 32.8629 43.1038 32.8626 43.104 32.8629L43.1051 32.865L43.1065 32.8675L43.1101 32.8739L43.1199 32.8918C43.1276 32.906 43.1377 32.9246 43.1497 32.9473C43.1738 32.9925 43.2062 33.0545 43.244 33.1299C43.319 33.2792 43.4196 33.489 43.5217 33.7317C43.6901 34.1321 44 34.9311 44 35.7391C44 37.4427 43.003 38.7775 41.8558 39.7209C40.6947 40.6757 39.1354 41.4464 37.385 42.0552C33.8654 43.2794 29.133 44 24 44C18.867 44 14.1346 43.2794 10.615 42.0552C8.86463 41.4464 7.30529 40.6757 6.14419 39.7209C4.99695 38.7775 3.99999 37.4427 3.99999 35.7391C3.99999 34.8725 4.29264 34.0922 4.49321 33.6393C4.60375 33.3898 4.71348 33.1804 4.79687 33.0311C4.83898 32.9556 4.87547 32.8935 4.9035 32.8471C4.91754 32.8238 4.92954 32.8043 4.93916 32.7889L4.94662 32.777L4.95178 32.7688ZM35.9868 29.004L24 9.77997L12.0131 29.004C12.4661 28.8609 12.9179 28.7342 13.3617 28.6282C16.4281 27.8961 20.0901 27.4783 24 27.4783C27.9099 27.4783 31.5719 27.8961 34.6383 28.6282C35.082 28.7342 35.5339 28.8609 35.9868 29.004Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+<span class="text-lg font-semibold text-[var(--surface-950)]">CrowdScout</span>
+</div>
+<p class="text-[var(--surface-500)]">© 2024 CrowdScout. All rights reserved.</p>
+</div>
+<div class="flex items-center gap-8">
+<nav class="flex gap-6">
+<a class="text-sm font-medium text-[var(--surface-500)] transition-colors hover:text-[var(--primary-500)]" href="#">Terms</a>
+<a class="text-sm font-medium text-[var(--surface-500)] transition-colors hover:text-[var(--primary-500)]" href="#">Privacy</a>
+<a class="text-sm font-medium text-[var(--surface-500)] transition-colors hover:text-[var(--primary-500)]" href="#">Contact</a>
+</nav>
+<div class="flex gap-4">
+<a class="text-[var(--surface-500)] transition-colors hover:text-[var(--primary-500)]" href="#">
+<svg aria-hidden="true" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+<path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.71v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"></path>
+</svg>
+</a>
+<a class="text-[var(--surface-500)] transition-colors hover:text-[var(--primary-500)]" href="#">
+<svg aria-hidden="true" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+<path clip-rule="evenodd" d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" fill-rule="evenodd"></path>
+</svg>
+</a>
+</div>
+</div>
+</div>
+</div>
+</footer>
+</div>
+</div>
+</body></html>
