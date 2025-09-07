@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>CrowdScout — Landing</title>
+
+  <!-- Fonts + icons -->
+  <link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+  <link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B600%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B600%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+  <!-- site CSS -->
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="auth.css"/>
+
+  <!-- supabase + auth helper -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
+</head>
+<body>
+  <header style="background:var(--surface-50); padding:14px 22px; display:flex; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:14px;">
+      <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="logo" style="height:44px;">
+      <h1 style="margin:0; font-size:18px; font-weight:700; color:var(--surface-950)">CrowdScout</h1>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:12px;">
+      <a href="input.html" style="background:var(--primary-500); color:var(--surface-950); padding:8px 12px; border-radius:8px; text-decoration:none;">Input Data</a>
+
+      <div class="profile-container">
+        <button id="profileBtn" class="profile-btn" aria-label="Profile">
+          <img id="landingAvatar" class="profile-avatar" src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png" alt="avatar"/>
+        </button>
+
+        <div id="profileDropdown" class="dropdown" role="menu" aria-hidden="true">
+          <button id="signupOpen">Sign Up</button>
+          <button id="loginLinkBtn">Login</button>
+          <a href="https://www.chiefdelphi.com" target="_blank" rel="noopener">Chief Delphi <span class="material-symbols-outlined" style="margin-left:auto;font-size:18px">open_in_new</span></a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main style="display:flex; align-items:center; justify-content:center; padding:48px;">
+    <div style="max-width:980px; color:var(--surface-400)">
+      <h2 style="color:white; font-size:34px; margin-bottom:8px">Welcome to CrowdScout</h2>
+      <p style="margin-top:0">Use CrowdScout to collect and analyze FRC event scouting data. Click Input Data to begin (must be signed in).</p>
+    </div>
+  </main>
+
+  <!-- Sign Up popup (first step) -->
+  <div id="signupModal" class="modal-centered" style="display:none">
+    <div class="card bg-gradient-dark text-white">
+      <button id="closeSignup" style="position:absolute; right:16px; top:16px; background:none; border:none; color:var(--surface-400)"><span class="material-icons">close</span></button>
+      <header style="text-align:center; margin-bottom:10px">
+        <h1 style="font-size:28px; margin:0;">Sign Up</h1>
+      </header>
+
+      <form id="signupStep1Form" style="display:flex; flex-direction:column; gap:12px;">
+        <label style="font-weight:600">Email</label>
+        <input id="step1Email" type="email" required />
+
+        <label style="font-weight:600">Password</label>
+        <input id="step1Password" type="password" required />
+
+        <div style="display:flex; gap:8px;">
+          <button type="submit" class="cta" style="flex:1">Continue</button>
+          <button type="button" id="cancelSignup" style="background:#333; color:#fff; border:none; padding:12px 14px; border-radius:9999px;">Cancel</button>
+        </div>
+
+        <div class="small-muted">After you click Continue you'll be sent to a second page to finish your profile (team, role, etc.)</div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // profile dropdown
+    const profileBtn = document.getElementById('profileBtn');
+    const profileDropdown = document.getElementById('profileDropdown');
+    profileBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      profileDropdown.style.display = profileDropdown.style.display === 'block' ? 'none' : 'block';
+    });
+    document.addEventListener('click', () => profileDropdown.style.display = 'none');
+
+    // sign up modal logic (first-step)
+    const signupOpen = document.getElementById('signupOpen');
+    const signupModal = document.getElementById('signupModal');
+    const closeSignup = document.getElementById('closeSignup');
+    const signupForm = document.getElementById('signupStep1Form');
+    const cancelSignup = document.getElementById('cancelSignup');
+    const loginLinkBtn = document.getElementById('loginLinkBtn');
+
+    signupOpen.addEventListener('click', () => {
+      signupModal.style.display = 'flex';
+      profileDropdown.style.display = 'none';
+    });
+    closeSignup.addEventListener('click', () => signupModal.style.display = 'none');
+    cancelSignup.addEventListener('click', () => signupModal.style.display = 'none');
+
+    // when user submits initial signup, store credentials and go to second step
+    signupForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('step1Email').value.trim();
+      const password = document.getElementById('step1Password').value;
+      if (!email || !password) return alert('Enter email and password');
+
+      // store temporarily in sessionStorage (so it's not permanently stored in localStorage)
+      sessionStorage.setItem('pendingSignup', JSON.stringify({ email, password }));
+      // redirect to the page to finish signup
+      window.location.href = 'signup-complete.html';
+    });
+
+    // open login page
+    loginLinkBtn.addEventListener('click', () => {
+      window.location.href = 'login.html';
+    });
+
+    // register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(console.error);
+    }
+  </script>
+</body>
+</html>

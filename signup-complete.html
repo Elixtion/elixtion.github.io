@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Complete Sign Up — CrowdScout</title>
+
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="auth.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
+</head>
+<body>
+  <main class="modal-centered" style="background:transparent;">
+    <div class="card bg-gradient-dark">
+      <header style="text-align:center; margin-bottom:10px;">
+        <h1 style="margin:0; color:white;">Finish Creating Your Account</h1>
+      </header>
+
+      <form id="completeForm" style="display:flex; flex-direction:column; gap:12px;">
+        <label style="font-weight:600; color:white;">Email</label>
+        <input id="emailDisplay" type="email" disabled />
+
+        <label style="font-weight:600; color:white;">Full name</label>
+        <input id="fullName" type="text" required />
+
+        <label style="font-weight:600; color:white;">Team affiliation (optional)</label>
+        <input id="teamAff" type="text" placeholder="frc86 or Team Name" />
+
+        <label style="font-weight:600; color:white;">Status</label>
+        <select id="statusSelect">
+          <option value="student">Student</option>
+          <option value="mentor">Mentor</option>
+          <option value="other">Other</option>
+        </select>
+
+        <div style="display:flex; gap:8px;">
+          <button type="submit" class="cta" style="flex:1">Create account</button>
+          <button type="button" id="cancelComplete" style="background:#333; color:#fff; border:none; padding:12px 14px; border-radius:9999px;">Cancel</button>
+        </div>
+
+        <div id="completeMsg" class="small-muted" style="color:var(--surface-400)"></div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    const pending = JSON.parse(sessionStorage.getItem('pendingSignup') || 'null');
+    if (!pending) {
+      alert('No sign up in progress. Redirecting to landing.');
+      window.location.href = 'landing.html';
+    } else {
+      document.getElementById('emailDisplay').value = pending.email;
+    }
+
+    document.getElementById('cancelComplete').addEventListener('click', () => {
+      sessionStorage.removeItem('pendingSignup');
+      window.location.href = 'landing.html';
+    });
+
+    document.getElementById('completeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fullName = document.getElementById('fullName').value.trim();
+      const team = document.getElementById('teamAff').value.trim();
+      const status = document.getElementById('statusSelect').value;
+      const msgEl = document.getElementById('completeMsg');
+      msgEl.textContent = '';
+
+      // call supabase signUp with metadata
+      try {
+        const res = await window.MyAuth.signUpWithMetadata(pending.email, pending.password, {
+          full_name: fullName,
+          team_affiliation: team,
+          status: status
+        });
+
+        if (res.error) {
+          msgEl.textContent = 'Sign up error: ' + res.error.message;
+          return;
+        }
+
+        // Clear the temporary pending storage
+        sessionStorage.removeItem('pendingSignup');
+
+        // success message + redirect to login page (or input page if you want to auto-login)
+        msgEl.textContent = 'Account created. Check your email to confirm (if required). You will be redirected to login.';
+        setTimeout(() => window.location.href = 'login.html', 1800);
+      } catch (err) {
+        msgEl.textContent = 'Unexpected error: ' + (err.message || err);
+      }
+    });
+  </script>
+</body>
+</html>

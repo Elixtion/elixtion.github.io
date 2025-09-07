@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Login — CrowdScout</title>
+
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="auth.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
+</head>
+<body>
+  <main class="modal-centered">
+    <div class="card bg-gradient-dark">
+      <header style="text-align:center; margin-bottom:10px;"><h1 style="color:white">Sign In</h1></header>
+
+      <form id="loginForm" style="display:flex; flex-direction:column; gap:12px;">
+        <label style="font-weight:600; color:white;">Email</label>
+        <input id="loginEmail" type="email" required />
+        <label style="font-weight:600; color:white;">Password</label>
+        <input id="loginPassword" type="password" required />
+
+        <div style="display:flex; gap:8px;">
+          <button type="submit" class="cta" style="flex:1">Sign In</button>
+          <a href="landing.html" style="background:#333; color:#fff; padding:12px 14px; border-radius:9999px; display:inline-flex; align-items:center; text-decoration:none;">Cancel</a>
+        </div>
+
+        <div id="loginMsg" class="small-muted" style="color:var(--surface-400)"></div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const msg = document.getElementById('loginMsg');
+      msg.textContent = 'Signing in...';
+
+      try {
+        const { data, error } = await window.MyAuth.signIn(email, password);
+        if (error) {
+          msg.textContent = 'Sign in failed: ' + error.message;
+          return;
+        }
+        // Signed in. Go to input page.
+        msg.textContent = 'Signed in. Redirecting...';
+        setTimeout(() => window.location.href = 'input.html', 700);
+      } catch (err) {
+        msg.textContent = 'Unexpected error: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>

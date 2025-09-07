@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
+  <title>FRC Scouting Web App</title>
+
+  <!-- Tailwind for the modal (safe to include) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Material Icons (for open_in_new + close) -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+
+  <style>
+    :root {
+      /* ORIGINAL THEME (kept intact)  */
+      --bg: #121212;
+      --text: #f0f0f0;
+      --accent: #834980;
+      --green: #28a745;
+      --red: #cc3333;
+      --cell: #1e1e1e;
+      --button-bg: #2d2d2d;
+      --button-hover: #444;
+      --turquoise: #5CB9A4;
+      --black: #000000;
+      --blue: #007bff;
+      --yellow: #ffd700;
+
+      /* EXTRA PALETTE for the Auth Modal you provided */
+      --primary-50: #f7fdf0;
+      --primary-100: #eefad9;
+      --primary-200: #dff6ba;
+      --primary-300: #c9eea7;
+      --primary-400: #b1e48b;
+      --primary-500: #99e550;
+      --primary-600: #74c13a;
+      --primary-700: #58962e;
+      --primary-800: #447526;
+      --primary-900: #396122;
+      --primary-950: #1b350e;
+
+      --secondary-50: #f2f7f5;
+      --secondary-100: #e4eee9;
+      --secondary-200: #c9ddd4;
+      --secondary-300: #a7c6b9;
+      --secondary-400: #82ab9a;
+      --secondary-500: #658e7f;
+      --secondary-600: #527366;
+      --secondary-700: #445f55;
+      --secondary-800: #384d45;
+      --secondary-900: #30413a;
+      --secondary-950: #1a2420;
+
+      --surface-0: #111312;
+      --surface-50: #171a18;
+      --surface-100: #262e2a;
+      --surface-200: #3f4e46;
+      --surface-300: #576e62;
+      --surface-400: #6e8e7d;
+      --surface-500: #8cae9d;
+      --surface-600: #a9c8b9;
+      --surface-700: #c6e0d4;
+      --surface-800: #e2f4ea;
+      --surface-900: #f1faf5;
+      --surface-950: #ffffff;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .tab-nav {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      background-color: #1a1a1a;
+      padding: 0.75rem 1rem;
+      font-size: 1.25rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .nav-button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .nav-button.hidden {
+      visibility: hidden;
+    }
+
+    .nav-button.back-to-main {
+      color: var(--blue);
+    }
+
+    .pre-match-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Toggle button inside top-right cell */
+    .table-toggle {
+      width: 100%;
+      height: 100%;
+      background-color: var(--yellow);
+      border: none;
+      border-radius: 0;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: black;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+
+    /* Counter buttons (pass/fail and yellow toggle) */
+    .plus,
+    .plus.toggle-minus {
+      width: 48px;
+      height: 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background-color 0.2s ease;
+    }
+
+    .plus.pass {
+      background-color: var(--green);
+      color: white;
+    }
+
+    .plus.fail {
+      background-color: var(--red);
+      color: white;
+    }
+
+    .plus.toggle-minus {
+      background-color: var(--yellow);
+      color: black;
+    }
+
+    #startingPosImage {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    #startingPosImg {
+      width: 100%;
+      max-width: 400px;
+      max-height: 400px;
+      height: auto;
+      object-fit: contain;
+    }
+
+    #startingPosSlider {
+      margin-top: 10px;
+      width: 50%;
+    }
+
+    input[type="checkbox"] {
+      margin-top: 10px;
+    }
+
+    .pre-load-container,
+    .starting-position-container {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .horizontal-input {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 0px !important;
+      flex-wrap: nowrap;
+    }
+
+    .horizontal-input label {
+      display: inline;
+      margin-top: 0;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .horizontal-input select {
+      max-width: none;
+      width: 100px !important;
+      flex-shrink: 0;
+    }
+    select {
+      margin-top: 10px;
+      background-color: var(--cell);
+      color: var(--text);
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 1rem;
+    }
+
+    input[type="range"] {
+      margin-top: 10px;
+    }
+
+    label {
+      font-weight: bold;
+      font-size: 1rem;
+      margin-top: 10px;
+    }
+
+    #noShowText {
+      color: var(--yellow);
+      font-size: 1.2rem;
+      margin-top: 10px;
+    }
+
+    /* Adjust the dropdown for Starting Position */
+    #startingPosDropdown {
+      margin-top: 10px;
+      background-color: var(--cell);
+      color: var(--text);
+      border: 1px solid #444;
+      border-radius: 8px;
+      font-size: 1rem;
+      padding: 8px 10px;
+      width: 50%;
+    }
+
+    .tab-title {
+      text-align: center;
+      font-weight: bold;
+      justify-self: center;
+    }
+
+    .tab-content {
+      padding: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: var(--cell);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border: 1px solid #333;
+    }
+
+    th:first-child,
+    td:first-child {
+      max-width: 100px;
+      width: 100px;
+      word-break: break-word;
+    }
+
+    td.level-label {
+      background-color: #181818;
+      font-weight: bold;
+    }
+
+    td.top-left {
+      font-weight: bold;
+      color: white;
+    }
+
+    .first-top-left {
+      background-color: var(--accent) !important;
+    }
+
+    .second-top-left {
+      background-color: var(--turquoise) !important;
+    }
+
+    .third-top-left {
+      background-color: var(--black) !important;
+    }
+
+    .counter {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .coral-algae {
+      background-color: var(--red) !important;
+    }
+
+    .number {
+      min-width: 30px;
+      font-size: 1.2rem;
+    }
+
+    .actions, .setup-actions {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      max-width: 320px; /* Prevents the inputs from becoming too wide */
+    }
+
+    .tab-content {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .actions button, .setup-actions button {
+      padding: 10px 18px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background-color: var(--button-bg);
+      color: white;
+      min-width: 120px;
+      touch-action: manipulation;
+    }
+
+    select, input[type="text"], input[type="number"] {
+      margin-top: 15px;
+      background-color: var(--cell);
+      color: var(--text);
+      border: 1px solid #444;
+      border-radius: 8px;
+      font-size: 1rem;
+      padding: 8px 10px;
+      width: 100%;
+      max-width: 320px;
+      box-sizing: border-box;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 1rem;
+      user-select: none;
+    }
+
+    .error {
+      color: var(--red);
+      margin-top: 10px;
+    }
+
+    .cached-info {
+      font-size: 0.95rem;
+      color: var(--white);
+      margin-top: 10px;
+    }
+
+    .highlight {
+      background-color: var(--blue);
+      transition: background-color 0.5s ease;
+    }
+
+    .highlight.fade-out {
+      background-color: transparent;
+      transition: background-color 0.5s ease;
+    }
+
+    .back-button-container {
+      position: absolute;
+      top: 90px;
+      left: 1rem;
+      z-index: 10;
+    }
+
+    .back-button {
+      background-color: var(--button-bg);
+      color: white;
+      font-size: 1rem;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .no-show-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    input[type="checkbox"].no-show-checkbox {
+      width: 18px;
+      height: 18px;
+      margin-right: 7px;
+      margin-top: 17px;
+    }
+
+    @media (max-width: 600px) {
+      th, td {
+        padding: 10px;
+        font-size: 0.9rem;
+      }
+
+      .plus {
+        padding: 8px;
+        font-size: 0.9rem;
+      }
+
+      .number {
+        font-size: 1rem;
+      }
+
+      .actions {
+        gap: 10px;
+      }
+
+      .actions button {
+        font-size: 0.9rem;
+        padding: 8px 12px;
+        min-width: 80px;
+      }
+
+      .nav-button {
+        font-size: 0.9rem;
+      }
+
+      select, input[type="text"], input[type="number"] {
+        width: 100%;
+        font-size: 1rem;
+      }
+    }
+
+    /* ===== Profile Button / Dropdown ===== */
+    .profile-container {
+      position: fixed;
+      top: 8px;
+      right: 8px;
+      z-index: 50;
+    }
+    .profile-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      border-radius: 9999px;
+      padding: 2px;
+    }
+    .profile-avatar {
+      height: 40px;
+      width: 40px;
+      border-radius: 9999px;
+      object-fit: cover;
+      border: 1px solid #333;
+      background:#222;
+    }
+    .dropdown {
+      position: absolute;
+      right: 0;
+      margin-top: 8px;
+      width: 210px;
+      border-radius: 10px;
+      background: var(--surface-50);
+      border: 1px solid var(--surface-200);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.35);
+      display: none;
+      overflow: hidden;
+    }
+    .dropdown a, .dropdown button {
+      width: 100%;
+      text-align: left;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      background: transparent;
+      color: var(--surface-900);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dropdown a:hover, .dropdown button:hover {
+      background: var(--surface-100);
+    }
+    .dropdown .divider {
+      height: 1px;
+      background: var(--surface-200);
+      margin: 4px 0;
+    }
+
+    /* ===== Auth Modal extra helpers ===== */
+    .bg-gradient-dark {
+      background-image: linear-gradient(
+        to bottom right,
+        var(--primary-900),
+        var(--secondary-900)
+      );
+    }
+  </style>
+</head>
+
+<body>
+  <!-- NAV -->
+  <div class="tab-nav">
+    <button id="leftArrow" class="nav-button" onclick="prevTab()"></button>
+    <div class="tab-title" id="tab-title">Setup</div>
+    <button id="rightArrow" class="nav-button" onclick="nextTab()"></button>
+  </div>
+
+  <!-- PROFILE Button (top-right) -->
+  <div class="profile-container">
+    <button id="profileButton" class="profile-btn" aria-label="Profile menu">
+      <img id="profileAvatar" class="profile-avatar"
+           src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png" alt="profile" />
+    </button>
+    <div id="profileDropdown" class="dropdown">
+      <!-- Not logged in items -->
+      <button id="signupOpenBtn">Sign Up</button>
+      <button id="loginOpenBtn">Login</button>
+      <a href="https://www.chiefdelphi.com" target="_blank" rel="noopener">
+        Chief Delphi <span class="material-icons" style="margin-left:auto;font-size:18px;">open_in_new</span>
+      </a>
+
+      <!-- Logged-in items (hidden until login) -->
+      <div id="dropdownLoggedIn" style="display:none;">
+        <div class="divider"></div>
+        <div style="padding:8px 12px; font-size:0.85rem; color:var(--surface-400);" id="userEmailRow">Signed in</div>
+        <button id="signOutBtn">Sign Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main page content -->
+  <div class="tab-content" id="tab-content"></div>
+
+  <!-- ===== AUTH MODAL (works for Login + Sign Up) ===== -->
+  <div id="authModal"
+       class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+    <div class="relative bg-gradient-dark rounded-xl shadow-2xl w-full max-w-md mx-auto p-8">
+      <button id="authCloseBtn" class="absolute top-4 right-4 text-[var(--surface-400)] hover:text-[var(--surface-600)]">
+        <span class="material-icons">close</span>
+      </button>
+
+      <header class="text-center mb-4">
+        <h1 id="authTitle" class="text-3xl font-bold text-[var(--surface-950)]">Sign In</h1>
+      </header>
+
+      <!-- small toggle links -->
+      <div class="flex justify-center gap-6 mb-2 text-sm">
+        <button id="switchToLogin" class="text-[var(--primary-400)] hover:text-[var(--primary-500)] underline">Login</button>
+        <button id="switchToSignup" class="text-[var(--primary-400)] hover:text-[var(--primary-500)] underline">Sign Up</button>
+      </div>
+
+      <form id="authForm" class="space-y-6">
+        <div>
+          <label class="text-sm font-medium text-[var(--surface-800)]" for="authEmail">Email</label>
+          <input id="authEmail" type="email"
+                 class="mt-1 block w-full px-4 py-3 bg-[var(--surface-50)] border border-[var(--surface-300)] rounded-md shadow-sm placeholder-[var(--surface-500)] text-[var(--surface-950)] focus:outline-none focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)] sm:text-sm" />
+        </div>
+
+        <div class="relative">
+          <label class="text-sm font-medium text-[var(--surface-800)]" for="authPassword">Password</label>
+          <input id="authPassword" type="password"
+                 class="mt-1 block w-full px-4 py-3 bg-[var(--surface-50)] border border-[var(--surface-300)] rounded-md shadow-sm placeholder-[var(--surface-500)] text-[var(--surface-950)] focus:outline-none focus:ring-[var(--primary-500)] focus:border-[var(--primary-500)] sm:text-sm" />
+          <button id="togglePw" class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-sm leading-5" type="button">
+            <span class="material-icons text-[var(--surface-400)]">visibility</span>
+          </button>
+        </div>
+
+        <div class="flex items-center">
+          <input id="keepSignedIn" type="checkbox" checked
+                 class="h-4 w-4 text-[var(--primary-500)] focus:ring-[var(--primary-500)] border-[var(--surface-300)] rounded bg-[var(--surface-100)]" />
+          <label class="ml-3 text-sm font-medium text-[var(--surface-800)]" for="keepSignedIn">Keep Me Signed In</label>
+        </div>
+
+        <div>
+          <button id="authSubmitBtn" type="submit"
+                  class="w-full flex justify-center py-3 px-4 rounded-full shadow-sm text-sm font-medium text-[var(--surface-950)] bg-[var(--primary-600)] hover:bg-[var(--primary-700)] focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[var(--primary-500)]">
+            Continue
+          </button>
+        </div>
+
+        <div id="authError" class="text-red-400 text-sm text-center hidden"></div>
+
+        <div class="text-center">
+          <a id="forgotLink" class="text-sm font-medium text-[var(--primary-400)] hover:text-[var(--primary-500)]" href="#">
+            Forgot Password?
+          </a>
+        </div>
+      </form>
+
+      <div class="mt-6">
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-[var(--surface-300)]"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-gradient-dark text-[var(--surface-400)]">or</span>
+          </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-2 gap-4">
+          <button id="googleBtn"
+                  class="w-full inline-flex justify-center py-3 px-4 border border-[var(--surface-300)] rounded-md shadow-sm bg-[var(--surface-100)] text-sm font-medium text-[var(--surface-700)] hover:bg-[var(--surface-200)]">
+            <img alt="Google" class="h-5 w-5" src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"/>
+            <span class="ml-2">Google</span>
+          </button>
+          <button id="appleBtn"
+                  class="w-full inline-flex justify-center py-3 px-4 border border-[var(--surface-300)] rounded-md shadow-sm bg-[var(--surface-100)] text-sm font-medium text-[var(--surface-700)] hover:bg-[var(--surface-200)]">
+            <img alt="Apple" class="h-5 w-5" src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg"/>
+            <span class="ml-2">Apple</span>
+          </button>
+        </div>
+
+        <div class="mt-6 text-center text-sm text-[var(--surface-400)]" id="modeSwitchText">
+          New to CrowdScout?
+          <button id="createAccountSwitch" class="font-medium text-[var(--primary-400)] hover:text-[var(--primary-500)] underline">
+            Create an account
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ===== END AUTH MODAL ===== -->
+
+  <!-- Supabase JS v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    /* ================== SUPABASE CONFIG ================== */
+    const SUPABASE_URL = "https://kstzwynylwcvqmkzkjvr.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0.JvilpVaPUCEj0p9Ty4EHdtruq5yico79HWn8Uq6Lqjo";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
+
+    // Optional hard-redirect to a separate login page (set to null to disable)
+    const LOGIN_PAGE_URL = null; // or null to disable redirect
+
+    /* ================== ORIGINAL APP CODE (UNCHANGED) ================== */
+    const tabs = ['Setup', 'Pre-Match', 'Auton', 'TeleOP', 'Endgame', 'Upload'];
+    let currentTab = 0;
+    const tabTitle = document.getElementById("tab-title");
+    const tabContent = document.getElementById("tab-content");
+    const leftArrow = document.getElementById("leftArrow");
+    const rightArrow = document.getElementById("rightArrow");
+
+    const history = [];
+    const redoStack = [];
+
+    // Data storage keys
+    const STORAGE_KEYS = {
+      // Setup data
+      matchNumber: 'scoutingData_matchNumber',
+      selectedTeam: 'scoutingData_selectedTeam',
+
+      // Pre-Match data
+      noShow: 'scoutingData_noShow',
+      preLoad: 'scoutingData_preLoad',
+      startingPos: 'scoutingData_startingPos',
+
+      // Auton data
+      autonStartingPos: 'scoutingData_autonStartingPos',
+      autonCounters: 'scoutingData_autonCounters',
+
+      // TeleOP data
+      teleopCounters: 'scoutingData_teleopCounters',
+
+      // Endgame data
+      endgameData: 'scoutingData_endgameData'
+    };
+
+    // Default values
+    const DEFAULT_VALUES = {
+      matchNumber: '',
+      selectedTeam: '',
+      noShow: false,
+      preLoad: 'yes',
+      startingPos: '1',
+      autonStartingPos: '1',
+      autonCounters: {},
+      teleopCounters: {},
+      endgameData: {}
+    };
+
+    function saveData(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (e) {
+        console.error('Error saving data:', e);
+      }
+    }
+
+    function loadData(key, defaultValue = null) {
+      try {
+        const stored = localStorage.getItem(key);
+        return stored ? JSON.parse(stored) : defaultValue;
+      } catch (e) {
+        console.error('Error loading data:', e);
+        return defaultValue;
+      }
+    }
+
+    function saveCounters(tabName) {
+      const counters = {};
+      const numberElements = document.querySelectorAll('.counter .number');
+
+      numberElements.forEach((element, index) => {
+        const counter = element.closest('.counter');
+        const row = counter.closest('tr');
+        const table = counter.closest('table');
+
+        const tableIndex = Array.from(document.querySelectorAll('table')).indexOf(table);
+        const rowIndex = Array.from(table.querySelectorAll('tr')).indexOf(row);
+        const counterType = counter.getAttribute('data-type');
+
+        const key = `table${tableIndex}_row${rowIndex}_${counterType}`;
+        counters[key] = parseInt(element.textContent) || 0;
+      });
+
+      const storageKey = tabName === 'Auton' ? STORAGE_KEYS.autonCounters : STORAGE_KEYS.teleopCounters;
+      saveData(storageKey, counters);
+    }
+
+    function animateHighlight(element) {
+      element.classList.add("highlight");
+      setTimeout(() => {
+        element.classList.add("fade-out");
+      }, 500);
+      setTimeout(() => {
+        element.classList.remove("highlight", "fade-out");
+      }, 1000);
+    }
+
+    function updateNavigationButtons() {
+      if (currentTab === 0) {
+        leftArrow.innerHTML = '← Mainscreen';
+        leftArrow.classList.add('back-to-main');
+        leftArrow.classList.remove('hidden');
+        leftArrow.onclick = goToMainScreen;
+      } else {
+        leftArrow.classList.remove('back-to-main');
+        leftArrow.classList.toggle('hidden', currentTab === 0);
+        leftArrow.innerHTML = currentTab > 0 ? `← ${tabs[currentTab - 1]}` : '';
+        leftArrow.onclick = prevTab;
+      }
+      rightArrow.classList.toggle('hidden', currentTab === tabs.length - 1);
+      rightArrow.innerHTML = currentTab < tabs.length - 1 ? `${tabs[currentTab + 1]} →` : '';
+    }
+
+    function renderTab(index) {
+      if (currentTab !== index) {
+        saveCurrentTabData();
+      }
+
+      currentTab = index;
+      tabTitle.textContent = tabs[index];
+      updateNavigationButtons();
+
+      if (tabs[index] === 'Setup') return renderSetupTab();
+      if (tabs[index] === 'Pre-Match') return renderPreMatchTab();
+      if (tabs[index] === 'Auton') return renderAutonTab();
+      if (tabs[index] === 'TeleOP') return renderTeleOPTab();
+      if (tabs[index] === 'Upload') return renderUploadTab();
+
+      tabContent.innerHTML = `<h2>${tabs[index]}</h2>`;
+    }
+
+    function saveCurrentTabData() {
+      const currentTabName = tabs[currentTab];
+
+      if (currentTabName === 'Setup') {
+        const matchInput = document.getElementById("matchNumberInput");
+        const teamDropdown = document.getElementById("teamDropdown");
+        if (matchInput) saveData(STORAGE_KEYS.matchNumber, matchInput.value);
+        if (teamDropdown) saveData(STORAGE_KEYS.selectedTeam, teamDropdown.value);
+
+      } else if (currentTabName === 'Pre-Match') {
+        const noShowCheckbox = document.getElementById("noShowCheckbox");
+        const preLoadSelect = document.getElementById("preLoadSelect");
+        const startingPosDropdown = document.getElementById("startingPosDropdown");
+        if (noShowCheckbox) saveData(STORAGE_KEYS.noShow, noShowCheckbox.checked);
+        if (preLoadSelect) saveData(STORAGE_KEYS.preLoad, preLoadSelect.value);
+        if (startingPosDropdown) saveData(STORAGE_KEYS.startingPos, startingPosDropdown.value);
+
+      } else if (currentTabName === 'Auton') {
+        const autonStartingPos = document.getElementById("startingPos");
+        if (autonStartingPos) saveData(STORAGE_KEYS.autonStartingPos, autonStartingPos.value);
+        saveCounters('Auton');
+
+      } else if (currentTabName === 'TeleOP') {
+        saveCounters('TeleOP');
+      }
+    }
+
+    function prevTab() {
+      if (currentTab > 0) {
+        const nextIndex = currentTab - 1;
+        setTimeout(() => renderTab(nextIndex), 0);
+      }
+    }
+
+    function nextTab() {
+      if (currentTab < tabs.length - 1) {
+        const nextIndex = currentTab + 1;
+        setTimeout(() => renderTab(nextIndex), 0);
+      }
+    }
+
+    function renderSetupTab() {
+      const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
+      const cachedMsg = cached.eventKey ? `Cached Event: ${cached.eventKey}` : `No event currently cached.`;
+
+      const savedMatchNumber = loadData(STORAGE_KEYS.matchNumber, '');
+      const savedTeam = loadData(STORAGE_KEYS.selectedTeam, '');
+
+      const shouldShowTeamDropdown = savedMatchNumber && cached.matches;
+      let teamOptions = '';
+
+      if (shouldShowTeamDropdown) {
+        const matchNum = parseInt(savedMatchNumber);
+        const match = cached.matches.find(m => m.comp_level === "qm" && m.match_number === matchNum);
+
+        if (match) {
+          const stations = [
+            ...match.alliances.red.team_keys.map((team, i) => ({ label: `Red ${i + 1}`, team })),
+            ...match.alliances.blue.team_keys.map((team, i) => ({ label: `Blue ${i + 1}`, team }))
+          ];
+          teamOptions = stations.map(
+            s => `<option value="${s.team}" ${s.team === savedTeam ? 'selected' : ''}>${s.label} — ${s.team}</option>`
+          ).join("");
+        }
+      }
+
+      tabContent.innerHTML = `
+        <label for="eventKeyInput">Event Key (e.g. 2025flor):</label>
+        <div class="cached-info" id="cachedIndicator">${cachedMsg}</div>
+        <input type="text" id="eventKeyInput" placeholder="Enter event key" />
+        <div class="setup-actions">
+          <button onclick="fetchEventData()">Cache Event</button>
+          <button onclick="clearCachedEvent()">Clear Event</button>
+        </div>
+
+        <label for="matchNumberInput">Qualification Match #:</label>
+        <input type="number" id="matchNumberInput" value="${savedMatchNumber}" />
+        <div class="setup-actions">
+          <button onclick="handleMatchNumberInput()">Load Teams</button>
+          <button onclick="resetScoutingData()">Reset Data</button>
+        </div>
+
+        <div id="teamDropdownContainer" style="display:${shouldShowTeamDropdown ? 'block' : 'none'};">
+          <label for="teamDropdown">Select Team:</label>
+          <select id="teamDropdown">${teamOptions}</select>
+        </div>
+
+        <div class="error" id="setupError" style="display:none;"></div>
+      `;
+
+      const matchInput = document.getElementById("matchNumberInput");
+      const teamDropdown = document.getElementById("teamDropdown");
+
+      if (matchInput) {
+        matchInput.addEventListener('input', () => {
+          saveData(STORAGE_KEYS.matchNumber, matchInput.value);
+        });
+      }
+
+      if (teamDropdown) {
+        const initialTeam = teamDropdown.value;
+        teamDropdown.addEventListener('change', () => {
+          const newTeam = teamDropdown.value;
+          if (newTeam !== initialTeam && initialTeam) {
+            resetScoutingDataSilent();
+          }
+          saveData(STORAGE_KEYS.selectedTeam, newTeam);
+        });
+      }
+    }
+
+    function goToMainScreen() {
+      saveCurrentTabData();
+      window.location.href = "index.html";
+    }
+
+    async function fetchEventData() {
+      const key = document.getElementById("eventKeyInput").value.trim();
+      const error = document.getElementById("setupError");
+
+      try {
+        const res = await fetch(`https://www.thebluealliance.com/api/v3/event/${key}/matches`, {
+          headers: { 'X-TBA-Auth-Key': 'XB2LbDFDIrbXMJDOMhLPOiGr7CGfMzr8gXOFkyQFRmQJa73CsQZig3CcUx8x8mWv' }
+        });
+
+        if (!res.ok) throw new Error("Could not fetch event");
+        const matches = await res.json();
+        localStorage.setItem("cachedEvent", JSON.stringify({ eventKey: key, matches }));
+        resetScoutingDataSilent();
+        const indicator = document.getElementById("cachedIndicator");
+        indicator.textContent = `Cached Event: ${key}`;
+        animateHighlight(indicator);
+      } catch (err) {
+        error.textContent = err.message;
+        error.style.display = "block";
+      }
+    }
+
+    function clearCachedEvent() {
+      localStorage.removeItem("cachedEvent");
+      resetScoutingDataSilent();
+      const indicator = document.getElementById("cachedIndicator");
+      indicator.textContent = `No event currently cached.`;
+      animateHighlight(indicator);
+    }
+
+    function resetScoutingData() {
+      Object.values(STORAGE_KEYS).forEach(key => {
+        localStorage.removeItem(key);
+      });
+
+      const matchInput = document.getElementById("matchNumberInput");
+      const teamDropdown = document.getElementById("teamDropdown");
+      const container = document.getElementById("teamDropdownContainer");
+
+      if (matchInput) matchInput.value = '';
+      if (teamDropdown) teamDropdown.innerHTML = '';
+      if (container) container.style.display = 'none';
+
+      const indicator = document.getElementById("cachedIndicator");
+      const originalText = indicator.textContent;
+      indicator.textContent = "Scouting data reset successfully!";
+      animateHighlight(indicator);
+
+      setTimeout(() => {
+        indicator.textContent = originalText;
+      }, 2000);
+    }
+
+    function resetScoutingDataSilent() {
+      const keysToKeep = [STORAGE_KEYS.matchNumber, STORAGE_KEYS.selectedTeam];
+      Object.values(STORAGE_KEYS).forEach(key => {
+        if (!keysToKeep.includes(key)) {
+          localStorage.removeItem(key);
+        }
+      });
+    }
+
+    function handleMatchNumberInput() {
+      const matchNum = parseInt(document.getElementById("matchNumberInput").value.trim());
+      const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
+      const error = document.getElementById("setupError");
+
+      error.style.display = "none";
+
+      if (!cached.matches || isNaN(matchNum)) {
+        error.textContent = "Please fetch event and enter valid match number.";
+        error.style.display = "block";
+        return;
+      }
+
+      const match = cached.matches.find(m => m.comp_level === "qm" && m.match_number === matchNum);
+      if (!match) {
+        error.textContent = "Match not found.";
+        error.style.display = "block";
+        return;
+      }
+
+      resetScoutingDataSilent();
+      saveData(STORAGE_KEYS.matchNumber, matchNum.toString());
+      renderSetupTab();
+    }
+
+    function renderPreMatchTab() {
+      const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
+      const savedTeam = loadData(STORAGE_KEYS.selectedTeam, '');
+      const savedNoShow = loadData(STORAGE_KEYS.noShow, false);
+      const savedPreLoad = loadData(STORAGE_KEYS.preLoad, 'yes');
+      const savedStartingPos = loadData(STORAGE_KEYS.startingPos, '1');
+
+      let allianceColor = 'red';
+      let imageSrc = "https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/redSetupImage.png";
+
+      if (cached.matches && savedTeam) {
+        const matchNum = parseInt(loadData(STORAGE_KEYS.matchNumber, '1'));
+        const match = cached.matches.find(m => m.comp_level === "qm" && m.match_number === matchNum);
+        if (match) {
+          if (match.alliances.blue.team_keys.includes(savedTeam)) {
+            allianceColor = 'blue';
+            imageSrc = "https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/blueSetupImage.png";
+          }
+        }
+      }
+
+      const preLoadContent = savedNoShow ? '' : `
+        <div class="horizontal-input">
+          <label for="preLoadSelect">Pre-Load:</label>
+          <select id="preLoadSelect">
+            <option value="yes" ${savedPreLoad === 'yes' ? 'selected' : ''}>Yes</option>
+            <option value="no" ${savedPreLoad === 'no' ? 'selected' : ''}>No</option>
+          </select>
+        </div>`;
+
+      const startingPosContent = savedNoShow ? '' : `
+        <div class="horizontal-input">
+          <label for="startingPosDropdown">Starting Position:</label>
+          <select id="startingPosDropdown">
+              <option value="1" ${savedStartingPos === '1' ? 'selected' : ''}>1</option>
+              <option value="2" ${savedStartingPos === '2' ? 'selected' : ''}>2</option>
+              <option value="3" ${savedStartingPos === '3' ? 'selected' : ''}>3</option>
+              <option value="4" ${savedStartingPos === '4' ? 'selected' : ''}>4</option>
+              <option value="5" ${savedStartingPos === '5' ? 'selected' : ''}>5</option>
+            </select>
+          </div>
+
+          <div id="startingPosImage">
+            <img src="${imageSrc}" alt="Starting Position" id="startingPosImg" />
+          </div>
+        </div>`;
+
+      const noShowTextContent = savedNoShow ? '<div id="noShowText">N/A</div>' : '<div id="noShowText" style="display: none;">N/A</div>';
+
+      tabContent.innerHTML = `
+        <div class="pre-match-container">
+          <div class="no-show-container">
+            <label for="noShowCheckbox">No Show:</label>
+            <input type="checkbox" id="noShowCheckbox" class="no-show-checkbox" ${savedNoShow ? 'checked' : ''} onchange="toggleNoShow()" />
+          </div>
+          ${noShowTextContent}
+          &nbsp
+          ${preLoadContent}
+          &nbsp
+          ${startingPosContent}
+        </div>
+      `;
+
+      const noShowCheckbox = document.getElementById("noShowCheckbox");
+      const preLoadSelect = document.getElementById("preLoadSelect");
+      const startingPosDropdown = document.getElementById("startingPosDropdown");
+
+      if (noShowCheckbox) {
+        noShowCheckbox.addEventListener('change', () => {
+          saveData(STORAGE_KEYS.noShow, noShowCheckbox.checked);
+          toggleNoShow();
+        });
+      }
+
+      if (preLoadSelect) {
+        preLoadSelect.addEventListener('change', () => {
+          saveData(STORAGE_KEYS.preLoad, preLoadSelect.value);
+        });
+      }
+
+      if (startingPosDropdown) {
+        startingPosDropdown.addEventListener('change', () => {
+          saveData(STORAGE_KEYS.startingPos, startingPosDropdown.value);
+        });
+      }
+    }
+
+    function toggleNoShow() {
+      const noShowCheckbox = document.getElementById("noShowCheckbox");
+      if (noShowCheckbox) {
+        saveData(STORAGE_KEYS.noShow, noShowCheckbox.checked);
+        renderPreMatchTab();
+      }
+    }
+
+    function renderCounterTable(titleClass, title, rows, tableIndex, savedCounters, isDropTable = false) {
+      function getCounterValue(rowIndex, counterType) {
+        const key = `table${tableIndex}_row${rowIndex}_${counterType}`;
+        return savedCounters[key] || 0;
+      }
+
+      const columnsHeader = isDropTable
+        ? `<th>Count</th><th style="width: 48px; height: 48px;"></th>`
+        : `<th>Fail</th><th>Pass</th><th style="width: 48px; height: 48px;"></th>`;
+
+      const bodyRows = rows.map((label, rowIndex) => {
+        const rowLabel = `<td class="level-label">${label}</td>`;
+        const countCell = (type) => `
+          <td>
+            <div class="counter" data-type="${type}">
+              <div class="number">${getCounterValue(rowIndex + 1, type)}</div>
+              <button class="plus ${isDropTable ? 'coral-algae' : type}" onclick="counterAction(this, ${tableIndex})">+</button>
+            </div>
+          </td>`;
+
+        return `<tr>${rowLabel}${
+          isDropTable ? countCell('pass') + `<td></td>` : countCell('fail') + countCell('pass') + `<td></td>`
+        }</tr>`;
+      }).join('');
+
+      return `
+        <table data-table-index="${tableIndex}">
+          <thead>
+            <tr>
+              <td class="top-left ${titleClass}">${title}</td>
+              ${columnsHeader}
+            </tr>
+          </thead>
+          <tbody>
+            ${bodyRows}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="${isDropTable ? 2 : 3}"></td>
+              <td>
+                <button class="table-toggle" onclick="toggleTableMode(${tableIndex}, this)">–</button>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+    }
+
+    const tableModes = {};
+    function toggleTableMode(tableIndex, toggleBtn) {
+      const table = document.querySelector(`table[data-table-index="${tableIndex}"]`);
+      if (!table) return;
+
+      const isMinus = !tableModes[tableIndex];
+      tableModes[tableIndex] = isMinus;
+
+      const buttons = table.querySelectorAll("button.plus");
+      buttons.forEach(btn => {
+        if (isMinus) {
+          btn.classList.add("toggle-minus");
+          btn.classList.remove("pass", "fail");
+          btn.textContent = "–";
+        } else {
+          btn.classList.remove("toggle-minus");
+          const type = btn.closest(".counter").getAttribute("data-type");
+          btn.classList.add(type);
+          btn.textContent = "+";
+        }
+      });
+
+      toggleBtn.textContent = isMinus ? "+" : "–";
+    }
+
+    function renderAutonTab() {
+      const savedCounters = loadData(STORAGE_KEYS.autonCounters, {});
+      tabContent.innerHTML = `
+        ${renderCounterTable('first-top-left', 'Level', ['L4', 'L3', 'L2', 'L1'], 0, savedCounters)}
+        ${renderCounterTable('second-top-left', 'Location', ['Barge', 'Processor'], 1, savedCounters)}
+        ${renderCounterTable('third-top-left', 'Item Dropped', ['Coral', 'Algae'], 2, savedCounters, true)}
+      `;
+    }
+
+    function renderTeleOPTab() {
+      const savedCounters = loadData(STORAGE_KEYS.teleopCounters, {});
+      tabContent.innerHTML = `
+        ${renderCounterTable('first-top-left', 'Level', ['L4', 'L3', 'L2', 'L1'], 0, savedCounters)}
+        ${renderCounterTable('second-top-left', 'Location', ['Barge', 'Processor'], 1, savedCounters)}
+        ${renderCounterTable('third-top-left', 'Item Dropped', ['Coral', 'Algae'], 2, savedCounters, true)}
+      `;
+    }
+
+    function renderUploadTab() {
+      const data = getAllScoutingData();
+      const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
+      const eventKey = cached.eventKey || 'No event cached';
+
+      const setupData = [
+        { label: 'Event Key', value: eventKey },
+        { label: 'Timestamp', value: data.timestamp },
+      ];
+
+      const preMatchData = [
+        { label: 'Match Number', value: data.matchNumber || 'Not set' },
+        { label: 'Selected Team', value: data.selectedTeam || 'Not set' },
+        { label: 'No Show', value: data.noShow ? 'Yes' : 'No' },
+        { label: 'Pre Load', value: data.preLoad },
+        { label: 'Starting Position', value: data.startingPos },
+      ];
+
+      const autonData = [
+        { label: 'Auton Starting Position', value: data.autonStartingPos }
+      ];
+
+      Object.entries(data.autonCounters).forEach(([key, value]) => {
+        const formattedKey = formatCounterKey('Auton', key);
+        autonData.push({ label: formattedKey, value: value });
+      });
+
+      const teleopData = [];
+      Object.entries(data.teleopCounters).forEach(([key, value]) => {
+        const formattedKey = formatCounterKey('TeleOP', key);
+        teleopData.push({ label: formattedKey, value: value });
+      });
+
+      const generateSection = (title, data) => `
+        <div style="margin-bottom: 20px;">
+          <h4 style="color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid var(--accent); padding-bottom: 5px;">${title}</h4>
+          ${data.map(item =>
+            `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #333;">
+              <span style="font-weight: bold;">${item.label}:</span>
+              <span>${item.value}</span>
+            </div>`
+          ).join('')}
+        </div>
+      `;
+
+      tabContent.innerHTML = `
+        <div style="max-width: 500px; width: 100%;">
+          <h3 style="text-align: center; margin-bottom: 20px;">Scouting Data Summary</h3>
+          ${generateSection('Setup', setupData)}
+          ${generateSection('Pre-Match', preMatchData)}
+          ${autonData.length > 1 ? generateSection('Autonomous', autonData) : ''}
+          ${teleopData.length > 0 ? generateSection('TeleOP', teleopData) : ''}
+
+          <div class="actions" style="margin-top: 30px;">
+            <button onclick="downloadCSV()">Download CSV</button>
+            <button onclick="copyToClipboard()">Copy Data</button>
+            <button id="uploadBtn" onclick="uploadToSupabase()">Upload to Supabase</button>
+          </div>
+          <div id="uploadStatus" class="cached-info"></div>
+        </div>
+      `;
+    }
+
+    function formatCounterKey(phase, key) {
+      const parts = key.split('_');
+      const tableIndex = parseInt(parts[0].replace('table', ''));
+      const rowIndex = parseInt(parts[1].replace('row', ''));
+      const type = parts[2];
+
+      if (tableIndex === 0) {
+        const levels = ['L4', 'L3', 'L2', 'L1'];
+        return `${phase} coral_${levels[rowIndex - 1]}_${type}`;
+      } else if (tableIndex === 1) {
+        const locations = ['barge', 'proc'];
+        return `${phase} algae_${locations[rowIndex - 1]}_${type}`;
+      } else if (tableIndex === 2) {
+        const items = ['coral', 'algae'];
+        return `${phase} drop_${items[rowIndex - 1]}_count`;
+      }
+      return `${phase} ${key}`;
+    }
+
+    function downloadCSV() {
+      const csvContent = exportToCSV();
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `scouting_data_autofit_${Date.now()}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setTimeout(() => {
+          alert('CSV downloaded! To auto-fit columns in Excel/Google Sheets:\n\nExcel: Select all columns → Home tab → Format → AutoFit Column Width\nGoogle Sheets: Select all columns → Right-click → Resize columns A-Z');
+        }, 500);
+      }
+    }
+
+    function copyToClipboard() {
+      const data = getAllScoutingData();
+      const textData = Object.entries(data)
+        .map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`)
+        .join('\n');
+
+      navigator.clipboard.writeText(textData).then(() => {
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        button.style.backgroundColor = 'var(--green)';
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.style.backgroundColor = 'var(--button-bg)';
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+        alert('Failed to copy data to clipboard');
+      });
+    }
+
+    function counterAction(button, tableIndex) {
+      const counter = button.closest(".counter");
+      const number = counter.querySelector(".number");
+      let value = parseInt(number.textContent);
+
+      const isMinus = tableModes[tableIndex];
+      if (isMinus) {
+        value = Math.max(0, value - 1);
+      } else {
+        value += 1;
+      }
+
+      number.textContent = value;
+      animateHighlight(number);
+
+      const currentTabName = tabs[currentTab];
+      if (currentTabName === 'Auton' || currentTabName === 'TeleOP') {
+        saveCounters(currentTabName);
+      }
+    }
+
+    function undo() {
+      if (history.length === 0) return;
+      const last = history.pop();
+      const container = last.row.querySelector(`[data-type="${last.type}"] .number`);
+      const val = parseInt(container.textContent);
+      if (val > 0) {
+        container.textContent = val - 1;
+        animateHighlight(container);
+      }
+      redoStack.push(last);
+
+      const currentTabName = tabs[currentTab];
+      if (currentTabName === 'Auton' || currentTabName === 'TeleOP') {
+        saveCounters(currentTabName);
+      }
+    }
+
+    function redo() {
+      if (redoStack.length === 0) return;
+      const action = redoStack.pop();
+      const container = action.row.querySelector(`[data-type="${action.type}"] .number`);
+      container.textContent = parseInt(container.textContent) + 1;
+      animateHighlight(container);
+      history.push(action);
+
+      const currentTabName = tabs[currentTab];
+      if (currentTabName === 'Auton' || currentTabName === 'TeleOP') {
+        saveCounters(currentTabName);
+      }
+    }
+
+    function getAllScoutingData() {
+      saveCurrentTabData();
+
+      return {
+        matchNumber: loadData(STORAGE_KEYS.matchNumber, ''),
+        selectedTeam: loadData(STORAGE_KEYS.selectedTeam, ''),
+
+        noShow: loadData(STORAGE_KEYS.noShow, false),
+        preLoad: loadData(STORAGE_KEYS.preLoad, 'yes'),
+        startingPos: loadData(STORAGE_KEYS.startingPos, '1'),
+
+        autonStartingPos: loadData(STORAGE_KEYS.autonStartingPos, '1'),
+        autonCounters: loadData(STORAGE_KEYS.autonCounters, {}),
+
+        teleopCounters: loadData(STORAGE_KEYS.teleopCounters, {}),
+
+        endgameData: loadData(STORAGE_KEYS.endgameData, {}),
+
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    function exportToCSV() {
+      const data = getAllScoutingData();
+      const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
+      const eventKey = cached.eventKey || 'No event cached';
+
+      const headers = [
+        'Event Key',
+        'Timestamp',
+        'Match Number',
+        'Team',
+        'No Show',
+        'Pre Load',
+        'Starting Position',
+        'Auton Starting Position'
+      ];
+
+      const autonCounters = data.autonCounters;
+      const teleopCounters = data.teleopCounters;
+
+      Object.keys(autonCounters).forEach(key => {
+        headers.push(formatCounterKey('Auton', key));
+      });
+      Object.keys(teleopCounters).forEach(key => {
+        headers.push(formatCounterKey('TeleOP', key));
+      });
+
+      const row = [
+        eventKey,
+        data.timestamp,
+        data.matchNumber,
+        data.selectedTeam,
+        data.noShow,
+        data.preLoad,
+        data.startingPos,
+        data.autonStartingPos
+      ];
+
+      Object.keys(autonCounters).forEach(key => {
+        row.push(autonCounters[key]);
+      });
+      Object.keys(teleopCounters).forEach(key => {
+        row.push(teleopCounters[key]);
+      });
+
+      const csvContent = [headers.join(','), row.join(',')].join('\n');
+      return csvContent;
+    }
+
+    window.addEventListener('beforeunload', () => {
+      saveCurrentTabData();
+    });
+    setInterval(() => {
+      saveCurrentTabData();
+    }, 30000);
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(registration => {
+            console.log('Service Worker registered with scope:', registration.scope);
+          })
+          .catch(error => {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+
+    /* ================== SUPABASE UPLOAD ================== */
+    async function uploadToSupabase() {
+      const statusEl = document.getElementById('uploadStatus');
+      const btn = document.getElementById('uploadBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Uploading...';
+      }
+      statusEl.textContent = '';
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        statusEl.textContent = 'Please login first.';
+        openAuth('login');
+        if (btn) { btn.disabled = false; btn.textContent = 'Upload to Supabase'; }
+        return;
+      }
+
+      // Build payload
+      const data = getAllScoutingData();
+      const cached = JSON.parse(localStorage.getItem("cachedEvent") || "{}");
+
+      const payload = {
+        user_id: session.user.id,
+        event_key: cached.eventKey || null,
+        timestamp: data.timestamp,
+        match_number: data.matchNumber ? Number(data.matchNumber) : null,
+        team: data.selectedTeam || null,
+        no_show: !!data.noShow,
+        pre_load: data.preLoad || null,
+        starting_pos: data.startingPos || null,
+        auton_start_pos: data.autonStartingPos || null,
+        auton_counters: data.autonCounters || {},
+        teleop_counters: data.teleopCounters || {},
+        endgame_data: data.endgameData || {}
+      };
+
+      // Insert into your table (ensure it exists + RLS allows inserts by authenticated users)
+      // Example RLS: "WITH CHECK (auth.uid() = user_id)"
+      const { data: inserted, error } = await supabase
+        .from('scouting_entries')
+        .insert([payload])
+        .select();
+
+      if (error) {
+        console.error(error);
+        statusEl.textContent = 'Upload failed: ' + error.message;
+      } else {
+        statusEl.textContent = 'Upload successful! Entry ID: ' + inserted[0].id;
+      }
+
+      if (btn) { btn.disabled = false; btn.textContent = 'Upload to Supabase'; }
+    }
+
+    /* ================== PROFILE DROPDOWN & AUTH ================== */
+    const profileBtn = document.getElementById('profileButton');
+    const profileDropdown = document.getElementById('profileDropdown');
+    const dropdownLoggedIn = document.getElementById('dropdownLoggedIn');
+    const userEmailRow = document.getElementById('userEmailRow');
+    const signOutBtn = document.getElementById('signOutBtn');
+
+    // Open/close dropdown
+    profileBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      profileDropdown.style.display = (profileDropdown.style.display === 'block') ? 'none' : 'block';
+    });
+    document.addEventListener('click', (e) => {
+      if (!profileDropdown.contains(e.target) && e.target !== profileBtn) {
+        profileDropdown.style.display = 'none';
+      }
+    });
+
+    // Open modal buttons
+    document.getElementById('signupOpenBtn').addEventListener('click', () => openAuth('signup'));
+    document.getElementById('loginOpenBtn').addEventListener('click', () => openAuth('login'));
+
+    // Modal bits
+    const authModal = document.getElementById('authModal');
+    const authCloseBtn = document.getElementById('authCloseBtn');
+    const authTitle = document.getElementById('authTitle');
+    const switchToLogin = document.getElementById('switchToLogin');
+    const switchToSignup = document.getElementById('switchToSignup');
+    const createAccountSwitch = document.getElementById('createAccountSwitch');
+
+    const authForm = document.getElementById('authForm');
+    const authEmail = document.getElementById('authEmail');
+    const authPassword = document.getElementById('authPassword');
+    const keepSignedIn = document.getElementById('keepSignedIn');
+    const authSubmitBtn = document.getElementById('authSubmitBtn');
+    const authError = document.getElementById('authError');
+    const forgotLink = document.getElementById('forgotLink');
+    const togglePw = document.getElementById('togglePw');
+
+    let authMode = 'login'; // 'login' or 'signup'
+
+    function openAuth(mode='login') {
+      authMode = mode;
+      authTitle.textContent = (authMode === 'signup') ? 'Create Account' : 'Sign In';
+      document.getElementById('modeSwitchText').innerHTML =
+        (authMode === 'signup')
+        ? `Already have an account? <button id="toLoginLink" class="font-medium text-[var(--primary-400)] hover:text-[var(--primary-500)] underline">Sign in</button>`
+        : `New to CrowdScout? <button id="toSignupLink" class="font-medium text-[var(--primary-400)] hover:text-[var(--primary-500)] underline">Create an account</button>`;
+      authError.classList.add('hidden');
+      authError.textContent = '';
+      authEmail.value = '';
+      authPassword.value = '';
+      authModal.classList.remove('hidden');
+      profileDropdown.style.display = 'none';
+
+      // wire the inline links each time
+      const toLogin = document.getElementById('toLoginLink');
+      const toSignup = document.getElementById('toSignupLink');
+      if (toLogin) toLogin.addEventListener('click', () => openAuth('login'));
+      if (toSignup) toSignup.addEventListener('click', () => openAuth('signup'));
+    }
+
+    function closeAuth() {
+      authModal.classList.add('hidden');
+    }
+
+    authCloseBtn.addEventListener('click', closeAuth);
+    switchToLogin.addEventListener('click', () => openAuth('login'));
+    switchToSignup.addEventListener('click', () => openAuth('signup'));
+    if (createAccountSwitch) createAccountSwitch.addEventListener('click', () => openAuth('signup'));
+
+    togglePw.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isPwd = authPassword.getAttribute('type') === 'password';
+      authPassword.setAttribute('type', isPwd ? 'text' : 'password');
+    });
+
+    forgotLink.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const email = authEmail.value.trim();
+      if (!email) {
+        authError.textContent = 'Enter your email first.';
+        authError.classList.remove('hidden');
+        return;
+      }
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/reset'
+      });
+      if (error) {
+        authError.textContent = error.message;
+        authError.classList.remove('hidden');
+      } else {
+        authError.textContent = 'Password reset email sent!';
+        authError.classList.remove('hidden');
+      }
+    });
+
+    // OAuth
+    document.getElementById('googleBtn').addEventListener('click', async () => {
+      await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href }});
+    });
+    document.getElementById('appleBtn').addEventListener('click', async () => {
+      await supabase.auth.signInWithOAuth({ provider: 'apple', options: { redirectTo: window.location.href }});
+    });
+
+    // Submit (Sign In / Sign Up)
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      authSubmitBtn.disabled = true;
+      authSubmitBtn.textContent = 'Working...';
+      authError.classList.add('hidden');
+      authError.textContent = '';
+
+      const email = authEmail.value.trim();
+      const password = authPassword.value;
+
+      try {
+        if (authMode === 'login') {
+          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          closeAuth();
+          await refreshAuthUI();
+        } else {
+          const { data, error } = await supabase.auth.signUp({
+            email, password,
+            options: { emailRedirectTo: window.location.origin }
+          });
+          if (error) throw error;
+          authError.textContent = 'Check your inbox to confirm your email.';
+          authError.classList.remove('hidden');
+        }
+      } catch (err) {
+        authError.textContent = err.message || 'Authentication error';
+        authError.classList.remove('hidden');
+      } finally {
+        authSubmitBtn.disabled = false;
+        authSubmitBtn.textContent = 'Continue';
+      }
+    });
+
+    // Sign out
+    if (signOutBtn) {
+      signOutBtn.addEventListener('click', async () => {
+        await supabase.auth.signOut();
+        profileDropdown.style.display = 'none';
+        await refreshAuthUI();
+      });
+    }
+
+    // Reflect auth state into the dropdown + optional page protection
+    async function refreshAuthUI() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && session.user) {
+        // Show logged-in area
+        dropdownLoggedIn.style.display = '';
+        userEmailRow.textContent = session.user.email || 'Signed in';
+        // Swap avatar (optional)
+        document.getElementById('profileAvatar').src =
+          `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(session.user.email || 'User')}`;
+      } else {
+        // Show login options only
+        dropdownLoggedIn.style.display = 'none';
+        document.getElementById('profileAvatar').src =
+          'https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png';
+        // Gate the page: show modal immediately and optionally redirect
+        openAuth('login');
+        if (LOGIN_PAGE_URL) {
+          setTimeout(() => { window.location.href = LOGIN_PAGE_URL; }, 1200);
+        }
+      }
+    }
+
+    // Initial render + auth state check
+    (async () => {
+      renderTab(currentTab);
+      await refreshAuthUI();
+    })();
+
+    // Close modal on ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !authModal.classList.contains('hidden')) closeAuth();
+    });
+  </script>
+</body>
+</html>
