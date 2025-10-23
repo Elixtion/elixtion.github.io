@@ -164,8 +164,8 @@
 // ============================================
 // CONFIGURATION - REPLACE THESE VALUES
 // ============================================
-const SUPABASE_URL = 'https://kstzwynylwcvqmkzkjvr.supabase.co'; // FIXED: Added https://
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0.JvilpVaPUCEj0p9Ty4EHdtruq5yico79HWn8Uq6Lqjo'; // GET YOUR COMPLETE KEY FROM SUPABASE
+const SUPABASE_URL = 'https://kstzwynylwcvqhttpsmkzkjvr.supabase.co'; // FIXED: Added https://
+const SUPABASE_ANON_KEY = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzdHp3eW55bHdjdnFodHRwc21remp2ciIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzI5NzEwNjk5LCJleHAiOjIwNDUyODY2OTl9.gHl7tSMm7K3O8oi2iQJ-WIsmBqmDo6-Sg0Q7ryvGPJM'; // GET YOUR COMPLETE KEY FROM SUPABASE
 const DASHBOARD_URL = 'https://elixtion.github.io/test'; // Where to redirect after successful confirmation
 const HOME_URL = '/'; // Your home page URL
 
@@ -261,7 +261,20 @@ async function handleEmailConfirmation() {
   console.log('Hash:', window.location.hash);
   
   try {
-    // Wait a moment for Supabase to process the URL
+    // FIRST: Check if user is already logged in and confirmed BEFORE processing token
+    const { data: { session: existingSession }, error: existingSessionError } = await supabaseClient.auth.getSession();
+    
+    if (!existingSessionError && existingSession && existingSession.user.email_confirmed_at) {
+      // User is already confirmed and logged in - show success immediately
+      console.log('User already confirmed and logged in:', existingSession.user);
+      showSuccess(existingSession.user);
+      setTimeout(() => {
+        window.location.href = DASHBOARD_URL;
+      }, 5000);
+      return;
+    }
+    
+    // Wait a moment for Supabase to process the URL token
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Check if there's a hash in the URL (contains token info)
@@ -275,6 +288,21 @@ async function handleEmailConfirmation() {
     
     // Check for errors in URL
     if (error) {
+      // Special handling for "already confirmed" errors
+      if (error.includes('already') || errorDescription?.includes('already')) {
+        // Try to get session - user might already be logged in
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+        if (!sessionError && session && session.user.email_confirmed_at) {
+          console.log('Email already confirmed, user logged in');
+          showSuccess(session.user);
+          setTimeout(() => {
+            window.location.href = DASHBOARD_URL;
+          }, 5000);
+          return;
+        }
+        // If not logged in, show success message anyway since email is confirmed
+        throw new Error('This email has already been confirmed. Please try logging in.');
+      }
       throw new Error(errorDescription || error);
     }
     
@@ -322,8 +350,10 @@ async function handleEmailConfirmation() {
     
     if (error.message.includes('expired') || error.message.includes('Expired')) {
       errorMsg = 'This confirmation link has expired. Please request a new one.';
+    } else if (error.message.includes('already confirmed')) {
+      errorMsg = 'This email has already been confirmed. Please try logging in.';
     } else if (error.message.includes('already') || error.message.includes('used')) {
-      errorMsg = 'This confirmation link has already been used. Try logging in instead.';
+      errorMsg = 'This confirmation link has already been used. Please try logging in.';
     } else if (error.message.includes('invalid') || error.message.includes('Invalid')) {
       errorMsg = 'This confirmation link is invalid. Please request a new one.';
     } else if (error.message) {

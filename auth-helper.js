@@ -4,8 +4,8 @@
 // ============================================
 
 // CONFIGURATION - REPLACE THESE VALUES
-const SUPABASE_URL = '://kstzwynylwcvqhttpsmkzkjvr.supabase.co'; // e.g., 'https://xxxxx.supabase.co'
-const SUPABASE_ANON_KEY = '.eyJpc3MiOiJzdXBhYmFzZSIeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9sInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0.JvilpVaPUCEj0p9Ty4EHdtruq5yico79HWn8Uq6Lqjo'; // Your project's anon/public key
+const SUPABASE_URL = 'https://kstzwynylwcvqmkzkjvr.supabase.co'; // e.g., 'https://xxxxx.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0.JvilpVaPUCEj0p9Ty4EHdtruq5yico79HWn8Uq6Lqjo'; // Your project's anon/public key
 
 // Initialize Supabase client
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
