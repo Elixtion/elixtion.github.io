@@ -5,10 +5,10 @@
 
 // CONFIGURATION - REPLACE THESE VALUES
 const SUPABASE_URL = '://kstzwynylwcvqhttpsmkzkjvr.supabase.co'; // e.g., 'https://xxxxx.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0'; // Your project's anon/public key
+const SUPABASE_ANON_KEY = '.eyJpc3MiOiJzdXBhYmFzZSIeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9sInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0.JvilpVaPUCEj0p9Ty4EHdtruq5yico79HWn8Uq6Lqjo'; // Your project's anon/public key
 
 // Initialize Supabase client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
@@ -49,10 +49,11 @@ async function checkAuth() {
 
 /**
  * Protect a page - redirect if not authenticated or not confirmed
- * @param {Object} options
- * @param {string} options.loginUrl
- * @param {string} options.confirmUrl
- * @param {boolean} options.requireConfirmation
+ * Call this at the top of any protected page
+ * @param {Object} options - Configuration options
+ * @param {string} options.loginUrl - Where to redirect if not logged in (default: '/login.html')
+ * @param {string} options.confirmUrl - Where to redirect if email not confirmed (default: '/resend-confirmation.html')
+ * @param {boolean} options.requireConfirmation - Whether to require email confirmation (default: true)
  * @returns {Promise<{user: Object, session: Object}>}
  */
 async function protectPage(options = {}) {
@@ -64,11 +65,13 @@ async function protectPage(options = {}) {
   
   const { user, session, isConfirmed } = await checkAuth();
   
+  // Not logged in at all
   if (!user || !session) {
     window.location.href = loginUrl;
     throw new Error('Not authenticated');
   }
   
+  // Logged in but email not confirmed
   if (requireConfirmation && !isConfirmed) {
     window.location.href = confirmUrl;
     throw new Error('Email not confirmed');
@@ -110,11 +113,13 @@ async function updateProfileAvatar(selector = '#landingAvatar') {
   const avatarEl = document.querySelector(selector);
   
   if (avatarEl && user) {
+    // If you have custom avatar URLs in user metadata
     const avatarUrl = user.user_metadata?.avatar_url;
     if (avatarUrl) {
       avatarEl.src = avatarUrl;
     }
     
+    // Update alt text
     const username = user.user_metadata?.username || user.email;
     avatarEl.alt = username;
   }
@@ -135,63 +140,18 @@ async function displayUserGreeting(selector = '#userGreeting') {
 }
 
 // ============================================
-// CONFIRMATION PAGE LOGIC
+// EXPORT FOR USE IN OTHER FILES
 // ============================================
+// If using ES6 modules, uncomment:
+// export { supabase, checkAuth, protectPage, getCurrentUser, signOut, updateProfileAvatar, displayUserGreeting };
 
-/**
- * Handles email confirmation process on confirmation.html
- */
-async function handleEmailConfirmation() {
-  const loadingState = document.getElementById('loadingState');
-  const successState = document.getElementById('successState');
-  const errorState = document.getElementById('errorState');
-
-  try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-
-    if (error) throw error;
-
-    if (session && session.user && session.user.email_confirmed_at) {
-      // Success: user confirmed and logged in
-      loadingState.classList.add('hidden');
-      successState.classList.remove('hidden');
-
-      setTimeout(() => {
-        window.location.href = '/dashboard.html';
-      }, 2500);
-    } else {
-      // Waiting or invalid
-      setTimeout(async () => {
-        const { data: { session: newSession } } = await supabase.auth.getSession();
-        if (newSession && newSession.user.email_confirmed_at) {
-          loadingState.classList.add('hidden');
-          successState.classList.remove('hidden');
-          setTimeout(() => {
-            window.location.href = '/dashboard.html';
-          }, 2500);
-        } else {
-          throw new Error('Email not confirmed yet.');
-        }
-      }, 3000);
-    }
-  } catch (error) {
-    console.error('Email confirmation error:', error);
-    if (loadingState) loadingState.classList.add('hidden');
-    if (errorState) errorState.classList.remove('hidden');
-  }
-}
-
-// ============================================
-// AUTH STATE LISTENER
-// ============================================
-supabase.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_IN') {
-    console.log('User signed in:', session?.user);
-  }
-  if (event === 'USER_UPDATED') {
-    console.log('User updated (email verified):', session?.user);
-  }
-  if (event === 'SIGNED_OUT') {
-    console.log('User signed out.');
-  }
-});
+// For global access without modules:
+window.authHelper = {
+  supabase,
+  checkAuth,
+  protectPage,
+  getCurrentUser,
+  signOut,
+  updateProfileAvatar,
+  displayUserGreeting
+};
