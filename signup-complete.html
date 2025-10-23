@@ -68,17 +68,16 @@
 
       // call supabase signUp with metadata
       try {
-        const res = await window.MyAuth.signUpWithMetadata(pending.email, pending.password, {
-          // User Metadata (as before)
-          data: {
-            full_name: fullName,
-            team_affiliation: team,
-            status: status
-          },
-          // CRITICAL: Options object for the Supabase Auth function
+        const res = await window.supabase.auth.signUp({
+          email: pending.email,
+          password: pending.password,
           options: {
-            // This is the URL the user will be sent to after clicking the email confirmation link.
-            emailRedirectTo: '/confirm' 
+            data: {
+              full_name: fullName,
+              team_affiliation: team,
+              status: status
+            },
+            emailRedirectTo: 'https://elixtion.github.io/confirm'
           }
         });
 
@@ -87,12 +86,11 @@
           return;
         }
 
-        // Clear the temporary pending storage
         sessionStorage.removeItem('pendingSignup');
 
-        // success message + redirect to login page (or input page if you want to auto-login)
         msgEl.textContent = 'Account created. Check your email to confirm (if required). You will be redirected to login.';
-        setTimeout(() => window.location.href = 'login.html', 1800);
+        setTimeout(() => (window.location.href = 'login.html'), 1800);
+
       } catch (err) {
         msgEl.textContent = 'Unexpected error: ' + (err.message || err);
       }
