@@ -164,15 +164,16 @@
 // ============================================
 // CONFIGURATION - REPLACE THESE VALUES
 // ============================================
-const SUPABASE_URL = '://kstzwynylwcvqhttpsmkzkjvr.supabase.co'; // e.g., 'https://xxxxx.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0'; // Your project's anon/public key
+const SUPABASE_URL = 'https://kstzwynylwcvqmkzkjvr.supabase.co'; // FIXED: Added https://
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0.JvilpVaPUCEj0p9Ty4EHdtruq5yico79HWn8Uq6Lqjo'; // GET YOUR COMPLETE KEY FROM SUPABASE
 const DASHBOARD_URL = 'https://elixtion.github.io/test'; // Where to redirect after successful confirmation
 const HOME_URL = '/'; // Your home page URL
 
 // ============================================
-// SUPABASE CLIENT INITIALIZATION
+// SUPABASE CLIENT INITIALIZATION - FIXED SYNTAX
 // ============================================
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+const { createClient } = supabase;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
@@ -255,48 +256,56 @@ function showResendForm() {
 // MAIN CONFIRMATION LOGIC
 // ============================================
 async function handleEmailConfirmation() {
+  console.log('Starting email confirmation process...');
+  console.log('Current URL:', window.location.href);
+  console.log('Hash:', window.location.hash);
+  
   try {
+    // Wait a moment for Supabase to process the URL
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     // Check if there's a hash in the URL (contains token info)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const accessToken = hashParams.get('access_token');
     const type = hashParams.get('type');
+    const error = hashParams.get('error');
+    const errorDescription = hashParams.get('error_description');
     
-    // If no token in URL, check for existing session
-    if (!accessToken) {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) throw sessionError;
-      
-      if (session && session.user.email_confirmed_at) {
-        // User already confirmed and logged in
-        showSuccess(session.user);
-        return;
-      }
-      
-      // No token and no session = invalid link
-      throw new Error('Invalid or missing confirmation token');
+    console.log('URL Parameters:', { accessToken: accessToken ? 'present' : 'missing', type, error, errorDescription });
+    
+    // Check for errors in URL
+    if (error) {
+      throw new Error(errorDescription || error);
     }
-
-    // Supabase automatically processes the token due to detectSessionInUrl: true
-    // We just need to verify the session was created
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    if (sessionError) throw sessionError;
+    // Get the current session after Supabase processes the URL
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+    
+    console.log('Session check:', { session: session ? 'exists' : 'null', error: sessionError });
+    
+    if (sessionError) {
+      console.error('Session error:', sessionError);
+      throw sessionError;
+    }
     
     if (!session) {
-      throw new Error('Failed to create session from confirmation token');
+      // No session created
+      if (accessToken) {
+        throw new Error('Failed to create session from confirmation token');
+      } else {
+        throw new Error('Invalid or missing confirmation token');
+      }
     }
 
     // Verify email is confirmed
+    console.log('User email_confirmed_at:', session.user.email_confirmed_at);
+    
     if (!session.user.email_confirmed_at) {
       throw new Error('Email confirmation incomplete');
     }
 
     // SUCCESS! User is now confirmed and logged in
     console.log('Email confirmed successfully:', session.user);
-    
-    // Optional: Create or update user profile in your database
-    // await createUserProfile(session.user);
     
     showSuccess(session.user);
     
@@ -311,12 +320,14 @@ async function handleEmailConfirmation() {
     // Determine error type and show appropriate message
     let errorMsg = 'The confirmation link is invalid or has expired.';
     
-    if (error.message.includes('expired')) {
+    if (error.message.includes('expired') || error.message.includes('Expired')) {
       errorMsg = 'This confirmation link has expired. Please request a new one.';
     } else if (error.message.includes('already') || error.message.includes('used')) {
       errorMsg = 'This confirmation link has already been used. Try logging in instead.';
-    } else if (error.message.includes('invalid')) {
+    } else if (error.message.includes('invalid') || error.message.includes('Invalid')) {
       errorMsg = 'This confirmation link is invalid. Please request a new one.';
+    } else if (error.message) {
+      errorMsg = error.message;
     }
     
     showError(errorMsg);
@@ -331,7 +342,7 @@ async function handleResendConfirmation(email) {
     resendSuccess.classList.add('hidden');
     resendError.classList.add('hidden');
     
-    const { error } = await supabase.auth.resend({
+    const { error } = await supabaseClient.auth.resend({
       type: 'signup',
       email: email,
       options: {
@@ -386,14 +397,16 @@ resendEmailForm.addEventListener('submit', async (e) => {
 });
 
 // Listen for auth state changes
-supabase.auth.onAuthStateChange((event, session) => {
-  console.log('Auth state changed:', event, session);
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  console.log('Auth state changed:', event, session ? 'session exists' : 'no session');
   
   if (event === 'SIGNED_IN' && session) {
     // User successfully confirmed and logged in
+    console.log('SIGNED_IN event triggered');
     showSuccess(session.user);
   } else if (event === 'USER_UPDATED' && session) {
     // Email confirmed
+    console.log('USER_UPDATED event triggered');
     showSuccess(session.user);
   } else if (event === 'TOKEN_REFRESHED') {
     console.log('Token refreshed successfully');
@@ -404,13 +417,9 @@ supabase.auth.onAuthStateChange((event, session) => {
 // INITIALIZE ON PAGE LOAD
 // ============================================
 window.addEventListener('DOMContentLoaded', () => {
+  console.log('Page loaded, initializing confirmation...');
   handleEmailConfirmation();
 });
-</script>
-
-<script src="/auth-helper.js"></script>
-<script>
-  document.addEventListener('DOMContentLoaded', handleEmailConfirmation);
 </script>
 </body>
 </html>
