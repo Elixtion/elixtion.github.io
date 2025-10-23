@@ -57,6 +57,118 @@
     .animate-fadeIn {
       animation: fadeIn 0.5s ease-out forwards;
     }
+    
+    /* Profile dropdown styles */
+    .profile-container {
+      position: relative;
+    }
+    .profile-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+    .profile-avatar {
+      height: 40px;
+      width: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      transition: transform 0.3s;
+    }
+    .profile-avatar:hover {
+      transform: scale(1.1);
+    }
+    .dropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      background: var(--surface-50);
+      border: 1px solid var(--surface-100);
+      border-radius: 8px;
+      min-width: 180px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      overflow: hidden;
+    }
+    .dropdown button,
+    .dropdown a {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 10px 14px;
+      background: none;
+      border: none;
+      color: var(--surface-950);
+      text-decoration: none;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .dropdown button:hover,
+    .dropdown a:hover {
+      background: var(--surface-100);
+    }
+    
+    /* Modal styles */
+    .modal-centered {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .card {
+      position: relative;
+      background: var(--surface-50);
+      border: 1px solid var(--surface-100);
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 450px;
+      width: 90%;
+    }
+    .bg-gradient-dark {
+      background: linear-gradient(to bottom right, var(--surface-50), var(--surface-0));
+    }
+    .text-white {
+      color: var(--surface-950);
+    }
+    .modal-centered input {
+      width: 100%;
+      padding: 12px;
+      background: var(--surface-0);
+      border: 1px solid var(--surface-100);
+      border-radius: 8px;
+      color: var(--surface-950);
+      font-size: 14px;
+    }
+    .modal-centered input:focus {
+      outline: none;
+      border-color: var(--primary-500);
+      box-shadow: 0 0 0 2px rgba(153, 229, 80, 0.2);
+    }
+    .cta {
+      background: var(--primary-500);
+      color: var(--primary-950);
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .cta:hover {
+      background: var(--primary-400);
+      transform: translateY(-2px);
+    }
+    .small-muted {
+      font-size: 12px;
+      color: var(--surface-400);
+      text-align: center;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body class="bg-[var(--surface-0)] text-[var(--surface-900)]">
@@ -79,7 +191,7 @@
 <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--surface-500)]">
 <span class="material-symbols-outlined text-xl"> search </span>
 </div>
-<input class="h-10 w-full rounded-md border border-transparent bg-[var(--surface-50)] py-2 pl-10 pr-4 text-sm text-[var(--surface-950)] placeholder:text-[var(--surface-500)] transition-colors focus:border-[var(--primary-500)] focus:bg-[var(--surface-0)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" placeholder="Search" value=""/>
+<input class="h-10 w-full rounded-md border border-transparent bg-[var(--surface-50)] py-2 pl-10 pr-4 text-sm text-[var(--surface-950)] placeholder:text-[var(--surface-500)] transition-colors focus:border-[var(--primary-500)] focus:bg-[var(--surface-0)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" placeholder="Search for a team or event" value=""/>
 </label>
 <a href="https://elixtion.github.io/input" target="_blank" 
    class="flex h-10 flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md bg-[var(--surface-950)] px-4 text-sm font-semibold text-black transition-colors hover:bg-[var(--surface-800)]">
@@ -87,9 +199,17 @@
   <span class="material-symbols-outlined text-xl"> open_in_new </span>
 </a>
 
-<button class="flex-shrink-0">
-<img class="h-10 w-10 rounded-full object-cover transition-transform duration-300 hover:scale-110" src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png"/>
-</button>
+<div class="profile-container">
+  <button id="profileBtn" class="profile-btn flex-shrink-0" aria-label="Profile">
+    <img id="landingAvatar" class="profile-avatar" src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png" alt="avatar"/>
+  </button>
+
+  <div id="profileDropdown" class="dropdown" role="menu" aria-hidden="true">
+    <button id="signupOpen">Sign Up</button>
+    <button id="loginLinkBtn">Login</button>
+    <a href="https://www.chiefdelphi.com" target="_blank" rel="noopener">Chief Delphi <span class="material-symbols-outlined" style="margin-left:auto;font-size:18px">open_in_new</span></a>
+  </div>
+</div>
 </div>
 </header>
 <main class="flex-1 px-10 py-12">
@@ -100,7 +220,7 @@
 <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
 <div class="relative z-10 flex animate-fadeIn flex-col gap-4 text-left">
 <h1 class="text-4xl font-extrabold tracking-tighter text-white @[280px]:text-7xl">Unlock the Power of CrowdScout</h1>
-<p class="max-w-2xl text-base text-[var(--surface-300)] @[480px]:text-xl">
+<p class="max-w-2xl text-base text-[var(--surface-600)] @[480px]:text-xl">
                     Transform raw data into actionable intelligence with our intuitive analytics platform. Gain a competitive edge by understanding your audience, optimizing your strategies, and driving growth.
                   </p>
 <button class="flex h-12 w-fit cursor-pointer items-center justify-center rounded-lg bg-[var(--primary-500)] px-6 text-base font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40">
@@ -226,4 +346,92 @@
 </footer>
 </div>
 </div>
+
+<!-- Sign Up Modal -->
+<div id="signupModal" class="modal-centered" style="display:none">
+  <div class="card bg-gradient-dark text-white">
+    <button id="closeSignup" style="position:absolute; right:16px; top:16px; background:none; border:none; color:var(--surface-400); cursor:pointer; font-size:24px;"><span class="material-symbols-outlined">close</span></button>
+    <header style="text-align:center; margin-bottom:10px">
+      <h1 style="font-size:28px; margin:0;">Sign Up</h1>
+    </header>
+
+    <form id="signupStep1Form" style="display:flex; flex-direction:column; gap:12px;">
+      <label style="font-weight:600">Username</label>
+      <input id="step1Username" type="text" required />
+
+      <label style="font-weight:600">Email</label>
+      <input id="step1Email" type="email" required />
+
+      <label style="font-weight:600">Password</label>
+      <input id="step1Password" type="password" required />
+
+      <div style="display:flex; gap:8px;">
+        <button type="submit" class="cta" style="flex:1">Continue</button>
+        <button type="button" id="cancelSignup" style="background:#333; color:#fff; border:none; padding:12px 14px; border-radius:8px; cursor:pointer;">Cancel</button>
+      </div>
+
+      </form>
+  </div>
+</div>
+
+<script>
+  // Profile dropdown functionality
+  const profileBtn = document.getElementById('profileBtn');
+  const profileDropdown = document.getElementById('profileDropdown');
+  
+  profileBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    profileDropdown.style.display = profileDropdown.style.display === 'block' ? 'none' : 'block';
+  });
+  
+  document.addEventListener('click', () => {
+    profileDropdown.style.display = 'none';
+  });
+
+  // Sign up modal logic
+  const signupOpen = document.getElementById('signupOpen');
+  const signupModal = document.getElementById('signupModal');
+  const closeSignup = document.getElementById('closeSignup');
+  const signupForm = document.getElementById('signupStep1Form');
+  const cancelSignup = document.getElementById('cancelSignup');
+  const loginLinkBtn = document.getElementById('loginLinkBtn');
+
+  signupOpen.addEventListener('click', () => {
+    signupModal.style.display = 'flex';
+    profileDropdown.style.display = 'none';
+  });
+  
+  closeSignup.addEventListener('click', () => {
+    signupModal.style.display = 'none';
+  });
+  
+  cancelSignup.addEventListener('click', () => {
+    signupModal.style.display = 'none';
+  });
+
+  // Handle signup form submission
+  signupForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = document.getElementById('step1Username').value.trim();
+    const email = document.getElementById('step1Email').value.trim();
+    const password = document.getElementById('step1Password').value;
+    
+    if (!username || !email || !password) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    // Store credentials temporarily (using in-memory storage for demo)
+    const pendingSignup = { username, email, password, timestamp: Date.now() };
+    
+    // In a real application, this would be handled server-side
+    // For now, redirect to signup completion page
+    window.location.href = 'signup-complete.html';
+  });
+
+  // Handle login button
+  loginLinkBtn.addEventListener('click', () => {
+    window.location.href = 'login.html';
+  });
+</script>
 </body></html>

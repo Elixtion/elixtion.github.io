@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B600%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B600%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Email Confirmation - CrowdScout</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style type="text/tailwindcss">
+    :root {
+      --primary-50: #f7fdf0;
+      --primary-100: #eefad9;
+      --primary-200: #dff6ba;
+      --primary-300: #c9eea7;
+      --primary-400: #b1e48b;
+      --primary-500: #99e550;
+      --primary-600: #74c13a;
+      --primary-700: #58962e;
+      --primary-800: #447526;
+      --primary-900: #396122;
+      --primary-950: #1b350e;
+      --secondary-50: #f2f7f5;
+      --secondary-100: #e4eee9;
+      --secondary-200: #c9ddd4;
+      --secondary-300: #a7c6b9;
+      --secondary-400: #82ab9a;
+      --secondary-500: #658e7f;
+      --secondary-600: #527366;
+      --secondary-700: #445f55;
+      --secondary-800: #384d45;
+      --secondary-900: #30413a;
+      --secondary-950: #1a2420;
+      --surface-0: #111312;
+      --surface-50: #171a18;
+      --surface-100: #262e2a;
+      --surface-200: #3f4e46;
+      --surface-300: #576e62;
+      --surface-400: #6e8e7d;
+      --surface-500: #8cae9d;
+      --surface-600: #a9c8b9;
+      --surface-700: #c6e0d4;
+      --surface-800: #e2f4ea;
+      --surface-900: #f1faf5;
+      --surface-950: #ffffff;
+    }
+  </style>
+</head>
+<body class="bg-[var(--surface-0)] text-[var(--surface-900)]">
+<div class="relative flex size-full min-h-screen flex-col" style='font-family: Inter, "Noto Sans", sans-serif;'>
+<div class="flex h-full grow flex-col items-center justify-center p-6">
+<div id="loadingState" class="flex w-full max-w-md animate-fadeIn flex-col items-center gap-8 rounded-2xl border border-[var(--surface-100)] bg-[var(--surface-50)] p-8 text-center shadow-2xl shadow-black/30">
+<div class="flex items-center gap-3 text-[var(--surface-950)]">
+<div class="animate-spin">
+<svg class="h-12 w-12 text-[var(--primary-500)]" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+</svg>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<h1 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Confirming Your Email...</h1>
+<p class="text-base text-[var(--surface-400)]">Please wait while we verify your account.</p>
+</div>
+</div>
+
+<div id="successState" class="hidden w-full max-w-md animate-fadeIn flex-col items-center gap-8 rounded-2xl border border-[var(--surface-100)] bg-[var(--surface-50)] p-8 text-center shadow-2xl shadow-black/30">
+<div class="flex items-center gap-3 text-[var(--surface-950)]">
+<svg class="h-12 w-12 text-[var(--primary-500)]" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M13.8261 30.5736C16.7203 29.8826 20.2244 29.4783 24 29.4783C27.7756 29.4783 31.2797 29.8826 34.1739 30.5736C36.9144 31.2278 39.9967 32.7669 41.3563 33.8352L24.8486 7.36089C24.4571 6.73303 23.5429 6.73303 23.1514 7.36089L6.64374 33.8352C8.00331 32.7669 11.0856 31.2278 13.8261 30.5736Z" fill="currentColor"></path>
+<path clip-rule="evenodd" d="M39.998 35.764C39.9944 35.7463 39.9875 35.7155 39.9748 35.6706C39.9436 35.5601 39.8949 35.4259 39.8346 35.2825C39.8168 35.2403 39.7989 35.1993 39.7813 35.1602C38.5103 34.2887 35.9788 33.0607 33.7095 32.5189C30.9875 31.8691 27.6413 31.4783 24 31.4783C20.3587 31.4783 17.0125 31.8691 14.2905 32.5189C12.0012 33.0654 9.44505 34.3104 8.18538 35.1832C8.17384 35.2075 8.16216 35.233 8.15052 35.2592C8.09919 35.3751 8.05721 35.4886 8.02977 35.589C8.00356 35.6848 8.00039 35.7333 8.00004 35.7388C8.00004 35.739 8 35.7393 8.00004 35.7388C8.00004 35.7641 8.0104 36.0767 8.68485 36.6314C9.34546 37.1746 10.4222 37.7531 11.9291 38.2772C14.9242 39.319 19.1919 40 24 40C28.8081 40 33.0758 39.319 36.0709 38.2772C37.5778 37.7531 38.6545 37.1746 39.3151 36.6314C39.9006 36.1499 39.9857 35.8511 39.998 35.764ZM4.95178 32.7688L21.4543 6.30267C22.6288 4.4191 25.3712 4.41909 26.5457 6.30267L43.0534 32.777C43.0709 32.8052 43.0878 32.8338 43.104 32.8629L41.3563 33.8352C43.104 32.8629 43.1038 32.8626 43.104 32.8629L43.1051 32.865L43.1065 32.8675L43.1101 32.8739L43.1199 32.8918C43.1276 32.906 43.1377 32.9246 43.1497 32.9473C43.1738 32.9925 43.2062 33.0545 43.244 33.1299C43.319 33.2792 43.4196 33.489 43.5217 33.7317C43.6901 34.1321 44 34.9311 44 35.7391C44 37.4427 43.003 38.7775 41.8558 39.7209C40.6947 40.6757 39.1354 41.4464 37.385 42.0552C33.8654 43.2794 29.133 44 24 44C18.867 44 14.1346 43.2794 10.615 42.0552C8.86463 41.4464 7.30529 40.6757 6.14419 39.7209C4.99695 38.7775 3.99999 37.4427 3.99999 35.7391C3.99999 34.8725 4.29264 34.0922 4.49321 33.6393C4.60375 33.3898 4.71348 33.1804 4.79687 33.0311C4.83898 32.9556 4.87547 32.8935 4.9035 32.8471C4.91754 32.8238 4.92954 32.8043 4.93916 32.7889L4.94662 32.777L4.95178 32.7688ZM35.9868 29.004L24 9.77997L12.0131 29.004C12.4661 28.8609 12.9179 28.7342 13.3617 28.6282C16.4281 27.8961 20.0901 27.4783 24 27.4783C27.9099 27.4783 31.5719 27.8961 34.6383 28.6282C35.082 28.7342 35.5339 28.8609 35.9868 29.004Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<div class="flex flex-col gap-2">
+<h1 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Your Account is Activated!</h1>
+<p class="text-base text-[var(--surface-400)]">Welcome! You're now logged in and ready to explore.</p>
+<p id="userGreeting" class="text-sm text-[var(--surface-500)] mt-2"></p>
+</div>
+<div class="flex w-full flex-col gap-4">
+<button id="continueBtn" class="flex h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-[var(--primary-500)] px-6 text-base font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40">
+  Continue to Dashboard
+</button>
+</div>
+</div>
+
+<div id="errorState" class="hidden w-full max-w-md animate-fadeIn flex-col items-center gap-8 rounded-2xl border border-[var(--surface-100)] bg-[var(--surface-50)] p-8 text-center shadow-2xl shadow-black/30">
+<div class="flex items-center gap-3 text-[var(--surface-950)]">
+<svg class="h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+</svg>
+</div>
+<div class="flex flex-col gap-2">
+<h1 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Confirmation Failed</h1>
+<p id="errorMessage" class="text-base text-[var(--surface-400)]">The confirmation link is invalid or has expired.</p>
+</div>
+<div class="flex w-full flex-col gap-3">
+<button id="resendBtn" class="flex h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-[var(--primary-500)] px-6 text-base font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40">
+  Request New Confirmation Email
+</button>
+<a href="/" class="text-sm text-[var(--surface-500)] hover:text-[var(--primary-500)] transition-colors">
+  Return to Home
+</a>
+</div>
+</div>
+
+<div id="resendForm" class="hidden w-full max-w-md animate-fadeIn flex-col items-center gap-8 rounded-2xl border border-[var(--surface-100)] bg-[var(--surface-50)] p-8 shadow-2xl shadow-black/30">
+<div class="flex flex-col gap-2 w-full">
+<h1 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl text-center">Resend Confirmation</h1>
+<p class="text-base text-[var(--surface-400)] text-center">Enter your email to receive a new confirmation link.</p>
+</div>
+<form id="resendEmailForm" class="w-full flex flex-col gap-4">
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-[var(--surface-950)]">Email Address</label>
+<input 
+  id="resendEmailInput" 
+  type="email" 
+  required 
+  placeholder="your@email.com"
+  class="h-12 w-full rounded-lg border border-[var(--surface-200)] bg-[var(--surface-0)] px-4 text-[var(--surface-950)] placeholder:text-[var(--surface-500)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-500)]/20"
+/>
+</div>
+<button type="submit" class="flex h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-[var(--primary-500)] px-6 text-base font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40">
+  Send Confirmation Email
+</button>
+<button type="button" id="cancelResendBtn" class="text-sm text-[var(--surface-500)] hover:text-[var(--primary-500)] transition-colors">
+  Cancel
+</button>
+</form>
+<div id="resendSuccess" class="hidden w-full p-4 rounded-lg bg-[var(--primary-900)]/20 border border-[var(--primary-700)]">
+<p class="text-sm text-[var(--primary-300)]">✓ Confirmation email sent! Check your inbox.</p>
+</div>
+<div id="resendError" class="hidden w-full p-4 rounded-lg bg-red-900/20 border border-red-700">
+<p class="text-sm text-red-300" id="resendErrorText"></p>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+<style>
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
+  </style>
+
+<script>
+// ============================================
+// CONFIGURATION - REPLACE THESE VALUES
+// ============================================
+const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL'; // e.g., 'https://xxxxx.supabase.co'
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Your project's anon/public key
+const DASHBOARD_URL = '/dashboard.html'; // Where to redirect after successful confirmation
+const HOME_URL = '/'; // Your home page URL
+
+// ============================================
+// SUPABASE CLIENT INITIALIZATION
+// ============================================
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true // CRITICAL: This allows automatic token processing from URL
+  }
+});
+
+// ============================================
+// DOM ELEMENTS
+// ============================================
+const loadingState = document.getElementById('loadingState');
+const successState = document.getElementById('successState');
+const errorState = document.getElementById('errorState');
+const resendForm = document.getElementById('resendForm');
+const errorMessage = document.getElementById('errorMessage');
+const userGreeting = document.getElementById('userGreeting');
+const continueBtn = document.getElementById('continueBtn');
+const resendBtn = document.getElementById('resendBtn');
+const resendEmailForm = document.getElementById('resendEmailForm');
+const resendEmailInput = document.getElementById('resendEmailInput');
+const cancelResendBtn = document.getElementById('cancelResendBtn');
+const resendSuccess = document.getElementById('resendSuccess');
+const resendError = document.getElementById('resendError');
+const resendErrorText = document.getElementById('resendErrorText');
+
+// ============================================
+// STATE MANAGEMENT FUNCTIONS
+// ============================================
+function showLoading() {
+  loadingState.classList.remove('hidden');
+  loadingState.classList.add('flex');
+  successState.classList.add('hidden');
+  successState.classList.remove('flex');
+  errorState.classList.add('hidden');
+  errorState.classList.remove('flex');
+  resendForm.classList.add('hidden');
+  resendForm.classList.remove('flex');
+}
+
+function showSuccess(user) {
+  loadingState.classList.add('hidden');
+  loadingState.classList.remove('flex');
+  successState.classList.remove('hidden');
+  successState.classList.add('flex');
+  errorState.classList.add('hidden');
+  errorState.classList.remove('flex');
+  resendForm.classList.add('hidden');
+  resendForm.classList.remove('flex');
+  
+  // Display user info
+  const username = user.user_metadata?.username || 'User';
+  userGreeting.textContent = `Logged in as: ${username} (${user.email})`;
+}
+
+function showError(message) {
+  loadingState.classList.add('hidden');
+  loadingState.classList.remove('flex');
+  successState.classList.add('hidden');
+  successState.classList.remove('flex');
+  errorState.classList.remove('hidden');
+  errorState.classList.add('flex');
+  resendForm.classList.add('hidden');
+  resendForm.classList.remove('flex');
+  
+  errorMessage.textContent = message;
+}
+
+function showResendForm() {
+  loadingState.classList.add('hidden');
+  loadingState.classList.remove('flex');
+  successState.classList.add('hidden');
+  successState.classList.remove('flex');
+  errorState.classList.add('hidden');
+  errorState.classList.remove('flex');
+  resendForm.classList.remove('hidden');
+  resendForm.classList.add('flex');
+}
+
+// ============================================
+// MAIN CONFIRMATION LOGIC
+// ============================================
+async function handleEmailConfirmation() {
+  try {
+    // Check if there's a hash in the URL (contains token info)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const type = hashParams.get('type');
+    
+    // If no token in URL, check for existing session
+    if (!accessToken) {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) throw sessionError;
+      
+      if (session && session.user.email_confirmed_at) {
+        // User already confirmed and logged in
+        showSuccess(session.user);
+        return;
+      }
+      
+      // No token and no session = invalid link
+      throw new Error('Invalid or missing confirmation token');
+    }
+
+    // Supabase automatically processes the token due to detectSessionInUrl: true
+    // We just need to verify the session was created
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) throw sessionError;
+    
+    if (!session) {
+      throw new Error('Failed to create session from confirmation token');
+    }
+
+    // Verify email is confirmed
+    if (!session.user.email_confirmed_at) {
+      throw new Error('Email confirmation incomplete');
+    }
+
+    // SUCCESS! User is now confirmed and logged in
+    console.log('Email confirmed successfully:', session.user);
+    
+    // Optional: Create or update user profile in your database
+    // await createUserProfile(session.user);
+    
+    showSuccess(session.user);
+    
+    // Auto-redirect after 3 seconds
+    setTimeout(() => {
+      window.location.href = DASHBOARD_URL;
+    }, 3000);
+    
+  } catch (error) {
+    console.error('Confirmation error:', error);
+    
+    // Determine error type and show appropriate message
+    let errorMsg = 'The confirmation link is invalid or has expired.';
+    
+    if (error.message.includes('expired')) {
+      errorMsg = 'This confirmation link has expired. Please request a new one.';
+    } else if (error.message.includes('already') || error.message.includes('used')) {
+      errorMsg = 'This confirmation link has already been used. Try logging in instead.';
+    } else if (error.message.includes('invalid')) {
+      errorMsg = 'This confirmation link is invalid. Please request a new one.';
+    }
+    
+    showError(errorMsg);
+  }
+}
+
+// ============================================
+// RESEND CONFIRMATION EMAIL
+// ============================================
+async function handleResendConfirmation(email) {
+  try {
+    resendSuccess.classList.add('hidden');
+    resendError.classList.add('hidden');
+    
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+      options: {
+        emailRedirectTo: window.location.origin + window.location.pathname
+      }
+    });
+    
+    if (error) throw error;
+    
+    // Show success message
+    resendSuccess.classList.remove('hidden');
+    resendEmailInput.value = '';
+    
+    // Hide success message after 5 seconds
+    setTimeout(() => {
+      resendSuccess.classList.add('hidden');
+    }, 5000);
+    
+  } catch (error) {
+    console.error('Resend error:', error);
+    resendErrorText.textContent = error.message || 'Failed to send confirmation email. Please try again.';
+    resendError.classList.remove('hidden');
+  }
+}
+
+// ============================================
+// EVENT LISTENERS
+// ============================================
+
+// Continue to dashboard button
+continueBtn.addEventListener('click', () => {
+  window.location.href = DASHBOARD_URL;
+});
+
+// Show resend form
+resendBtn.addEventListener('click', () => {
+  showResendForm();
+});
+
+// Cancel resend form
+cancelResendBtn.addEventListener('click', () => {
+  showError('The confirmation link is invalid or has expired.');
+});
+
+// Handle resend form submission
+resendEmailForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = resendEmailInput.value.trim();
+  if (email) {
+    await handleResendConfirmation(email);
+  }
+});
+
+// Listen for auth state changes
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Auth state changed:', event, session);
+  
+  if (event === 'SIGNED_IN' && session) {
+    // User successfully confirmed and logged in
+    showSuccess(session.user);
+  } else if (event === 'USER_UPDATED' && session) {
+    // Email confirmed
+    showSuccess(session.user);
+  } else if (event === 'TOKEN_REFRESHED') {
+    console.log('Token refreshed successfully');
+  }
+});
+
+// ============================================
+// INITIALIZE ON PAGE LOAD
+// ============================================
+window.addEventListener('DOMContentLoaded', () => {
+  handleEmailConfirmation();
+});
+</script>
+
+<script src="/auth-helper.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', handleEmailConfirmation);
+</script>
+</body>
+</html>
