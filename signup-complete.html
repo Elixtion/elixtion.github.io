@@ -69,9 +69,17 @@
       // call supabase signUp with metadata
       try {
         const res = await window.MyAuth.signUpWithMetadata(pending.email, pending.password, {
-          full_name: fullName,
-          team_affiliation: team,
-          status: status
+          // User Metadata (as before)
+          data: {
+            full_name: fullName,
+            team_affiliation: team,
+            status: status
+          },
+          // CRITICAL: Options object for the Supabase Auth function
+          options: {
+            // This is the URL the user will be sent to after clicking the email confirmation link.
+            emailRedirectTo: 'https://elixtion.github.io/confirm' 
+          }
         });
 
         if (res.error) {
