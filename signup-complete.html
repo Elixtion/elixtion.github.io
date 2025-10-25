@@ -48,7 +48,7 @@
     const pending = JSON.parse(sessionStorage.getItem('pendingSignup') || 'null');
     if (!pending) {
       alert('No sign up in progress. Redirecting to landing.');
-      window.location.href = 'landing.html';
+      window.location.href = 'test.html';
     } else {
       document.getElementById('emailDisplay').value = pending.email;
     }
