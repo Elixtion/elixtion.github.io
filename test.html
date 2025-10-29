@@ -374,91 +374,356 @@
   </div>
 </div>
 
+<!-- Login Modal (paste after Sign Up modal) -->
+<div id="loginModal" class="modal-centered" style="display:none">
+  <div class="card bg-gradient-dark text-white">
+    <button id="closeLogin" style="position:absolute; right:16px; top:16px; background:none; border:none; color:var(--surface-400); cursor:pointer; font-size:24px;">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <header style="text-align:center; margin-bottom:10px">
+      <h1 style="font-size:28px; margin:0;">Login</h1>
+    </header>
+    <form id="loginForm" style="display:flex; flex-direction:column; gap:12px;">
+      <label style="font-weight:600">Email</label>
+      <input id="loginEmail" type="email" required />
+      <label style="font-weight:600">Password</label>
+      <input id="loginPassword" type="password" required />
+      <div style="display:flex; gap:8px;">
+        <button type="submit" class="cta" style="flex:1">Login</button>
+        <button type="button" id="cancelLogin" style="background:#333; color:#fff; border:none; padding:12px 14px; border-radius:8px; cursor:pointer;">Cancel</button>
+      </div>
+      <div style="display:flex; justify-content:center; gap:8px; margin-top:6px; align-items:center;">
+        <button type="button" id="forgotPasswordBtn" style="background:none; border:none; color:var(--surface-400); cursor:pointer; font-size:14px; text-decoration:underline;">Forgot password?</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div id="resetPasswordModal" class="modal-centered" style="display:none">
+  <div class="card bg-gradient-dark text-white">
+    <button id="closeReset" style="position:absolute; right:16px; top:16px; background:none; border:none; color:var(--surface-400); cursor:pointer; font-size:24px;">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <header style="text-align:center; margin-bottom:10px">
+      <h1 style="font-size:22px; margin:0;">Reset password</h1>
+    </header>
+    <form id="resetForm" style="display:flex; flex-direction:column; gap:12px;">
+      <label style="font-weight:600">Enter the email for your account</label>
+      <input id="resetEmail" type="email" required />
+      <div style="display:flex; gap:8px;">
+        <button type="submit" class="cta" style="flex:1">Send reset link</button>
+        <button type="button" id="cancelReset" style="background:#333; color:#fff; border:none; padding:12px 14px; border-radius:8px; cursor:pointer;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // ✅ Initialize Supabase client
-  const supabase = window.supabase.createClient(
-    'https://kstzwynylwcvqmkzkjvr.supabase.co', // <-- replace with your Supabase URL
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0.JvilpVaPUCEj0p9Ty4EHdtruq5yico79HWn8Uq6Lqjo' // <-- replace with your anon key
-  );
+  // -------------------------
+  // Supabase initialization
+  // -------------------------
+  const SUPABASE_URL = 'https://kstzwynylwcvqmkzkjvr.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0.JvilpVaPUCEj0p9Ty4EHdtruq5yico79HWn8Uq6Lqjo';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // ✅ Profile dropdown
+  // -------------------------
+  // DOM references
+  // -------------------------
   const profileBtn = document.getElementById('profileBtn');
-  const profileDropdown = document.getElementById('profileDropdown');
-  
-  profileBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    profileDropdown.style.display = profileDropdown.style.display === 'block' ? 'none' : 'block';
-  });
-  
-  document.addEventListener('click', () => {
-    profileDropdown.style.display = 'none';
-  });
+  const profileDropdown = document.getElementById('profileDropdown'); // logged-out dropdown (exists in your HTML)
+  // We'll create a logged-in dropdown dynamically so you don't have to edit HTML.
+  const landingAvatar = document.getElementById('landingAvatar');
 
-  // ✅ Modal elements
-  const signupOpen = document.getElementById('signupOpen');
+  // Modals & forms
   const signupModal = document.getElementById('signupModal');
+  const signupForm = document.getElementById('signupStep1Form');
   const closeSignup = document.getElementById('closeSignup');
   const cancelSignup = document.getElementById('cancelSignup');
-  const signupForm = document.getElementById('signupStep1Form');
+
+  const loginModal = document.getElementById('loginModal');
+  const loginForm = document.getElementById('loginForm');
+  const closeLogin = document.getElementById('closeLogin');
+  const cancelLogin = document.getElementById('cancelLogin');
+
+  const resetModal = document.getElementById('resetPasswordModal');
+  const resetForm = document.getElementById('resetForm');
+  const closeReset = document.getElementById('closeReset');
+  const cancelReset = document.getElementById('cancelReset');
+
+  // Buttons
+  const signupOpen = document.getElementById('signupOpen');
   const loginLinkBtn = document.getElementById('loginLinkBtn');
+  const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
 
-  // ✅ Open signup modal
-  signupOpen.addEventListener('click', () => {
-    signupModal.style.display = 'flex';
-    profileDropdown.style.display = 'none';
-  });
+  // Utility: simple show/hide helpers
+  const showElem = (el) => { if (el) el.style.display = 'flex'; }
+  const hideElem = (el) => { if (el) el.style.display = 'none'; }
 
-  // ✅ Close modal events
-  closeSignup.addEventListener('click', () => {
-    signupModal.style.display = 'none';
-  });
+  // -------------------------
+  // Create logged-in dropdown (dynamically)
+  // -------------------------
+  function ensureLoggedInDropdown() {
+    let existing = document.getElementById('profileDropdownLoggedIn');
+    if (existing) return existing;
 
-  cancelSignup.addEventListener('click', () => {
-    signupModal.style.display = 'none';
-  });
+    const dropdown = document.createElement('div');
+    dropdown.id = 'profileDropdownLoggedIn';
+    dropdown.className = 'dropdown';
+    dropdown.setAttribute('role', 'menu');
+    dropdown.style.display = 'none';
 
-  // ✅ Signup form submit
-  signupForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    // Profile link
+    const profileLink = document.createElement('a');
+    profileLink.href = '/profile';
+    profileLink.textContent = 'Profile';
+    dropdown.appendChild(profileLink);
 
-    const username = document.getElementById('step1Username').value.trim();
-    const email = document.getElementById('step1Email').value.trim();
-    const password = document.getElementById('step1Password').value;
+    // Logout button
+    const logoutBtn = document.createElement('button');
+    logoutBtn.id = 'logoutBtn';
+    logoutBtn.textContent = 'Logout';
+    dropdown.appendChild(logoutBtn);
 
-    if (!username || !email || !password) {
-      alert('Please fill in all fields');
-      return;
+    // External link (same as logged-out)
+    const cd = document.createElement('a');
+    cd.href = 'https://www.chiefdelphi.com';
+    cd.target = '_blank';
+    cd.rel = 'noopener';
+    cd.innerHTML = 'Chief Delphi <span class="material-symbols-outlined" style="margin-left:auto;font-size:18px">open_in_new</span>';
+    dropdown.appendChild(cd);
+
+    // attach after the existing logged-out dropdown (or profile container)
+    if (profileDropdown && profileDropdown.parentNode) {
+      profileDropdown.parentNode.appendChild(dropdown);
+    } else {
+      document.body.appendChild(dropdown);
     }
 
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { username },
-          emailRedirectTo: 'https://elixtion.github.io/confirm'
+    // Add logout handler
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        alert('Logged out.');
+        updateUIForAuthState();
+      } catch (err) {
+        console.error('Logout error', err);
+        alert('Logout error: ' + (err.message || err));
+      }
+    });
+
+    return dropdown;
+  }
+
+  // -------------------------
+  // Dropdown behavior (avatar button)
+  // -------------------------
+  profileBtn.addEventListener('click', async (ev) => {
+    ev.stopPropagation();
+    const sessionResp = await supabase.auth.getSession();
+    const session = sessionResp?.data?.session ?? null;
+    const loggedInDropdown = ensureLoggedInDropdown();
+    if (session) {
+      // toggle logged-in dropdown
+      loggedInDropdown.style.display = loggedInDropdown.style.display === 'block' ? 'none' : 'block';
+      if (profileDropdown) profileDropdown.style.display = 'none';
+    } else {
+      // toggle logged-out dropdown
+      if (profileDropdown) profileDropdown.style.display = profileDropdown.style.display === 'block' ? 'none' : 'block';
+      if (loggedInDropdown) loggedInDropdown.style.display = 'none';
+    }
+  });
+
+  // Clicking outside closes any dropdown
+  document.addEventListener('click', () => {
+    if (profileDropdown) profileDropdown.style.display = 'none';
+    const li = document.getElementById('profileDropdownLoggedIn');
+    if (li) li.style.display = 'none';
+  });
+
+  // -------------------------
+  // Modal open/close helpers
+  // -------------------------
+  // Sign up
+  if (signupOpen) signupOpen.addEventListener('click', () => { showElem(signupModal); if (profileDropdown) profileDropdown.style.display = 'none'; });
+  if (closeSignup) closeSignup.addEventListener('click', () => hideElem(signupModal));
+  if (cancelSignup) cancelSignup.addEventListener('click', () => hideElem(signupModal));
+
+  // Login
+  if (loginLinkBtn) loginLinkBtn.addEventListener('click', () => { showElem(loginModal); if (profileDropdown) profileDropdown.style.display = 'none'; });
+  if (closeLogin) closeLogin.addEventListener('click', () => hideElem(loginModal));
+  if (cancelLogin) cancelLogin.addEventListener('click', () => hideElem(loginModal));
+
+  // Reset
+  if (forgotPasswordBtn) forgotPasswordBtn.addEventListener('click', () => { showElem(resetModal); hideElem(loginModal); });
+  if (closeReset) closeReset.addEventListener('click', () => hideElem(resetModal));
+  if (cancelReset) cancelReset.addEventListener('click', () => hideElem(resetModal));
+  // ESC key closes modals
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      hideElem(signupModal);
+      hideElem(loginModal);
+      hideElem(resetModal);
+    }
+  });
+
+  // -------------------------
+  // Signup handler (email confirmation enabled)
+  // -------------------------
+  if (signupForm) {
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = (document.getElementById('step1Username') || {}).value?.trim();
+      const email = (document.getElementById('step1Email') || {}).value?.trim();
+      const password = (document.getElementById('step1Password') || {}).value;
+
+      if (!username || !email || !password) {
+        alert('Please fill in all sign-up fields.');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { username },
+            // Use your confirmation redirect URL (make sure it's added to your Supabase project's Redirect URLs)
+            emailRedirectTo: 'https://elixtion.github.io/confirm'
+          }
+        });
+
+        if (error) throw error;
+
+        // If supabase returns data.user but email confirmation is required
+        alert('Account created! Please check your email for the confirmation link before logging in.');
+        hideElem(signupModal);
+        signupForm.reset();
+      } catch (err) {
+        console.error('SignUp error', err);
+        alert('Sign-up error: ' + (err.message || err));
+      }
+    });
+  }
+
+  // -------------------------
+  // Login handler
+  // -------------------------
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = (document.getElementById('loginEmail') || {}).value?.trim();
+      const password = (document.getElementById('loginPassword') || {}).value;
+
+      if (!email || !password) {
+        alert('Please fill in both email and password.');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+
+        const session = data?.session ?? null;
+        const user = data?.user ?? null;
+
+        // If Supabase requires email confirmation and the user wasn't confirmed, handle gracefully:
+        // Many Supabase setups do not create a session until email confirmed — but if a session was returned, check for email confirmed property.
+        const confirmedAt = user?.email_confirmed_at || user?.confirmed_at || null;
+        if (user && !confirmedAt) {
+          // if the account isn't confirmed, sign them out and ask them to confirm
+          await supabase.auth.signOut();
+          alert('Please confirm your email address (check your inbox) before logging in.');
+          return;
         }
-      });
 
-      if (error) throw error;
+        alert('Login successful!');
+        hideElem(loginModal);
+        loginForm.reset();
+        updateUIForAuthState();
+      } catch (err) {
+        console.error('Login error', err);
+        // supabase may return an error message detailing email not confirmed
+        alert('Login error: ' + (err.message || err));
+      }
+    });
+  }
 
-      alert('Account created! Please check your email to confirm your account.');
-      signupModal.style.display = 'none';
-      window.location.href = 'login.html';
+  // -------------------------
+  // Forgot password (reset) handler
+  // -------------------------
+  if (resetForm) {
+    resetForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = (document.getElementById('resetEmail') || {}).value?.trim();
+      if (!email) {
+        alert('Please provide the email for your account.');
+        return;
+      }
+
+      try {
+        // Supabase v2 client method for sending a password reset email:
+        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + '/reset-password'
+        });
+        if (error) throw error;
+
+        alert('If that email exists you will receive a password reset link shortly. Check your inbox.');
+        hideElem(resetModal);
+        resetForm.reset();
+      } catch (err) {
+        console.error('Reset error', err);
+        alert('Error sending reset link: ' + (err.message || err));
+      }
+    });
+  }
+
+  // -------------------------
+  // Keep UI in sync with auth state
+  // -------------------------
+  async function updateUIForAuthState() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const loggedInDropdown = ensureLoggedInDropdown();
+      if (session && session.user) {
+        // show logged-in dropdown option (but default hidden until avatar clicked)
+        hideElem(profileDropdown);
+        hideElem(document.getElementById('profileDropdownLoggedIn')); // to be safe, hide before update
+        // update avatar (if user's metadata contains an avatar url)
+        const user = session.user;
+        const avatarUrl = (user?.user_metadata && user.user_metadata.avatar_url) || null;
+        if (avatarUrl && landingAvatar) landingAvatar.src = avatarUrl;
+        // Optionally show name on avatar title
+        if (landingAvatar) landingAvatar.title = user?.email || (user?.user_metadata?.username || 'Profile');
+
+        // ensure logged-in dropdown exists (created earlier)
+        // we keep it hidden until avatar clicked — so nothing else to show here
+      } else {
+        // not logged in
+        if (landingAvatar) {
+          landingAvatar.src = 'https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png';
+          landingAvatar.title = 'Not signed in';
+        }
+        hideElem(document.getElementById('profileDropdownLoggedIn'));
+        // ensure logged-out dropdown is hidden by default
+        if (profileDropdown) profileDropdown.style.display = 'none';
+      }
     } catch (err) {
-      console.error('Signup error:', err);
-      alert('Unexpected error: ' + (err.message || err));
+      console.error('Error updating UI for auth state', err);
     }
-  });
+  }
 
-  // ✅ Redirect to login page
-  loginLinkBtn.addEventListener('click', () => {
-    window.location.href = 'login.html';
+  // Run once on load
+  updateUIForAuthState();
+
+  // Listen for auth state changes and keep UI in sync
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log('Auth event:', event);
+    updateUIForAuthState();
   });
 });
 </script>
-
-
 </body></html>
