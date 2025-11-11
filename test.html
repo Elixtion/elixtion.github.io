@@ -367,7 +367,7 @@
     </header>
 
     <form id="signupStep1Form" style="display:flex; flex-direction:column; gap:12px;">
-      <label style="font-weight:600">Username</label>
+      <label style="font-weight:600">Display Name (Permanent)</label>
       <input id="step1Username" type="text" required />
 
       <label style="font-weight:600">Email</label>
@@ -384,7 +384,7 @@
       <div id="signupError" class="error-display" style="display:none;"></div>
       </form>
     
-    <div id="signupSuccessContent" style="display:none; text-align:center; padding:20px;">
+    <div id="signupSuccessContent" style="display:none; text-align:center; padding:20px; flex-direction: column;">
       <span class="material-symbols-outlined" style="font-size: 64px; color: var(--primary-500); margin-bottom: 20px;">
         check_circle
       </span>
@@ -392,7 +392,7 @@
         Account Created!
       </h2>
       <p style="color: var(--surface-400); margin-bottom: 30px; font-size: 16px;">
-        **Please check your email** for the confirmation link to activate your account and log in.
+        <b>Please check your email</b> for the confirmation link to activate your account and log in.
       </p>
       <button type="button" class="cta" onclick="document.getElementById('signupModal').style.display='none';" style="width: 100%;">
         Got It
@@ -648,9 +648,9 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
     // Only check username manually
     const { data: usernameCheck, error: usernameError } = await supabase
-      .from('display_name')
+      .from('profiles')
       .select('id')
-      .eq('username', username)
+      .eq('display_name', username)
       .limit(1);
 
     if (usernameError) throw usernameError;
