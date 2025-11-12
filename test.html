@@ -671,6 +671,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (error) throw error;
 
+    // Create profile entry for the new user
+    if (data.user) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: data.user.id,
+          display_name: username // Set display_name to username initially
+        });
+      
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        // Note: User is created but profile failed - you may want to handle this
+      }
+    }
+
     hideElem(signupForm);
     showElem(signupSuccessContent);
     signupForm.reset();
