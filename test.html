@@ -650,7 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const { data: usernameCheck, error: usernameError } = await supabase
       .from('display_name')
       .select('id')
-      .eq('username', username)
+      .eq('profiles', display_name)
       .limit(1);
 
     if (usernameError) throw usernameError;
@@ -663,8 +663,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+
       options: {
-        data: { username },
+        data: {display_name: username},
         emailRedirectTo: 'https://elixtion.github.io/confirm'
       }
     });
