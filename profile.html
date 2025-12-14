@@ -265,6 +265,18 @@ Log In
 <h2 class="text-2xl font-bold tracking-tight text-white">Profile</h2>
 <p class="mt-1 text-[var(--surface-400)]">Manage your account details.</p>
 <div class="mt-8 space-y-10">
+<div class="flex items-center justify-between gap-4">
+<div class="flex-shrink-0" style="width: calc(50% - 0.75rem);">
+<h3 class="text-lg font-semibold text-[var(--surface-200)] mb-4">Account Status</h3>
+<div class="flex items-center justify-between rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] p-4">
+<div class="flex items-center gap-4">
+<span class="font-medium text-[var(--surface-400)]">Profile Complete</span>
+</div>
+<span class="material-symbols-outlined text-2xl text-green-500"> check_circle </span>
+</div>
+</div>
+<button class="flex h-10 cursor-pointer items-center justify-center rounded-md bg-[var(--primary-500)] px-6 text-sm font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40 self-end mb-0">Save Changes</button>
+</div>
 <div class="space-y-6">
 <h3 class="text-lg font-semibold text-[var(--surface-200)]">Personal Information</h3>
 <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -313,24 +325,6 @@ Log In
 <textarea class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="bio" rows="4">Passionate about turning data into actionable insights.</textarea>
 </div>
 </div>
-<div class="space-y-6">
-<h3 class="text-lg font-semibold text-[var(--surface-200)]">Account Status</h3>
-<div class="flex items-center justify-between rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] p-4">
-<div class="flex items-center gap-4">
-<span class="font-medium text-[var(--surface-400)]">Profile Complete</span>
-</div>
-<span class="material-symbols-outlined text-2xl text-green-500"> check_circle </span>
-</div>
-<div class="flex items-center justify-between rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] p-4">
-<div class="flex items-center gap-4">
-<span class="font-medium text-[var(--surface-400)]">Incomplete Section</span>
-</div>
-<span class="material-symbols-outlined text-2xl text-red-500"> cancel </span>
-</div>
-</div>
-</div>
-<div class="mt-10 flex justify-end">
-<button class="flex h-10 cursor-pointer items-center justify-center rounded-md bg-[var(--primary-500)] px-6 text-sm font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40">Save Changes</button>
 </div>
 </div>
 </div>
