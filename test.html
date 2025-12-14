@@ -634,7 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (signupForm) {
     signupForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      clearError(signupError); // Clear previous errors
+      clearError(signupError);
 
       const username = (document.getElementById('step1Username') || {}).value?.trim();
       const email = (document.getElementById('step1Email') || {}).value?.trim();
@@ -646,54 +646,28 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-    // Only check username manually
-    const { data: usernameCheck, error: usernameError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('display_name', username)
-      .limit(1);
-
-    if (usernameError) throw usernameError;
-    if (usernameCheck.length > 0) {
-      showError(signupError, 'Username already taken.');
-      return;
-    }
-
-    // Sign up user — duplicate emails will throw automatically
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { username },
-        emailRedirectTo: 'https://elixtion.github.io/confirm'
-      }
-    });
-
-    if (error) throw error;
-
-    // Create profile entry for the new user
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          display_name: username // Set display_name to username initially
+        // Sign up user — duplicate emails will throw automatically
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { username },
+            emailRedirectTo: 'https://elixtion.github.io/confirm'
+          }
         });
-      
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-        // Note: User is created but profile failed - you may want to handle this
-      }
-    }
 
-    hideElem(signupForm);
-    showElem(signupSuccessContent);
-    signupForm.reset();
-  } catch (err) {
-    console.error('SignUp error', err);
-    // Supabase auth.signUp error message already covers duplicate email
-    showError(signupError, 'Sign-up error: ' + (err.message || err));
-  }
+        if (error) throw error;
+        
+        // **(The profile is now created securely by your database trigger)**
+
+        hideElem(signupForm);
+        showElem(signupSuccessContent);
+        signupForm.reset();
+      } catch (err) {
+        console.error('SignUp error', err);
+        // Supabase auth.signUp error message already covers duplicate email
+        showError(signupError, 'Sign-up error: ' + (err.message || err));
+      }
     });
   }
 
