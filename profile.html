@@ -219,8 +219,10 @@
     <img id="landingAvatar" class="profile-avatar" src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png" alt="Profile" />
   </button>
   <div id="profileDropdown" class="dropdown" style="display: none;">
+    <a href="https://elixtion.github.io/test">Home</a>
     <button id="signupOpen">Sign Up</button>
-    <button id="loginLinkBtn">Login</button>
+    <button id="loginLinkBtn">Log In</button>
+    <a href="https://www.chiefdelphi.com" target="_blank" rel="noopener">Chief Delphi <span class="material-symbols-outlined" style="margin-left:auto;font-size:18px">open_in_new</span></a>
   </div>
 </div>
 </div>
@@ -505,12 +507,6 @@ document.addEventListener('DOMContentLoaded', () => {
     homeLink.href = 'https://elixtion.github.io/test';
     homeLink.textContent = 'Home';
     dropdown.appendChild(homeLink);
-    
-    // Profile link
-    const profileLink = document.createElement('a');
-    profileLink.href = 'https://elixtion.github.io/profile';
-    profileLink.textContent = 'Profile';
-    dropdown.appendChild(profileLink);
 
     // Logout button
     const logoutBtn = document.createElement('button');
