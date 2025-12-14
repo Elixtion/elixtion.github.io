@@ -184,6 +184,13 @@
       margin-top: 10px;
       text-align: center;
     }
+    /* Placeholder-style option colors */
+    select option:first-child {
+      color: var(--surface-500);
+    }
+    select option:not(:first-child) {
+      color: var(--surface-900);
+    }
   </style>
 </head>
 <body class="bg-[var(--surface-0)] text-[var(--surface-900)]">
@@ -275,7 +282,8 @@ Log In
 <span class="material-symbols-outlined text-2xl text-green-500"> check_circle </span>
 </div>
 </div>
-<button class="flex h-10 cursor-pointer items-center justify-center rounded-md bg-[var(--primary-500)] px-6 text-sm font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40 self-end mb-0">Save Changes</button>
+<button id="save-profile-btn">Save Changes</button>
+
 </div>
 <div class="space-y-6">
 <h3 class="text-lg font-semibold text-[var(--surface-200)]">Personal Information</h3>
@@ -291,7 +299,7 @@ Log In
 </div>
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="display-name">Display Name</label>
-<input class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="display-name" type="text" value="John Doe"/>
+<input class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="display-name" type="text" placeholder="Enter a name everyone can see"/>
 </div>
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="email">Email</label>
@@ -309,20 +317,33 @@ Log In
 <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="team">Team / Organization</label>
-<input class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="team" type="text" value="Data Insights Team"/>
+<input class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="team" type="number" value="" placeholder="Enter team number"/>
 </div>
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="student-lead">Student Lead</label>
-<input class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="student-lead" type="text" value="Not Applicable"/>
+<select class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="student-lead">
+<option value="">Select</option>
+<option value="true">True</option>
+<option value="false" selected>False</option>
+</select>
 </div>
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="role">Role</label>
-<input class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="role" type="text" value="Data Analyst"/>
+<select class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="role">
+<option value="">Set Role</option>
+<option value="student">Student</option>
+<option value="mentor">Mentor</option>
+<option value="spectator">Spectator</option>
+<option value="other">Other</option>
+</select>
 </div>
 </div>
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="bio">Bio</label>
-<textarea class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="bio" rows="4">Passionate about turning data into actionable insights.</textarea>
+<textarea class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="bio" rows="4" maxlength="250" placeholder="Tell us about yourself (max 250 characters)"></textarea>
+<div class="mt-1 text-right text-xs text-[var(--surface-500)]">
+<span id="bioCount">0</span>/250 characters
+</div>
 </div>
 </div>
 </div>
@@ -430,6 +451,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const SUPABASE_URL = "https://kstzwynylwcvqmkzkjvr.supabase.co"
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0.JvilpVaPUCEj0p9Ty4EHdtruq5yico79HWn8Uq6Lqjo'
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Profile form fields
+const displayNameInput = document.getElementById('display-name');
+const emailInput = document.getElementById('email');
+const usernameInput = document.getElementById('username');
+const teamInput = document.getElementById('team');
+const roleSelectEl = document.getElementById('role');
+const studentLeadSelectEl = document.getElementById('student-lead');
+const bioInput = document.getElementById('bio');
+const saveProfileBtn = document.getElementById('save-profile-btn'); // ✅ fixed
+
 
   // -------------------------
   // DOM references
@@ -763,6 +795,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Optionally show name on avatar title
         if (landingAvatar) landingAvatar.title = user?.email || (user?.user_metadata?.username || 'Profile');
 
+        await loadUserProfile(session.user);
+
         // ensure logged-in dropdown exists (created earlier)
         // we keep it hidden until avatar clicked — so nothing else to show here
       } else {
@@ -784,6 +818,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  async function loadUserProfile(user) {
+  if (!user) return;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  if (error) {
+    console.error('Failed to load profile:', error);
+    return;
+  }
+
+  // Display-only fields
+  if (usernameInput) usernameInput.value = user.user_metadata?.username || '';
+  if (emailInput) emailInput.value = user.email || '';
+
+  // Editable fields — ONLY set if not null
+  if (data.display_name !== null && displayNameInput)
+    displayNameInput.value = data.display_name;
+
+  if (data.team_id !== null && teamInput)
+    teamInput.value = data.team_id;
+
+  if (data.bio !== null && bioInput) {
+    bioInput.value = data.bio;
+    bioCount.textContent = data.bio.length;
+  }
+
+  // Dropdown defaults
+  if (roleSelectEl)
+    roleSelectEl.value = data.role || '';
+
+  if (studentLeadSelectEl)
+    studentLeadSelectEl.value =
+      data.is_student_lead === true ? 'true' : 'false';
+
+  // Update dropdown colors
+  updateSelectColor(roleSelectEl);
+  updateSelectColor(studentLeadSelectEl);
+}
+
+
   // Run once on load
   updateUIForAuthState();
 
@@ -792,6 +870,83 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Auth event:', event);
     updateUIForAuthState();
   });
+
+  // -------------------------
+  // Bio character counter
+  // -------------------------
+  const bioTextarea = document.getElementById('bio');
+  const bioCount = document.getElementById('bioCount');
+  
+  if (bioTextarea && bioCount) {
+    // Update counter on input
+    bioTextarea.addEventListener('input', () => {
+      bioCount.textContent = bioTextarea.value.length;
+    });
+    
+    // Set initial count
+    bioCount.textContent = bioTextarea.value.length;
+  }
+
+  // -------------------------
+  // Select dropdown placeholder styling
+  // -------------------------
+  const roleSelect = document.getElementById('role');
+  const studentLeadSelect = document.getElementById('student-lead');
+  
+  const updateSelectColor = (select) => {
+    if (select) {
+      if (select.value === '') {
+        select.style.color = 'var(--surface-500)';
+      } else {
+        select.style.color = 'var(--surface-900)';
+      }
+    }
+  };
+  
+  if (roleSelect) {
+    updateSelectColor(roleSelect);
+    roleSelect.addEventListener('change', () => updateSelectColor(roleSelect));
+  }
+  
+  if (studentLeadSelect) {
+    updateSelectColor(studentLeadSelect);
+    studentLeadSelect.addEventListener('change', () => updateSelectColor(studentLeadSelect));
+  }
 });
+
+const saveBtn = document.querySelector('button.bg-[var(--primary-500)]');
+
+if (saveBtn) {
+  saveBtn.addEventListener('click', async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const updates = {
+      display_name: displayNameInput.value || null,
+      bio: bioInput.value || null,
+      role: roleSelectEl.value || '',
+      is_student_lead: studentLeadSelectEl.value === 'true',
+      updated_at: new Date().toISOString()
+    };
+
+    // Optional team input
+    if (teamInput.value) {
+      updates.team_id = teamInput.value;
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', user.id);
+
+    if (error) {
+      console.error('Profile update failed:', error);
+      alert('Failed to save profile changes.');
+    } else {
+      alert('Profile updated successfully.');
+    }
+  });
+}
+
 </script>
 </body></html>
