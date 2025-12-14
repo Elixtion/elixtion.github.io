@@ -521,7 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Profile link
     const profileLink = document.createElement('a');
-    profileLink.href = '/profile';
+    profileLink.href = 'https://elixtion.github.io/profile';
     profileLink.textContent = 'Profile';
     dropdown.appendChild(profileLink);
 
@@ -705,7 +705,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         hideElem(loginModal);
         loginForm.reset();
-        updateUIForAuthState();
+        
+        // Check if user came from profile page, otherwise stay on test page
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('from') === 'profile') {
+          window.location.href = 'https://elixtion.github.io/profile';
+        } else {
+          updateUIForAuthState();
+        }
+
       } catch (err) {
         console.error('Login error', err);
         // supabase may return an error message detailing email not confirmed

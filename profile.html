@@ -228,7 +228,7 @@
 <main class="flex-1 overflow-y-auto p-10">
 <div class="mx-auto max-w-7xl">
 <div class="flex gap-4">
-<aside class="flex-shrink-0">
+<aside id="navSidebar" class="flex-shrink-0">
 <div class="w-48 rounded-xl border border-[var(--surface-100)] bg-[var(--surface-50)] p-4">
 <nav class="flex flex-col gap-2">
 <a class="flex items-center gap-3 rounded-md bg-[var(--primary-500)] px-4 py-3 text-sm font-semibold text-[var(--primary-950)]" href="#">
@@ -248,6 +248,18 @@
 </aside>
 <div class="flex-1">
 <div class="mx-auto max-w-4xl">
+<div id="noUserContent" style="display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 24px;">
+<h2 class="text-3xl font-bold text-white">No user is currently logged in.</h2>
+<div class="flex gap-4">
+<button id="noUserSignupBtn" class="flex h-12 cursor-pointer items-center justify-center rounded-md bg-[var(--primary-500)] px-8 text-base font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40">
+Sign Up
+</button>
+<button id="noUserLoginBtn" class="flex h-12 cursor-pointer items-center justify-center rounded-md bg-[var(--surface-200)] px-8 text-base font-bold text-[var(--surface-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--surface-300)] hover:shadow-2xl">
+Log In
+</button>
+</div>
+</div>
+<div id="profileContent" style="display: flex; flex-direction: column;">
 <h2 class="text-2xl font-bold tracking-tight text-white">Profile</h2>
 <p class="mt-1 text-[var(--surface-400)]">Manage your account details.</p>
 <div class="mt-8 space-y-10">
@@ -317,6 +329,7 @@
 </div>
 <div class="mt-10 flex justify-end">
 <button class="flex h-10 cursor-pointer items-center justify-center rounded-md bg-[var(--primary-500)] px-6 text-sm font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40">Save Changes</button>
+</div>
 </div>
 </div>
 </div>
@@ -452,6 +465,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const signupOpen = document.getElementById('signupOpen');
   const loginLinkBtn = document.getElementById('loginLinkBtn');
   const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
+  const noUserSignupBtn = document.getElementById('noUserSignupBtn');
+  const noUserLoginBtn = document.getElementById('noUserLoginBtn');
 
   // Utility: simple show/hide helpers
   const showElem = (el) => { if (el) el.style.display = 'flex'; }
@@ -485,9 +500,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Note: dropdown.style.display is not set here; it's controlled by JS below
     // and relies on the new CSS definition of .dropdown
 
+    // Home link
+    const homeLink = document.createElement('a');
+    homeLink.href = 'https://elixtion.github.io/test';
+    homeLink.textContent = 'Home';
+    dropdown.appendChild(homeLink);
+    
     // Profile link
     const profileLink = document.createElement('a');
-    profileLink.href = '/profile';
+    profileLink.href = 'https://elixtion.github.io/profile';
     profileLink.textContent = 'Profile';
     dropdown.appendChild(profileLink);
 
@@ -566,6 +587,12 @@ document.addEventListener('DOMContentLoaded', () => {
     showElem(signupForm); // Ensure form is visible
     hideElem(signupSuccessContent); // Ensure success is hidden
   });
+  if (noUserSignupBtn) noUserSignupBtn.addEventListener('click', () => { 
+    showElem(signupModal); 
+    clearError(signupError); // Clear error on open
+    showElem(signupForm); // Ensure form is visible
+    hideElem(signupSuccessContent); // Ensure success is hidden
+  });
   if (closeSignup) closeSignup.addEventListener('click', () => hideElem(signupModal));
   if (cancelSignup) cancelSignup.addEventListener('click', () => hideElem(signupModal));
 
@@ -573,6 +600,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (loginLinkBtn) loginLinkBtn.addEventListener('click', () => { 
     showElem(loginModal); 
     if (profileDropdown) profileDropdown.style.display = 'none'; 
+    clearError(loginError); // Clear error on open
+  });
+  if (noUserLoginBtn) noUserLoginBtn.addEventListener('click', () => { 
+    showElem(loginModal); 
     clearError(loginError); // Clear error on open
   });
   if (closeLogin) closeLogin.addEventListener('click', () => hideElem(loginModal));
@@ -671,7 +702,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         hideElem(loginModal);
         loginForm.reset();
-        updateUIForAuthState();
+        
+        // Check if we're on the test page and redirect to profile
+        if (window.location.pathname.includes('/test')) {
+          window.location.href = 'https://elixtion.github.io/profile';
+        } else {
+          updateUIForAuthState();
+        }
       } catch (err) {
         console.error('Login error', err);
         // supabase may return an error message detailing email not confirmed
@@ -716,7 +753,16 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const loggedInDropdown = ensureLoggedInDropdown();
+      const profileContent = document.getElementById('profileContent');
+      const noUserContent = document.getElementById('noUserContent');
+      const navSidebar = document.getElementById('navSidebar');
+      
       if (session && session.user) {
+        // User is logged in - show profile content and navigation
+        if (profileContent) profileContent.style.display = 'flex';
+        if (noUserContent) noUserContent.style.display = 'none';
+        if (navSidebar) navSidebar.style.display = 'block';
+        
         // show logged-in dropdown option (but default hidden until avatar clicked)
         hideElem(profileDropdown);
         hideElem(document.getElementById('profileDropdownLoggedIn')); // to be safe, hide before update
@@ -730,7 +776,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // ensure logged-in dropdown exists (created earlier)
         // we keep it hidden until avatar clicked — so nothing else to show here
       } else {
-        // not logged in
+        // not logged in - show no user content, hide navigation
+        if (profileContent) profileContent.style.display = 'none';
+        if (noUserContent) noUserContent.style.display = 'flex';
+        if (navSidebar) navSidebar.style.display = 'none';
+        
         if (landingAvatar) {
           landingAvatar.src = 'https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png';
           landingAvatar.title = 'Not signed in';
