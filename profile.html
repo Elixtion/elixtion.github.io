@@ -279,10 +279,10 @@ Log In
 <div class="flex items-center gap-4">
 <span class="font-medium text-[var(--surface-400)]">Profile Complete</span>
 </div>
-<span class="material-symbols-outlined text-2xl text-green-500"> check_circle </span>
+<span id="profileCompleteIcon" class="material-symbols-outlined text-2xl text-green-500"> check_circle </span>
 </div>
 </div>
-<button class="flex h-10 cursor-pointer items-center justify-center rounded-md bg-[var(--primary-500)] px-6 text-sm font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40 self-end mb-0">Save Changes</button>
+<button id="saveChangesBtn" class="flex h-10 cursor-pointer items-center justify-center rounded-md bg-[var(--primary-500)] px-6 text-sm font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40 self-end mb-0">Save Changes</button>
 
 </div>
 <div class="space-y-6">
@@ -291,7 +291,7 @@ Log In
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="username">Username</label>
 <div class="relative mt-1">
-<input class="w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-100)] px-4 py-2 text-[var(--surface-700)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" disabled="" id="username" type="text" value="johndoe"/>
+<input class="w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-100)] px-4 py-2 text-[var(--surface-700)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" disabled="" id="username" type="text" value=""/>
 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
 <span class="material-symbols-outlined text-xl text-[var(--surface-500)]"> lock </span>
 </div>
@@ -304,7 +304,7 @@ Log In
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="email">Email</label>
 <div class="relative mt-1">
-<input class="w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-100)] px-4 py-2 text-[var(--surface-700)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" disabled="" id="email" type="email" value="john.doe@example.com"/>
+<input class="w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-100)] px-4 py-2 text-[var(--surface-700)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" disabled="" id="email" type="email" value=""/>
 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
 <span class="material-symbols-outlined text-xl text-[var(--surface-500)]"> lock </span>
 </div>
@@ -452,15 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0.JvilpVaPUCEj0p9Ty4EHdtruq5yico79HWn8Uq6Lqjo'
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // Profile form fields
-const displayNameInput = document.getElementById('display-name');
-const emailInput = document.getElementById('email');
-const usernameInput = document.getElementById('username');
-const teamInput = document.getElementById('team');
-const roleSelectEl = document.getElementById('role');
-const studentLeadSelectEl = document.getElementById('student-lead');
-const bioInput = document.getElementById('bio');
-
 
 
   // -------------------------
@@ -495,6 +486,17 @@ const bioInput = document.getElementById('bio');
   const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
   const noUserSignupBtn = document.getElementById('noUserSignupBtn');
   const noUserLoginBtn = document.getElementById('noUserLoginBtn');
+
+  // Profile form fields
+  const usernameInput = document.getElementById('username');
+  const displayNameInput = document.getElementById('display-name');
+  const emailInput = document.getElementById('email');
+  const teamInput = document.getElementById('team');
+  const studentLeadSelectEl = document.getElementById('student-lead');
+  const roleSelectEl = document.getElementById('role');
+  const bioInput = document.getElementById('bio');
+  const saveChangesBtn = document.getElementById('saveChangesBtn');
+  const profileCompleteIcon = document.getElementById('profileCompleteIcon');
 
   // Utility: simple show/hide helpers
   const showElem = (el) => { if (el) el.style.display = 'flex'; }
@@ -840,8 +842,8 @@ const bioInput = document.getElementById('bio');
   if (data.display_name !== null && displayNameInput)
     displayNameInput.value = data.display_name;
 
-  if (data.team_id !== null && teamInput)
-    teamInput.value = data.team_id;
+  if (data.team_number !== null && teamInput)
+    teamInput.value = data.team_number;
 
   if (data.bio !== null && bioInput) {
     bioInput.value = data.bio;
@@ -859,6 +861,17 @@ const bioInput = document.getElementById('bio');
   // Update dropdown colors
   updateSelectColor(roleSelectEl);
   updateSelectColor(studentLeadSelectEl);
+
+  // Update Profile Complete status icon
+  if (profileCompleteIcon) {
+    if (data.profile_completed === true) {
+      profileCompleteIcon.textContent = 'check_circle';
+      profileCompleteIcon.className = 'material-symbols-outlined text-2xl text-green-500';
+    } else {
+      profileCompleteIcon.textContent = 'cancel';
+      profileCompleteIcon.className = 'material-symbols-outlined text-2xl text-red-500';
+    }
+  }
 }
 
 
@@ -912,41 +925,64 @@ const bioInput = document.getElementById('bio');
     updateSelectColor(studentLeadSelect);
     studentLeadSelect.addEventListener('change', () => updateSelectColor(studentLeadSelect));
   }
+
+  // -------------------------
+  // Save Changes Handler
+  // -------------------------
+  if (saveChangesBtn) {
+    saveChangesBtn.addEventListener('click', async () => {
+      try {
+        // Get current user
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session || !session.user) {
+          alert('You must be logged in to save changes.');
+          return;
+        }
+
+        // Disable button during save
+        saveChangesBtn.disabled = true;
+        saveChangesBtn.textContent = 'Saving...';
+
+        // Prepare update data
+        const updates = {
+          id: session.user.id,
+          display_name: displayNameInput?.value?.trim() || null,
+          team_number: teamInput?.value ? parseInt(teamInput.value) : null,
+          role: roleSelectEl?.value || null,
+          is_student_lead: studentLeadSelectEl?.value === 'true' ? true : 
+                           studentLeadSelectEl?.value === 'false' ? false : null,
+          bio: bioInput?.value?.trim() || null,
+          updated_at: new Date().toISOString()
+        };
+
+        // Update profile in database
+        const { error } = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', session.user.id);
+
+        if (error) throw error;
+
+        // Show success message
+        saveChangesBtn.textContent = 'Saved!';
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+          saveChangesBtn.disabled = false;
+          saveChangesBtn.textContent = 'Save Changes';
+        }, 2000);
+
+      } catch (err) {
+        console.error('Error saving profile:', err);
+        alert('Failed to save changes: ' + (err.message || err));
+        
+        // Re-enable button
+        saveChangesBtn.disabled = false;
+        saveChangesBtn.textContent = 'Save Changes';
+      }
+    });
+  }
 });
-
-
-
-if (saveBtn) {
-  saveBtn.addEventListener('click', async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const updates = {
-      display_name: displayNameInput.value || null,
-      bio: bioInput.value || null,
-      role: roleSelectEl.value || '',
-      is_student_lead: studentLeadSelectEl.value === 'true',
-      updated_at: new Date().toISOString()
-    };
-
-    // Optional team input
-    if (teamInput.value) {
-      updates.team_id = teamInput.value;
-    }
-
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id);
-
-    if (error) {
-      console.error('Profile update failed:', error);
-      alert('Failed to save profile changes.');
-    } else {
-      alert('Profile updated successfully.');
-    }
-  });
-}
 
 </script>
 </body></html>
