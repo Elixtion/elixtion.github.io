@@ -60,70 +60,238 @@
     .group:hover .group-hover\:block {
         display: block;
     }
+    
+    /* Profile dropdown styles */
+    .profile-container {
+      position: relative;
+    }
+    .profile-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+    .profile-avatar {
+      height: 40px;
+      width: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      transition: transform 0.3s;
+    }
+    .profile-avatar:hover {
+      transform: scale(1.1);
+    }
+    .dropdown {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      background: var(--surface-50);
+      border: 1px solid var(--surface-100);
+      border-radius: 8px;
+      min-width: 180px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      overflow: hidden;
+    }
+    .dropdown button,
+    .dropdown a {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 10px 14px;
+      background: none;
+      border: none;
+      color: var(--surface-950);
+      text-decoration: none;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .dropdown button:hover,
+    .dropdown a:hover {
+      background: var(--surface-100);
+    }
+    
+    /* Modal styles */
+    .modal-centered {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .card {
+      position: relative;
+      background: var(--surface-50);
+      border: 1px solid var(--surface-100);
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 450px;
+      width: 90%;
+    }
+    .bg-gradient-dark {
+      background: linear-gradient(to bottom right, var(--surface-50), var(--surface-0));
+    }
+    .text-white {
+      color: var(--surface-950);
+    }
+    .modal-centered input {
+      width: 100%;
+      padding: 12px;
+      background: var(--surface-0);
+      border: 1px solid var(--surface-100);
+      border-radius: 8px;
+      color: var(--surface-950);
+      font-size: 14px;
+    }
+    .modal-centered input:focus {
+      outline: none;
+      border-color: var(--primary-500);
+      box-shadow: 0 0 0 2px rgba(153, 229, 80, 0.2);
+    }
+    .cta {
+      background: var(--primary-500);
+      color: var(--primary-950);
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .cta:hover {
+      background: var(--primary-400);
+      transform: translateY(-2px);
+    }
+    .small-muted {
+      font-size: 12px;
+      color: var(--surface-400);
+      text-align: center;
+      margin-top: 8px;
+    }
+    /* Error Style */
+    .error-display {
+      background: rgba(220, 38, 38, 0.2);
+      border: 1px solid rgba(220, 38, 38, 0.7);
+      color: rgba(252, 165, 165, 1);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: center;
+    }
+    /* Placeholder-style option colors */
+    select option:first-child {
+      color: var(--surface-500);
+    }
+    select option:not(:first-child) {
+      color: var(--surface-900);
+    }
   </style>
 </head>
 <body class="bg-[var(--surface-0)] text-[var(--surface-900)]">
 <div class="relative flex size-full min-h-screen flex-col" style='font-family: Inter, "Noto Sans", sans-serif;'>
-<div class="flex h-full grow flex-row">
-<aside class="flex w-64 flex-shrink-0 flex-col border-r border-[var(--surface-100)] bg-[var(--surface-50)]">
-<div class="flex h-16 flex-shrink-0 items-center justify-between border-b border-[var(--surface-100)] px-6">
-<a class="flex items-center gap-3 text-[var(--surface-950)]" href="#">
-<svg class="h-8 w-8 text-[var(--primary-500)]" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-<path d="M13.8261 30.5736C16.7203 29.8826 20.2244 29.4783 24 29.4783C27.7756 29.4783 31.2797 29.8826 34.1739 30.5736C36.9144 31.2278 39.9967 32.7669 41.3563 33.8352L24.8486 7.36089C24.4571 6.73303 23.5429 6.73303 23.1514 7.36089L6.64374 33.8352C8.00331 32.7669 11.0856 31.2278 13.8261 30.5736Z" fill="currentColor"></path>
-<path clip-rule="evenodd" d="M39.998 35.764C39.9944 35.7463 39.9875 35.7155 39.9748 35.6706C39.9436 35.5601 39.8949 35.4259 39.8346 35.2825C39.8168 35.2403 39.7989 35.1993 39.7813 35.1602C38.5103 34.2887 35.9788 33.0607 33.7095 32.5189C30.9875 31.8691 27.6413 31.4783 24 31.4783C20.3587 31.4783 17.0125 31.8691 14.2905 32.5189C12.0012 33.0654 9.44505 34.3104 8.18538 35.1832C8.17384 35.2075 8.16216 35.233 8.15052 35.2592C8.09919 35.3751 8.05721 35.4886 8.02977 35.589C8.00356 35.6848 8.00039 35.7333 8.00004 35.7388C8.00004 35.739 8 35.7393 8.00004 35.7388C8.00004 35.7641 8.0104 36.0767 8.68485 36.6314C9.34546 37.1746 10.4222 37.7531 11.9291 38.2772C14.9242 39.319 19.1919 40 24 40C28.8081 40 33.0758 39.319 36.0709 38.2772C37.5778 37.7531 38.6545 37.1746 39.3151 36.6314C39.9006 36.1499 39.9857 35.8511 39.998 35.764ZM4.95178 32.7688L21.4543 6.30267C22.6288 4.4191 25.3712 4.41909 26.5457 6.30267L43.0534 32.777C43.0709 32.8052 43.0878 32.8338 43.104 32.8629L41.3563 33.8352C43.104 32.8629 43.1038 32.8626 43.104 32.8629L43.1051 32.865L43.1065 32.8675L43.1101 32.8739L43.1199 32.8918C43.1276 32.906 43.1377 32.9246 43.1497 32.9473C43.1738 32.9925 43.2062 33.0545 43.244 33.1299C43.319 33.2792 43.4196 33.489 43.5217 33.7317C43.6901 34.1321 44 34.9311 44 35.7391C44 37.4427 43.003 38.7775 41.8558 39.7209C40.6947 40.6757 39.1354 41.4464 37.385 42.0552C33.8654 43.2794 29.133 44 24 44C18.867 44 14.1346 43.2794 10.615 42.0552C8.86463 41.4464 7.30529 40.6757 6.14419 39.7209C4.99695 38.7775 3.99999 37.4427 3.99999 35.7391C3.99999 34.8725 4.29264 34.0922 4.49321 33.6393C4.60375 33.3898 4.71348 33.1804 4.79687 33.0311C4.83898 32.9556 4.87547 32.8935 4.9035 32.8471C4.91754 32.8238 4.92954 32.8043 4.93916 32.7889L4.94662 32.777L4.95178 32.7688ZM35.9868 29.004L24 9.77997L12.0131 29.004C12.4661 28.8609 12.9179 28.7342 13.3617 28.6282C16.4281 27.8961 20.0901 27.4783 24 27.4783C27.9099 27.4783 31.5719 27.8961 34.6383 28.6282C35.082 28.7342 35.5339 28.8609 35.9868 29.004Z" fill="currentColor" fill-rule="evenodd"></path>
-</svg>
-<h1 class="text-xl font-bold">Data Insights</h1>
+<div class="flex h-full grow flex-col">
+<header class="sticky top-0 z-20 flex items-center justify-between whitespace-nowrap border-b border-[var(--surface-100)] bg-[var(--surface-0)]/80 px-10 py-4 backdrop-blur-lg">
+<div class="flex items-center gap-10">
+<a class="flex items-center gap-3 text-[var(--surface-950)]" href="https://elixtion.github.io/test">
+<img class="h-12 w-12" src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout Logo">
+<h1 class="text-xl font-bold">CrowdScout</h1>
 </a>
-</div>
-<nav class="flex-1 px-4 py-6">
-<ul class="space-y-2">
-<li>
-<a class="flex items-center gap-3 rounded-md bg-[var(--primary-500)] px-4 py-2 text-sm font-semibold text-[var(--primary-950)]" href="#">
-<span class="material-symbols-outlined text-xl"> person </span>
-<span>Profile</span>
-</a>
-</li>
-<li>
-<a class="flex items-center gap-3 rounded-md px-4 py-2 text-sm font-semibold text-[var(--surface-500)] hover:bg-[var(--surface-100)] hover:text-[var(--surface-950)]" href="#">
-<span class="material-symbols-outlined text-xl"> settings </span>
-<span>Settings</span>
-</a>
-</li>
-<li>
-<a class="flex items-center gap-3 rounded-md px-4 py-2 text-sm font-semibold text-[var(--surface-500)] hover:bg-[var(--surface-100)] hover:text-[var(--surface-950)]" href="#">
-<span class="material-symbols-outlined text-xl"> notifications </span>
-<span>Notifications</span>
-</a>
-</li>
-</ul>
+<nav class="flex items-center gap-2">
+<a class="relative rounded-md px-4 py-2 text-sm font-semibold text-[var(--surface-500)] transition-colors hover:text-[var(--surface-950)]" href="#">Teams</a>
+<a class="relative rounded-md px-4 py-2 text-sm font-semibold text-[var(--surface-500)] transition-colors hover:text-[var(--surface-950)]" href="#">Events</a>
+<a class="relative rounded-md px-4 py-2 text-sm font-semibold text-[var(--surface-500)] transition-colors hover:text-[var(--surface-950)]" href="#">Matches</a>
 </nav>
-<div class="mt-auto p-6">
-<button class="flex w-full items-center justify-center gap-2 rounded-md bg-[var(--surface-100)] py-2 text-sm font-semibold text-[var(--surface-700)] transition-colors hover:bg-[var(--surface-200)] hover:text-[var(--surface-900)]">
-<span class="material-symbols-outlined text-xl"> logout </span>
-<span>Logout</span>
-</button>
 </div>
-</aside>
-<div class="flex flex-1 flex-col">
-<header class="sticky top-0 z-10 flex h-16 flex-shrink-0 items-center justify-end border-b border-[var(--surface-100)] bg-[var(--surface-0)]/80 px-10 backdrop-blur-lg">
-<div class="flex items-center gap-4">
-<button class="flex-shrink-0">
-<img class="h-10 w-10 rounded-full object-cover transition-transform duration-300 hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBiA5_1VQl4STx1MWIZVk5renjUM8AGmrvkEewODWMHn85JDKb5QcEx74lAxPDY9vkQOU_pTePdXyX1Q3Ts0sjweOyD9IAnNCq4wtzQF_b3SkIFHaS57luVhxdPjRrUFfE_vJjnhQrKKvlSpVJc0BH9S7lCc8Q9NCbxAWqztcxM6FC9u_464lKQ-8Y-9xgHc7711WSPljUSGndEQqgIEotedpUDp_qQdUfLAiSNlSP-m8qca28JVsyG-TYqzpahzyiJnOxdQXPy9To"/>
-</button>
+<div class="flex flex-1 items-center justify-end gap-4">
+<label class="relative flex w-full max-w-xs">
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--surface-500)]">
+<span class="material-symbols-outlined text-xl"> search </span>
+</div>
+<input class="h-10 w-full rounded-md border border-transparent bg-[var(--surface-50)] py-2 pl-10 pr-4 text-sm text-[var(--surface-950)] placeholder:text-[var(--surface-500)] transition-colors focus:border-[var(--primary-500)] focus:bg-[var(--surface-0)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" placeholder="Search for a team or event" value=""/>
+</label>
+<a href="https://elixtion.github.io/input" target="_blank" 
+   class="flex h-10 flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md bg-[var(--surface-950)] px-4 text-sm font-semibold text-black transition-colors hover:bg-[var(--surface-800)]">
+  <span>Input Data</span>
+  <span class="material-symbols-outlined text-xl"> open_in_new </span>
+</a>
+
+<div class="profile-container">
+  <button id="profileBtn" class="profile-btn flex-shrink-0" aria-label="Profile">
+    <img id="landingAvatar" class="profile-avatar" src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png" alt="Profile" />
+  </button>
+  <div id="profileDropdown" class="dropdown" style="display: none;">
+    <a href="https://elixtion.github.io/test">Home</a>
+    <button id="signupOpen">Sign Up</button>
+    <button id="loginLinkBtn">Log In</button>
+    <a href="https://www.chiefdelphi.com" target="_blank" rel="noopener">Chief Delphi <span class="material-symbols-outlined" style="margin-left:auto;font-size:18px">open_in_new</span></a>
+  </div>
+</div>
 </div>
 </header>
 <main class="flex-1 overflow-y-auto p-10">
+<div class="mx-auto max-w-7xl">
+<div class="flex gap-4">
+<aside id="navSidebar" class="flex-shrink-0">
+<div class="w-48 rounded-xl border border-[var(--surface-100)] bg-[var(--surface-50)] p-4">
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 rounded-md bg-[var(--primary-500)] px-4 py-3 text-sm font-semibold text-[var(--primary-950)]" href="#">
+<span class="material-symbols-outlined text-xl"> person </span>
+<span>Profile</span>
+</a>
+<a class="flex items-center gap-3 rounded-md px-4 py-3 text-sm font-semibold text-[var(--surface-500)] hover:bg-[var(--surface-100)] hover:text-[var(--surface-950)]" href="#">
+<span class="material-symbols-outlined text-xl"> settings </span>
+<span>Settings</span>
+</a>
+<a class="flex items-center gap-3 rounded-md px-4 py-3 text-sm font-semibold text-[var(--surface-500)] hover:bg-[var(--surface-100)] hover:text-[var(--surface-950)]" href="#">
+<span class="material-symbols-outlined text-xl"> notifications </span>
+<span>Notifications</span>
+</a>
+</nav>
+</div>
+</aside>
+<div class="flex-1">
 <div class="mx-auto max-w-4xl">
+<div id="noUserContent" style="display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 24px;">
+<h2 class="text-3xl font-bold text-white">No user is currently logged in.</h2>
+<div class="flex gap-4">
+<button id="noUserSignupBtn" class="flex h-12 cursor-pointer items-center justify-center rounded-md bg-[var(--primary-500)] px-8 text-base font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40">
+Sign Up
+</button>
+<button id="noUserLoginBtn" class="flex h-12 cursor-pointer items-center justify-center rounded-md bg-[var(--surface-200)] px-8 text-base font-bold text-[var(--surface-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--surface-300)] hover:shadow-2xl">
+Log In
+</button>
+</div>
+</div>
+<div id="profileContent" style="display: flex; flex-direction: column;">
 <h2 class="text-2xl font-bold tracking-tight text-white">Profile</h2>
 <p class="mt-1 text-[var(--surface-400)]">Manage your account details.</p>
 <div class="mt-8 space-y-10">
+<div class="flex items-center justify-between gap-4">
+<div class="flex-shrink-0" style="width: calc(50% - 0.75rem);">
+<h3 class="text-lg font-semibold text-[var(--surface-200)] mb-4">Account Status</h3>
+<div class="flex items-center justify-between rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] p-4">
+<div class="flex items-center gap-4">
+<span class="font-medium text-[var(--surface-400)]">Profile Complete</span>
+</div>
+<span id="profileCompleteIcon" class="material-symbols-outlined text-2xl text-green-500"> check_circle </span>
+</div>
+</div>
+<button id="saveChangesBtn" class="flex h-10 cursor-pointer items-center justify-center rounded-md bg-[var(--primary-500)] px-6 text-sm font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40 self-end mb-0">Save Changes</button>
+
+</div>
 <div class="space-y-6">
 <h3 class="text-lg font-semibold text-[var(--surface-200)]">Personal Information</h3>
 <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="username">Username</label>
 <div class="relative mt-1">
-<input class="w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-100)] px-4 py-2 text-[var(--surface-700)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" disabled="" id="username" type="text" value="johndoe"/>
+<input class="w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-100)] px-4 py-2 text-[var(--surface-700)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" disabled="" id="username" type="text" value=""/>
 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
 <span class="material-symbols-outlined text-xl text-[var(--surface-500)]"> lock </span>
 </div>
@@ -131,12 +299,12 @@
 </div>
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="display-name">Display Name</label>
-<input class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="display-name" type="text" value="John Doe"/>
+<input class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="display-name" type="text" placeholder="Enter a name everyone can see"/>
 </div>
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="email">Email</label>
 <div class="relative mt-1">
-<input class="w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-100)] px-4 py-2 text-[var(--surface-700)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" disabled="" id="email" type="email" value="john.doe@example.com"/>
+<input class="w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-100)] px-4 py-2 text-[var(--surface-700)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" disabled="" id="email" type="email" value=""/>
 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
 <span class="material-symbols-outlined text-xl text-[var(--surface-500)]"> lock </span>
 </div>
@@ -149,44 +317,672 @@
 <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="team">Team / Organization</label>
-<input class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="team" type="text" value="Data Insights Team"/>
+<input class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="team" type="number" value="" placeholder="Enter team number"/>
 </div>
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="student-lead">Student Lead</label>
-<input class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="student-lead" type="text" value="Not Applicable"/>
+<select class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="student-lead">
+<option value="">Select</option>
+<option value="true">True</option>
+<option value="false" selected>False</option>
+</select>
 </div>
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="role">Role</label>
-<input class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="role" type="text" value="Data Analyst"/>
+<select class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="role">
+<option value="">Set Role</option>
+<option value="student">Student</option>
+<option value="mentor">Mentor</option>
+<option value="spectator">Spectator</option>
+<option value="other">Other</option>
+</select>
 </div>
 </div>
 <div>
 <label class="block text-sm font-medium text-[var(--surface-400)]" for="bio">Bio</label>
-<textarea class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="bio" rows="4">Passionate about turning data into actionable insights.</textarea>
-</div>
-</div>
-<div class="space-y-6">
-<h3 class="text-lg font-semibold text-[var(--surface-200)]">Account Status</h3>
-<div class="flex items-center justify-between rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] p-4">
-<div class="flex items-center gap-4">
-<span class="font-medium text-[var(--surface-400)]">Profile Complete</span>
-</div>
-<span class="material-symbols-outlined text-2xl text-green-500"> check_circle </span>
-</div>
-<div class="flex items-center justify-between rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] p-4">
-<div class="flex items-center gap-4">
-<span class="font-medium text-[var(--surface-400)]">Incomplete Section</span>
-</div>
-<span class="material-symbols-outlined text-2xl text-red-500"> cancel </span>
+<textarea class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="bio" rows="4" maxlength="250" placeholder="Tell us about yourself (max 250 characters)"></textarea>
+<div class="mt-1 text-right text-xs text-[var(--surface-500)]">
+<span id="bioCount">0</span>/250 characters
 </div>
 </div>
 </div>
-<div class="mt-10 flex justify-end">
-<button class="flex h-10 cursor-pointer items-center justify-center rounded-md bg-[var(--primary-500)] px-6 text-sm font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40">Save Changes</button>
+</div>
+</div>
+</div>
 </div>
 </div>
 </main>
 </div>
 </div>
+
+<div id="signupModal" class="modal-centered" style="display:none">
+  <div class="card bg-gradient-dark text-white">
+    <button id="closeSignup" style="position:absolute; right:16px; top:16px; background:none; border:none; color:var(--surface-400); cursor:pointer; font-size:24px;"><span class="material-symbols-outlined">close</span></button>
+    <header style="text-align:center; margin-bottom:10px">
+      <h1 style="font-size:28px; margin:0;">Sign Up</h1>
+    </header>
+
+    <form id="signupStep1Form" style="display:flex; flex-direction:column; gap:12px;">
+      <label style="font-weight:600">Display Name (Permanent)</label>
+      <input id="step1Username" type="text" required />
+
+      <label style="font-weight:600">Email</label>
+      <input id="step1Email" type="email" required />
+
+      <label style="font-weight:600">Password</label>
+      <input id="step1Password" type="password" required />
+
+      <div style="display:flex; gap:8px;">
+        <button type="submit" class="cta" style="flex:1">Continue</button>
+        <button type="button" id="cancelSignup" style="background:#333; color:#fff; border:none; padding:12px 14px; border-radius:8px; cursor:pointer;">Cancel</button>
+      </div>
+      
+      <div id="signupError" class="error-display" style="display:none;"></div>
+      </form>
+    
+    <div id="signupSuccessContent" style="display:none; text-align:center; padding:20px; flex-direction: column;">
+      <span class="material-symbols-outlined" style="font-size: 64px; color: var(--primary-500); margin-bottom: 20px;">
+        check_circle
+      </span>
+      <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 10px; color: var(--surface-950);">
+        Account Created!
+      </h2>
+      <p style="color: var(--surface-400); margin-bottom: 30px; font-size: 16px;">
+        <b>Please check your email</b> for the confirmation link to activate your account and log in.
+      </p>
+      <button type="button" class="cta" onclick="document.getElementById('signupModal').style.display='none';" style="width: 100%;">
+        Got It
+      </button>
+    </div>
+    </div>
 </div>
+
+<div id="loginModal" class="modal-centered" style="display:none">
+  <div class="card bg-gradient-dark text-white">
+    <button id="closeLogin" style="position:absolute; right:16px; top:16px; background:none; border:none; color:var(--surface-400); cursor:pointer; font-size:24px;">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <header style="text-align:center; margin-bottom:10px">
+      <h1 style="font-size:28px; margin:0;">Login</h1>
+    </header>
+    <form id="loginForm" style="display:flex; flex-direction:column; gap:12px;">
+      <label style="font-weight:600">Email</label>
+      <input id="loginEmail" type="email" required />
+      <label style="font-weight:600">Password</label>
+      <input id="loginPassword" type="password" required />
+      <div style="display:flex; gap:8px;">
+        <button type="submit" class="cta" style="flex:1">Login</button>
+        <button type="button" id="cancelLogin" style="background:#333; color:#fff; border:none; padding:12px 14px; border-radius:8px; cursor:pointer;">Cancel</button>
+      </div>
+      
+      <div id="loginError" class="error-display" style="display:none;"></div>
+      <div style="display:flex; justify-content:center; gap:8px; margin-top:6px; align-items:center;">
+        <button type="button" id="forgotPasswordBtn" style="background:none; border:none; color:var(--surface-400); cursor:pointer; font-size:14px; text-decoration:underline;">Forgot password?</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="resetPasswordModal" class="modal-centered" style="display:none">
+  <div class="card bg-gradient-dark text-white">
+    <button id="closeReset" style="position:absolute; right:16px; top:16px; background:none; border:none; color:var(--surface-400); cursor:pointer; font-size:24px;">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <header style="text-align:center; margin-bottom:10px">
+      <h1 style="font-size:22px; margin:0;">Reset password</h1>
+    </header>
+    <form id="resetForm" style="display:flex; flex-direction:column; gap:12px;">
+      <label style="font-weight:600">Enter the email for your account</label>
+      <input id="resetEmail" type="email" required />
+      <div style="display:flex; gap:8px;">
+        <button type="submit" class="cta" style="flex:1">Send reset link</button>
+        <button type="button" id="cancelReset" style="background:#333; color:#fff; border:none; padding:12px 14px; border-radius:8px; cursor:pointer;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // -------------------------
+  // Supabase initialization
+  // -------------------------
+  const SUPABASE_URL = "https://kstzwynylwcvqmkzkjvr.supabase.co"
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0.JvilpVaPUCEj0p9Ty4EHdtruq5yico79HWn8Uq6Lqjo'
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+
+
+  // -------------------------
+  // DOM references
+  // -------------------------
+  const profileBtn = document.getElementById('profileBtn');
+  const profileDropdown = document.getElementById('profileDropdown'); 
+  const landingAvatar = document.getElementById('landingAvatar');
+
+  // Modals & forms
+  const signupModal = document.getElementById('signupModal');
+  const signupForm = document.getElementById('signupStep1Form');
+  const closeSignup = document.getElementById('closeSignup');
+  const cancelSignup = document.getElementById('cancelSignup');
+  const signupError = document.getElementById('signupError'); 
+  const signupSuccessContent = document.getElementById('signupSuccessContent'); 
+
+  const loginModal = document.getElementById('loginModal');
+  const loginForm = document.getElementById('loginForm');
+  const closeLogin = document.getElementById('closeLogin');
+  const cancelLogin = document.getElementById('cancelLogin');
+  const loginError = document.getElementById('loginError'); 
+
+  const resetModal = document.getElementById('resetPasswordModal');
+  const resetForm = document.getElementById('resetForm');
+  const closeReset = document.getElementById('closeReset');
+  const cancelReset = document.getElementById('cancelReset');
+
+  // Buttons
+  const signupOpen = document.getElementById('signupOpen');
+  const loginLinkBtn = document.getElementById('loginLinkBtn');
+  const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
+  const noUserSignupBtn = document.getElementById('noUserSignupBtn');
+  const noUserLoginBtn = document.getElementById('noUserLoginBtn');
+
+  // Profile form fields
+  const usernameInput = document.getElementById('username');
+  const displayNameInput = document.getElementById('display-name');
+  const emailInput = document.getElementById('email');
+  const teamInput = document.getElementById('team');
+  const studentLeadSelectEl = document.getElementById('student-lead');
+  const roleSelectEl = document.getElementById('role');
+  const bioInput = document.getElementById('bio');
+  const saveChangesBtn = document.getElementById('saveChangesBtn');
+  const profileCompleteIcon = document.getElementById('profileCompleteIcon');
+
+  // Utility: simple show/hide helpers
+  const showElem = (el) => { if (el) el.style.display = 'flex'; }
+  const hideElem = (el) => { if (el) el.style.display = 'none'; }
+  
+  // Utility: Error Display
+  const showError = (el, message) => {
+    if (el) {
+      el.textContent = message;
+      el.style.display = 'block';
+    }
+  }
+  const clearError = (el) => {
+    if (el) {
+      el.textContent = '';
+      el.style.display = 'none';
+    }
+  }
+
+  // -------------------------
+  // Create logged-in dropdown (dynamically)
+  // -------------------------
+  function ensureLoggedInDropdown() {
+    let existing = document.getElementById('profileDropdownLoggedIn');
+    if (existing) return existing;
+
+    const dropdown = document.createElement('div');
+    dropdown.id = 'profileDropdownLoggedIn';
+    dropdown.className = 'dropdown';
+    dropdown.setAttribute('role', 'menu');
+    // Note: dropdown.style.display is not set here; it's controlled by JS below
+    // and relies on the new CSS definition of .dropdown
+
+    // Home link
+    const homeLink = document.createElement('a');
+    homeLink.href = 'https://elixtion.github.io/test';
+    homeLink.textContent = 'Home';
+    dropdown.appendChild(homeLink);
+
+    // Logout button
+    const logoutBtn = document.createElement('button');
+    logoutBtn.id = 'logoutBtn';
+    logoutBtn.textContent = 'Logout';
+    dropdown.appendChild(logoutBtn);
+
+    // External link (same as logged-out)
+    const cd = document.createElement('a');
+    cd.href = 'https://www.chiefdelphi.com';
+    cd.target = '_blank';
+    cd.rel = 'noopener';
+    cd.innerHTML = 'Chief Delphi <span class="material-symbols-outlined" style="margin-left:auto;font-size:18px">open_in_new</span>';
+    dropdown.appendChild(cd);
+
+    // attach after the existing logged-out dropdown (or profile container)
+    if (profileDropdown && profileDropdown.parentNode) {
+      profileDropdown.parentNode.appendChild(dropdown);
+    } else {
+      document.body.appendChild(dropdown);
+    }
+
+    // Add logout handler
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        updateUIForAuthState();
+      } catch (err) {
+        console.error('Logout error', err);
+      }
+    });
+
+    return dropdown;
+  }
+
+  // -------------------------
+  // Dropdown behavior (avatar button)
+  // -------------------------
+  profileBtn.addEventListener('click', async (ev) => {
+    ev.stopPropagation();
+    const sessionResp = await supabase.auth.getSession();
+    const session = sessionResp?.data?.session ?? null;
+    const loggedInDropdown = ensureLoggedInDropdown();
+    const isShowingLoggedIn = loggedInDropdown.style.display === 'flex';
+    const isShowingLoggedOut = profileDropdown.style.display === 'flex';
+
+    if (session) {
+      // toggle logged-in dropdown
+      loggedInDropdown.style.display = isShowingLoggedIn ? 'none' : 'flex';
+      if (profileDropdown) profileDropdown.style.display = 'none';
+    } else {
+      // toggle logged-out dropdown
+      if (profileDropdown) profileDropdown.style.display = isShowingLoggedOut ? 'none' : 'flex';
+      if (loggedInDropdown) loggedInDropdown.style.display = 'none';
+    }
+  });
+
+  // Clicking outside closes any dropdown
+  document.addEventListener('click', () => {
+    if (profileDropdown) profileDropdown.style.display = 'none';
+    const li = document.getElementById('profileDropdownLoggedIn');
+    if (li) li.style.display = 'none';
+  });
+
+  // -------------------------
+  // Modal open/close helpers
+  // -------------------------
+  // Sign up
+  if (signupOpen) signupOpen.addEventListener('click', () => { 
+    showElem(signupModal); 
+    if (profileDropdown) profileDropdown.style.display = 'none'; 
+    clearError(signupError); // Clear error on open
+    showElem(signupForm); // Ensure form is visible
+    hideElem(signupSuccessContent); // Ensure success is hidden
+  });
+  if (noUserSignupBtn) noUserSignupBtn.addEventListener('click', () => { 
+    showElem(signupModal); 
+    clearError(signupError); // Clear error on open
+    showElem(signupForm); // Ensure form is visible
+    hideElem(signupSuccessContent); // Ensure success is hidden
+  });
+  if (closeSignup) closeSignup.addEventListener('click', () => hideElem(signupModal));
+  if (cancelSignup) cancelSignup.addEventListener('click', () => hideElem(signupModal));
+
+  // Login
+  if (loginLinkBtn) loginLinkBtn.addEventListener('click', () => { 
+    showElem(loginModal); 
+    if (profileDropdown) profileDropdown.style.display = 'none'; 
+    clearError(loginError); // Clear error on open
+  });
+  if (noUserLoginBtn) noUserLoginBtn.addEventListener('click', () => { 
+    showElem(loginModal); 
+    clearError(loginError); // Clear error on open
+  });
+  if (closeLogin) closeLogin.addEventListener('click', () => hideElem(loginModal));
+  if (cancelLogin) cancelLogin.addEventListener('click', () => hideElem(loginModal));
+
+  // Reset
+  if (forgotPasswordBtn) forgotPasswordBtn.addEventListener('click', () => { 
+    showElem(resetModal); 
+    hideElem(loginModal); 
+  });
+  if (closeReset) closeReset.addEventListener('click', () => hideElem(resetModal));
+  if (cancelReset) cancelReset.addEventListener('click', () => hideElem(resetModal));
+  // ESC key closes modals
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      hideElem(signupModal);
+      hideElem(loginModal);
+      hideElem(resetModal);
+    }
+  });
+
+  // -------------------------
+  // Signup handler (email confirmation enabled)
+  // -------------------------
+  if (signupForm) {
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearError(signupError);
+
+      const username = (document.getElementById('step1Username') || {}).value?.trim();
+      const email = (document.getElementById('step1Email') || {}).value?.trim();
+      const password = (document.getElementById('step1Password') || {}).value;
+
+      if (!username || !email || !password) {
+        showError(signupError, 'Please fill in all sign-up fields.');
+        return;
+      }
+
+      try {
+        // Sign up user — duplicate emails will throw automatically
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { username },
+            emailRedirectTo: 'https://elixtion.github.io/confirm'
+          }
+        });
+
+        if (error) throw error;
+        
+        // **(The profile is now created securely by your database trigger)**
+
+        hideElem(signupForm);
+        showElem(signupSuccessContent);
+        signupForm.reset();
+      } catch (err) {
+        console.error('SignUp error', err);
+        // Supabase auth.signUp error message already covers duplicate email
+        showError(signupError, 'Sign-up error: ' + (err.message || err));
+      }
+    });
+  }
+
+  // -------------------------
+  // Login handler
+  // -------------------------
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearError(loginError); // Clear previous errors
+      
+      const email = (document.getElementById('loginEmail') || {}).value?.trim();
+      const password = (document.getElementById('loginPassword') || {}).value;
+
+      if (!email || !password) {
+        showError(loginError, 'Please fill in both email and password.');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+
+        const session = data?.session ?? null;
+        const user = data?.user ?? null;
+
+        // If Supabase requires email confirmation and the user wasn't confirmed, handle gracefully:
+        const confirmedAt = user?.email_confirmed_at || user?.confirmed_at || null;
+        if (user && !confirmedAt) {
+          // if the account isn't confirmed, sign them out and ask them to confirm
+          await supabase.auth.signOut();
+          showError(loginError, 'Please confirm your email address (check your inbox) before logging in.');
+          return;
+        }
+
+        hideElem(loginModal);
+        loginForm.reset();
+        
+        // Check if we're on the test page and redirect to profile
+        if (window.location.pathname.includes('/test')) {
+          window.location.href = 'https://elixtion.github.io/profile';
+        } else {
+          updateUIForAuthState();
+        }
+      } catch (err) {
+        console.error('Login error', err);
+        // supabase may return an error message detailing email not confirmed
+        showError(loginError, 'Login error: ' + (err.message || err));
+      }
+    });
+  }
+
+  // -------------------------
+  // Forgot password (reset) handler
+  // -------------------------
+  if (resetForm) {
+    resetForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = (document.getElementById('resetEmail') || {}).value?.trim();
+      if (!email) {
+        alert('Please provide the email for your account.');
+        return;
+      }
+
+      try {
+        // Supabase v2 client method for sending a password reset email:
+        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + '/reset-password'
+        });
+        if (error) throw error;
+
+        alert('If that email exists you will receive a password reset link shortly. Check your inbox.');
+        hideElem(resetModal);
+        resetForm.reset();
+      } catch (err) {
+        console.error('Reset error', err);
+        alert('Error sending reset link: ' + (err.message || err));
+      }
+    });
+  }
+
+  // -------------------------
+  // Keep UI in sync with auth state
+  // -------------------------
+  async function updateUIForAuthState() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const loggedInDropdown = ensureLoggedInDropdown();
+      const profileContent = document.getElementById('profileContent');
+      const noUserContent = document.getElementById('noUserContent');
+      const navSidebar = document.getElementById('navSidebar');
+      
+      if (session && session.user) {
+        // User is logged in - show profile content and navigation
+        if (profileContent) profileContent.style.display = 'flex';
+        if (noUserContent) noUserContent.style.display = 'none';
+        if (navSidebar) navSidebar.style.display = 'block';
+        
+        // show logged-in dropdown option (but default hidden until avatar clicked)
+        hideElem(profileDropdown);
+        hideElem(document.getElementById('profileDropdownLoggedIn')); // to be safe, hide before update
+        // update avatar (if user's metadata contains an avatar url)
+        const user = session.user;
+        const avatarUrl = (user?.user_metadata && user.user_metadata.avatar_url) || null;
+        if (avatarUrl && landingAvatar) landingAvatar.src = avatarUrl;
+        // Optionally show name on avatar title
+        if (landingAvatar) landingAvatar.title = user?.email || (user?.user_metadata?.username || 'Profile');
+
+        await loadUserProfile(session.user);
+
+        // ensure logged-in dropdown exists (created earlier)
+        // we keep it hidden until avatar clicked — so nothing else to show here
+      } else {
+        // not logged in - show no user content, hide navigation
+        if (profileContent) profileContent.style.display = 'none';
+        if (noUserContent) noUserContent.style.display = 'flex';
+        if (navSidebar) navSidebar.style.display = 'none';
+        
+        if (landingAvatar) {
+          landingAvatar.src = 'https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png';
+          landingAvatar.title = 'Not signed in';
+        }
+        hideElem(document.getElementById('profileDropdownLoggedIn'));
+        // ensure logged-out dropdown is hidden by default
+        if (profileDropdown) profileDropdown.style.display = 'none';
+      }
+    } catch (err) {
+      console.error('Error updating UI for auth state', err);
+    }
+  }
+
+  async function loadUserProfile(user) {
+  if (!user) return;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  if (error) {
+    console.error('Failed to load profile:', error);
+    return;
+  }
+
+  // Display-only fields
+  if (usernameInput) usernameInput.value = user.user_metadata?.username || '';
+  if (emailInput) emailInput.value = user.email || '';
+
+  // Editable fields — ONLY set if not null
+  if (data.display_name !== null && displayNameInput)
+    displayNameInput.value = data.display_name;
+
+  if (data.team_number !== null && teamInput)
+    teamInput.value = data.team_number;
+
+  if (data.bio !== null && bioInput) {
+    bioInput.value = data.bio;
+    bioCount.textContent = data.bio.length;
+  }
+
+  // Dropdown defaults
+  if (roleSelectEl)
+    roleSelectEl.value = data.role || '';
+
+  if (studentLeadSelectEl)
+    studentLeadSelectEl.value =
+      data.is_student_lead === true ? 'true' : 'false';
+
+  // Update dropdown colors
+  updateSelectColor(roleSelectEl);
+  updateSelectColor(studentLeadSelectEl);
+
+  // Update Profile Complete status icon
+  if (profileCompleteIcon) {
+    if (data.profile_completed === true) {
+      profileCompleteIcon.textContent = 'check_circle';
+      profileCompleteIcon.className = 'material-symbols-outlined text-2xl text-green-500';
+    } else {
+      profileCompleteIcon.textContent = 'cancel';
+      profileCompleteIcon.className = 'material-symbols-outlined text-2xl text-red-500';
+    }
+  }
+}
+
+
+  // Run once on load
+  updateUIForAuthState();
+
+  // Listen for auth state changes and keep UI in sync
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log('Auth event:', event);
+    updateUIForAuthState();
+  });
+
+  // -------------------------
+  // Bio character counter
+  // -------------------------
+  const bioTextarea = document.getElementById('bio');
+  const bioCount = document.getElementById('bioCount');
+  
+  if (bioTextarea && bioCount) {
+    // Update counter on input
+    bioTextarea.addEventListener('input', () => {
+      bioCount.textContent = bioTextarea.value.length;
+    });
+    
+    // Set initial count
+    bioCount.textContent = bioTextarea.value.length;
+  }
+
+  // -------------------------
+  // Select dropdown placeholder styling
+  // -------------------------
+  const roleSelect = document.getElementById('role');
+  const studentLeadSelect = document.getElementById('student-lead');
+  
+  const updateSelectColor = (select) => {
+    if (select) {
+      if (select.value === '') {
+        select.style.color = 'var(--surface-500)';
+      } else {
+        select.style.color = 'var(--surface-900)';
+      }
+    }
+  };
+  
+  if (roleSelect) {
+    updateSelectColor(roleSelect);
+    roleSelect.addEventListener('change', () => updateSelectColor(roleSelect));
+  }
+  
+  if (studentLeadSelect) {
+    updateSelectColor(studentLeadSelect);
+    studentLeadSelect.addEventListener('change', () => updateSelectColor(studentLeadSelect));
+  }
+
+  // -------------------------
+  // Save Changes Handler
+  // -------------------------
+  if (saveChangesBtn) {
+    saveChangesBtn.addEventListener('click', async () => {
+      try {
+        // Get current user
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session || !session.user) {
+          alert('You must be logged in to save changes.');
+          return;
+        }
+
+        // Disable button during save
+        saveChangesBtn.disabled = true;
+        saveChangesBtn.textContent = 'Saving...';
+
+        // Prepare update data
+        const updates = {
+          id: session.user.id,
+          display_name: displayNameInput?.value?.trim() || null,
+          team_number: teamInput?.value ? parseInt(teamInput.value) : null,
+          role: roleSelectEl?.value || null,
+          is_student_lead: studentLeadSelectEl?.value === 'true' ? true : 
+                           studentLeadSelectEl?.value === 'false' ? false : null,
+          bio: bioInput?.value?.trim() || null,
+          updated_at: new Date().toISOString()
+        };
+
+        // Update profile in database
+        const { error } = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', session.user.id);
+
+        if (error) throw error;
+
+        // Show success message
+        saveChangesBtn.textContent = 'Saved!';
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+          saveChangesBtn.disabled = false;
+          saveChangesBtn.textContent = 'Save Changes';
+        }, 2000);
+
+      } catch (err) {
+        console.error('Error saving profile:', err);
+        alert('Failed to save changes: ' + (err.message || err));
+        
+        // Re-enable button
+        saveChangesBtn.disabled = false;
+        saveChangesBtn.textContent = 'Save Changes';
+      }
+    });
+  }
+});
+
+</script>
 </body></html>
