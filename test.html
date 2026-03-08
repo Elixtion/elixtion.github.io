@@ -79,8 +79,8 @@
       transform: scale(1.1);
     }
     .dropdown {
-      display: flex; /* FIX: Added display: flex */
-      flex-direction: column; /* FIX: Added flex-direction: column to stack items */
+      display: none; /* Hidden by default */
+      flex-direction: column;
       position: absolute;
       right: 0;
       top: calc(100% + 8px);
@@ -91,6 +91,9 @@
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
       z-index: 1000;
       overflow: hidden;
+    }
+    .dropdown.show {
+      display: flex; /* Use flex when shown */
     }
     .dropdown button,
     .dropdown a {
@@ -109,6 +112,11 @@
     .dropdown button:hover,
     .dropdown a:hover {
       background: var(--surface-100);
+    }
+    .divider {
+      height: 1px;
+      background: var(--surface-100);
+      margin: 4px 0;
     }
     
     /* Modal styles */
@@ -213,13 +221,25 @@
 
 <div class="profile-container">
   <button id="profileBtn" class="profile-btn flex-shrink-0" aria-label="Profile">
-    <img id="landingAvatar" class="profile-avatar" src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png" alt="avatar"/>
+    <img id="landingAvatar" class="profile-avatar" src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png" alt="profile"/>
   </button>
 
   <div id="profileDropdown" class="dropdown" role="menu" aria-hidden="true">
-    <button id="signupOpen">Sign Up</button>
-    <button id="loginLinkBtn">Login</button>
-    <a href="https://www.chiefdelphi.com" target="_blank" rel="noopener">Chief Delphi <span class="material-symbols-outlined" style="margin-left:auto;font-size:18px">open_in_new</span></a>
+    <!-- Logged out items -->
+    <div id="dropdownLoggedOut">
+      <button id="signupOpen">Sign Up</button>
+      <button id="loginLinkBtn">Login</button>
+      <a href="https://www.chiefdelphi.com" target="_blank" rel="noopener">Chief Delphi <span class="material-symbols-outlined" style="margin-left:auto;font-size:18px">open_in_new</span></a>
+    </div>
+    
+    <!-- Logged in items -->
+    <div id="dropdownLoggedIn" style="display:none;">
+      <a href="https://elixtion.github.io/profile">Profile</a>
+      <a href="https://www.chiefdelphi.com" target="_blank" rel="noopener">Chief Delphi <span class="material-symbols-outlined" style="margin-left:auto;font-size:18px">open_in_new</span></a>
+      <div class="divider"></div>
+      <div style="padding:8px 12px; font-size:0.85rem; color:var(--surface-400);" id="userEmailRow">Signed in</div>
+      <button id="signOutBtn">Sign Out</button>
+    </div>
   </div>
 </div>
 </div>
@@ -424,6 +444,21 @@
         <button type="button" id="forgotPasswordBtn" style="background:none; border:none; color:var(--surface-400); cursor:pointer; font-size:14px; text-decoration:underline;">Forgot password?</button>
       </div>
     </form>
+    
+    <div id="loginSuccessContent" style="display:none; text-align:center; padding:20px; flex-direction: column;">
+      <span class="material-symbols-outlined" style="font-size: 64px; color: var(--primary-500); margin-bottom: 20px;">
+        check_circle
+      </span>
+      <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 10px; color: var(--surface-950);">
+        Logged In Successfully!
+      </h2>
+      <p style="color: var(--surface-400); margin-bottom: 30px; font-size: 16px;">
+        Welcome back! You're now signed in.
+      </p>
+      <button type="button" class="cta" id="loginSuccessBtn" style="width: 100%;">
+        Continue
+      </button>
+    </div>
   </div>
 </div>
 
@@ -456,6 +491,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0.JvilpVaPUCEj0p9Ty4EHdtruq5yico79HWn8Uq6Lqjo'
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+
+  let isUpdatingAuthUI = false; 
+
   // -------------------------
   // DOM references
   // -------------------------
@@ -476,6 +514,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeLogin = document.getElementById('closeLogin');
   const cancelLogin = document.getElementById('cancelLogin');
   const loginError = document.getElementById('loginError'); 
+  const loginSuccessContent = document.getElementById('loginSuccessContent');
+  const loginSuccessBtn = document.getElementById('loginSuccessBtn');
 
   const resetModal = document.getElementById('resetPasswordModal');
   const resetForm = document.getElementById('resetForm');
@@ -508,6 +548,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // -------------------------
   // Create logged-in dropdown (dynamically)
   // -------------------------
+  // This function is no longer needed - dropdown is now in HTML
+  /*
   function ensureLoggedInDropdown() {
     let existing = document.getElementById('profileDropdownLoggedIn');
     if (existing) return existing;
@@ -559,35 +601,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
     return dropdown;
   }
+  */
+
 
   // -------------------------
   // Dropdown behavior (avatar button)
   // -------------------------
-  profileBtn.addEventListener('click', async (ev) => {
+  // Profile button toggles dropdown
+  // -------------------------
+  profileBtn.addEventListener('click', (ev) => {
     ev.stopPropagation();
-    const sessionResp = await supabase.auth.getSession();
-    const session = sessionResp?.data?.session ?? null;
-    const loggedInDropdown = ensureLoggedInDropdown();
-    const isShowingLoggedIn = loggedInDropdown.style.display === 'flex'; // CHANGED from 'block'
-    const isShowingLoggedOut = profileDropdown.style.display === 'flex'; // CHANGED from 'block'
-
-    if (session) {
-      // toggle logged-in dropdown
-      loggedInDropdown.style.display = isShowingLoggedIn ? 'none' : 'flex'; // CHANGED from 'block'
-      if (profileDropdown) profileDropdown.style.display = 'none';
-    } else {
-      // toggle logged-out dropdown
-      if (profileDropdown) profileDropdown.style.display = isShowingLoggedOut ? 'none' : 'flex'; // CHANGED from 'block'
-      if (loggedInDropdown) loggedInDropdown.style.display = 'none';
+    if (profileDropdown) {
+      profileDropdown.classList.toggle('show');
     }
   });
 
-  // Clicking outside closes any dropdown
-  document.addEventListener('click', () => {
-    if (profileDropdown) profileDropdown.style.display = 'none';
-    const li = document.getElementById('profileDropdownLoggedIn');
-    if (li) li.style.display = 'none';
+  // Clicking outside closes dropdown
+  document.addEventListener('click', (e) => {
+    if (profileDropdown && !profileDropdown.contains(e.target) && e.target !== profileBtn && !profileBtn.contains(e.target)) {
+      profileDropdown.classList.remove('show');
+    }
   });
+  
+  // Prevent dropdown clicks from closing it
+  if (profileDropdown) {
+    profileDropdown.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  // Sign out button handler
+  const signOutBtn = document.getElementById('signOutBtn');
+  if (signOutBtn) {
+    signOutBtn.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      if (profileDropdown) profileDropdown.classList.remove('show');
+      updateUIForAuthState();
+    });
+  }
 
   // -------------------------
   // Modal open/close helpers
@@ -595,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Sign up
   if (signupOpen) signupOpen.addEventListener('click', () => { 
     showElem(signupModal); 
-    if (profileDropdown) profileDropdown.style.display = 'none'; 
+    if (profileDropdown) profileDropdown.classList.remove('show'); 
     clearError(signupError); // Clear error on open
     showElem(signupForm); // Ensure form is visible
     hideElem(signupSuccessContent); // Ensure success is hidden
@@ -606,11 +657,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // Login
   if (loginLinkBtn) loginLinkBtn.addEventListener('click', () => { 
     showElem(loginModal); 
-    if (profileDropdown) profileDropdown.style.display = 'none'; 
+    if (profileDropdown) profileDropdown.classList.remove('show'); 
     clearError(loginError); // Clear error on open
+    showElem(loginForm); // Ensure form is visible
+    hideElem(loginSuccessContent); // Ensure success is hidden
   });
   if (closeLogin) closeLogin.addEventListener('click', () => hideElem(loginModal));
   if (cancelLogin) cancelLogin.addEventListener('click', () => hideElem(loginModal));
+  
+  // Login success button
+  if (loginSuccessBtn) loginSuccessBtn.addEventListener('click', () => {
+    hideElem(loginModal);
+    hideElem(loginSuccessContent);
+    showElem(loginForm);
+  });
 
   // Reset
   if (forgotPasswordBtn) forgotPasswordBtn.addEventListener('click', () => { 
@@ -703,16 +763,11 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        hideElem(loginModal);
+        // Show success message
+        hideElem(loginForm);
+        showElem(loginSuccessContent);
         loginForm.reset();
-        
-        // Check if user came from profile page, otherwise stay on test page
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('from') === 'profile') {
-          window.location.href = 'https://elixtion.github.io/profile';
-        } else {
-          updateUIForAuthState();
-        }
+  
 
       } catch (err) {
         console.error('Login error', err);
@@ -751,41 +806,66 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const safeGetSession = async () => {
+  try {
+    return await supabase.auth.getSession();
+  } catch {
+    return { data: { session: null } };
+  }
+};
+
   // -------------------------
   // Keep UI in sync with auth state
   // -------------------------
-  async function updateUIForAuthState() {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const loggedInDropdown = ensureLoggedInDropdown();
-      if (session && session.user) {
-        // show logged-in dropdown option (but default hidden until avatar clicked)
-        hideElem(profileDropdown);
-        hideElem(document.getElementById('profileDropdownLoggedIn')); // to be safe, hide before update
-        // update avatar (if user's metadata contains an avatar url)
-        const user = session.user;
-        const avatarUrl = (user?.user_metadata && user.user_metadata.avatar_url) || null;
-        if (avatarUrl && landingAvatar) landingAvatar.src = avatarUrl;
-        // Optionally show name on avatar title
-        if (landingAvatar) landingAvatar.title = user?.email || (user?.user_metadata?.username || 'Profile');
+ async function updateUIForAuthState() {
+  if (isUpdatingAuthUI) return;
+  isUpdatingAuthUI = true;
 
-        // ensure logged-in dropdown exists (created earlier)
-        // we keep it hidden until avatar clicked — so nothing else to show here
-      } else {
-        // not logged in
-        if (landingAvatar) {
-          landingAvatar.src = 'https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png';
-          landingAvatar.title = 'Not signed in';
-        }
-        hideElem(document.getElementById('profileDropdownLoggedIn'));
-        // ensure logged-out dropdown is hidden by default
-        if (profileDropdown) profileDropdown.style.display = 'none';
+  try {
+    // Manually get session if it's not passed or null to ensure we have the latest state
+    let { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
+
+    console.log('=== updateUIForAuthState ===');
+    console.log('Session:', session);
+
+    const dropdownLoggedIn = document.getElementById('dropdownLoggedIn');
+    const dropdownLoggedOut = document.getElementById('dropdownLoggedOut');
+    const userEmailRow = document.getElementById('userEmailRow');
+    const landingAvatar = document.getElementById('landingAvatar');
+
+    if (user) {
+      console.log('✓ User logged in:', user.email);
+      if (dropdownLoggedIn) dropdownLoggedIn.style.display = 'block';
+      if (dropdownLoggedOut) dropdownLoggedOut.style.display = 'none';
+
+      if (userEmailRow) {
+        userEmailRow.textContent = user.email || 'Signed in';
       }
-    } catch (err) {
-      console.error('Error updating UI for auth state', err);
-    }
-  }
 
+      const avatar = `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(user.email || 'User')}`;
+      if (landingAvatar) {
+        landingAvatar.src = avatar;
+        landingAvatar.title = user.email || 'Profile';
+      }
+    } else {
+      console.log('✗ User not logged in');
+      if (dropdownLoggedOut) dropdownLoggedOut.style.display = 'block';
+      if (dropdownLoggedIn) dropdownLoggedIn.style.display = 'none';
+
+      if (landingAvatar) {
+        landingAvatar.src = 'https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png';
+        landingAvatar.title = 'Not signed in';
+      }
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.warn('Auth UI update error:', err);
+    }
+  } finally {
+    isUpdatingAuthUI = false;
+  }
+}
   // Run once on load
   updateUIForAuthState();
 
@@ -795,5 +875,13 @@ document.addEventListener('DOMContentLoaded', () => {
     updateUIForAuthState();
   });
 });
+
+// Listen for auth state changes and keep UI in sync
+// Listen for auth state changes
+if (supabase && supabase.auth) {
+  supabase.auth.onAuthStateChange((_event, session) => {
+    updateUIForAuthState();
+  });
+}
 </script>
 </body></html>
