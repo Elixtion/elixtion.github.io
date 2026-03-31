@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="lib/supabase-client.js"></script>
+  <script src="lib/config.js"></script>
   <script src="lib/tba.js"></script>
   <script src="lib/statbotics.js"></script>
   <script src="lib/reliability.js"></script>
@@ -208,14 +209,26 @@ async function loadSubmissions(eventKey, matchPart) {
   if (!db) return [];
 
   let query = db.from("scout_submissions")
-    .select("id,team_number,alliance_color,driver_station,answers,reliability_score,created_at,profiles(username)")
+    .select("id,team_number,alliance_color,driver_station,answers,reliability_score,created_at,owner_id")
     .eq("event_key", eventKey)
     .eq("match_type", matchType);
 
   if (matchNumber !== null) query = query.eq("match_number", matchNumber);
 
   const { data } = await query;
-  return data || [];
+  const subs = data || [];
+
+  // Fetch usernames separately (avoids FK join requirement)
+  if (subs.length) {
+    const ownerIds = [...new Set(subs.map(s => s.owner_id).filter(Boolean))];
+    if (ownerIds.length) {
+      const { data: profiles } = await db.from("profiles").select("id,username").in("id", ownerIds);
+      const map = {};
+      if (profiles) profiles.forEach(p => { map[p.id] = p.username; });
+      subs.forEach(s => { s._username = map[s.owner_id] || "scout"; });
+    }
+  }
+  return subs;
 }
 
 function renderMatchHeader(m, matchLabel, eventKey) {
@@ -388,7 +401,7 @@ function renderRawTable(subs) {
               <td>${a.post_robot_died ? "Yes" : "No"}</td>
               <td>${a.teleop_played_defense ? "Yes" : "No"}</td>
               <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.post_notes || ""}</td>
-              <td style="color:var(--surface-400)">${s.profiles?.username || "—"}</td>
+              <td style="color:var(--surface-400)">${s._username || "—"}</td>
               <td>${r}</td>
             </tr>
           `;
@@ -414,7 +427,7 @@ function exportRaw() {
     s.answers?.post_robot_died ? "true" : "false",
     s.answers?.teleop_played_defense ? "true" : "false",
     s.answers?.post_notes ?? "",
-    s.profiles?.username || "",
+    s._username || "",
     s.reliability_score ?? "",
     s.created_at,
   ].map(escape).join(",")).join("\n");

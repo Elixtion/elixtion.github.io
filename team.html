@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="lib/supabase-client.js"></script>
+  <script src="lib/config.js"></script>
   <script src="lib/tba.js"></script>
   <script src="lib/statbotics.js"></script>
   <script src="lib/offline.js"></script>
@@ -229,10 +230,12 @@ function renderEPA(sbYear) {
   document.getElementById("epaStatboticsLink").href = `https://www.statbotics.io/teams/${TEAM_NUMBER}`;
 
   const epa = sbYear.epa;
-  const total     = epa.total_points?.mean ?? epa.total ?? null;
-  const autoVal   = epa.auto_points?.mean  ?? epa.auto  ?? null;
-  const teleopVal = epa.teleop_points?.mean ?? epa.teleop ?? null;
-  const endgameVal= epa.endgame_points?.mean ?? epa.endgame ?? null;
+  // Statbotics v3: epa.breakdown has flat numbers; epa.total_points is {mean, sd}
+  const bd = epa.breakdown || {};
+  const total     = bd.total_points   ?? epa.total_points?.mean  ?? null;
+  const autoVal   = bd.auto_points    ?? epa.auto_points?.mean   ?? null;
+  const teleopVal = bd.teleop_points  ?? epa.teleop_points?.mean ?? null;
+  const endgameVal= bd.endgame_points ?? epa.endgame_points?.mean ?? null;
   const maxEPA    = Math.max(total || 0, 1);
 
   const fmtSb = v => window.CS.statbotics.fmtEPA(v, 1);
@@ -283,8 +286,9 @@ function renderEPA(sbYear) {
     </div>` : ""}
     ${sbYear.record ? `
     <div style="margin-top:12px;font-size:0.78rem;color:var(--surface-500)">
-      2026 Record: <strong style="color:var(--surface-700)">${sbYear.record.wins ?? "?"}W – ${sbYear.record.losses ?? "?"}L – ${sbYear.record.ties ?? "?"}T</strong>
-      ${sbYear.rank ? ` · Rank <strong>${sbYear.rank}</strong>` : ""}
+      ${YEAR} Record: <strong style="color:var(--surface-700)">${sbYear.record.wins ?? "?"}W – ${sbYear.record.losses ?? "?"}L – ${sbYear.record.ties ?? "?"}T</strong>
+      ${epa.ranks?.total?.rank ? ` · Rank <strong>#${epa.ranks.total.rank}</strong>` : ""}
+      ${epa.ranks?.total?.percentile != null ? ` · Top <strong>${((1 - epa.ranks.total.percentile) * 100).toFixed(1)}%</strong>` : ""}
     </div>` : ""}
   `;
 }
@@ -391,11 +395,22 @@ async function loadScoutStats() {
   if (!db) return;
   const eventKey = document.getElementById("statsEventFilter")?.value || "";
   let query = db.from("scout_submissions")
-    .select("event_key,match_number,answers,reliability_score,created_at,profiles(username)")
+    .select("event_key,match_number,answers,reliability_score,created_at,owner_id")
     .eq("team_number", TEAM_NUMBER)
     .order("created_at", { ascending: false });
   if (eventKey) query = query.eq("event_key", eventKey);
   const { data: subs } = await query;
+
+  // Fetch usernames separately (avoids FK join requirement)
+  if (subs && subs.length) {
+    const ownerIds = [...new Set(subs.map(s => s.owner_id).filter(Boolean))];
+    if (ownerIds.length) {
+      const { data: profiles } = await db.from("profiles").select("id,username").in("id", ownerIds);
+      const map = {};
+      if (profiles) profiles.forEach(p => { map[p.id] = p.username; });
+      subs.forEach(s => { s._username = map[s.owner_id] || "scout"; });
+    }
+  }
 
   const el = document.getElementById("scoutStats");
   if (!subs || !subs.length) {
@@ -450,7 +465,7 @@ async function loadScoutStats() {
       <div class="cs-card cs-card-sm" style="margin-bottom:8px;font-size:0.85rem">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px">
           <span style="font-weight:600">${s.event_key} Q${s.match_number}</span>
-          <span style="color:var(--surface-400);font-size:0.75rem">${s.profiles?.username || "scout"}</span>
+          <span style="color:var(--surface-400);font-size:0.75rem">${s._username || "scout"}</span>
         </div>
         <div style="color:var(--surface-600);font-size:0.8rem">
           Auto: ${s.answers?.auto_fuel_scored ?? "—"} FUEL ·

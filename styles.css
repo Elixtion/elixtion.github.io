@@ -326,7 +326,7 @@ input, select, textarea, button { font-family: inherit; }
   position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
   color: var(--surface-400); font-size: 20px; pointer-events: none;
 }
-.cs-search input { padding-left: 36px; }
+.cs-search input { padding-left: 36px !important; }
 
 /* ── Confidence indicator ────────────────────────────────────────────────── */
 .cs-confidence { font-size: 0.7rem; color: var(--surface-400); }

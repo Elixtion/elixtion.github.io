@@ -27,6 +27,7 @@ const STATIC_ASSETS = [
   "/export.html",
   "/styles.css",
   "/lib/supabase-client.js",
+  "/lib/config.js",
   "/lib/tba.js",
   "/lib/statbotics.js",
   "/lib/offline.js",

@@ -135,7 +135,7 @@ async function previewExport() {
   const db = window.CS.db;
   const { data: subs, error } = await db
     .from("scout_submissions")
-    .select("event_key,match_number,match_type,team_number,alliance_color,answers,reliability_score,created_at,profiles(username)")
+    .select("event_key,match_number,match_type,team_number,alliance_color,answers,reliability_score,created_at,owner_id")
     .eq("event_key", eventKey)
     .order("match_number");
 
@@ -144,6 +144,15 @@ async function previewExport() {
 
   if (error || !subs) { window.CS.ui.toast("Failed to load data: " + (error?.message || "unknown"), "error"); return; }
   if (!subs.length)   { window.CS.ui.toast("No data found for " + eventKey, "warning"); return; }
+
+  // Fetch usernames for all scouts (two-step — no FK join needed)
+  const ownerIds = [...new Set(subs.map(s => s.owner_id).filter(Boolean))];
+  const usernameMap = {};
+  if (ownerIds.length) {
+    const { data: profiles } = await db.from("profiles").select("id,username").in("id", ownerIds);
+    if (profiles) profiles.forEach(p => { usernameMap[p.id] = p.username; });
+  }
+  subs.forEach(s => { s._username = usernameMap[s.owner_id] || "scout"; });
 
   const dataType = document.getElementById("dataType").value;
   let output, preview;
@@ -179,7 +188,7 @@ function buildRaw(subs) {
     fields.forEach(f => { row[f.id] = s.answers?.[f.id] ?? ""; });
     if (_includeMeta) {
       row.reliability_score = s.reliability_score ?? 1.0;
-      row.scout = s.profiles?.username || "anonymous";
+      row.scout = s._username || "scout";
       row.submitted_at = s.created_at;
     }
     return row;
