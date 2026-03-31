@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Events — CrowdScout</title>
+  <meta name="theme-color" content="#111312"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;600;700;900&display=swap"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="lib/supabase-client.js"></script>
+  <script src="lib/tba.js"></script>
+  <script src="lib/offline.js"></script>
+  <script src="lib/ui.js"></script>
+</head>
+<body>
+
+<header class="cs-header">
+  <a href="home.html" class="cs-header-brand">
+    <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
+    <span>Events</span>
+  </a>
+  <nav class="cs-nav">
+    <a href="scout.html">Scout</a>
+    <a href="teams.html">Teams</a>
+    <a href="profile.html">Profile</a>
+  </nav>
+</header>
+
+<main class="cs-page-wide" style="padding-top:16px">
+
+  <!-- Search + filter -->
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+    <div class="cs-search" style="flex:1;min-width:200px">
+      <span class="material-symbols-outlined">search</span>
+      <input id="searchInput" class="cs-input" placeholder="Search events…" oninput="filterEvents()"/>
+    </div>
+    <select id="weekFilter" class="cs-select" style="width:auto;min-width:130px" onchange="filterEvents()">
+      <option value="">All Weeks</option>
+      <option value="1">Week 1</option>
+      <option value="2">Week 2</option>
+      <option value="3">Week 3</option>
+      <option value="4">Week 4</option>
+      <option value="5">Week 5</option>
+      <option value="6">Week 6</option>
+      <option value="CMP">Championship</option>
+    </select>
+  </div>
+
+  <div id="loadingState" style="padding:40px 0;text-align:center;color:var(--surface-400)">
+    <span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px">hourglass_top</span>
+    Loading 2026 events…
+  </div>
+
+  <div id="eventsList" style="display:none">
+    <div id="eventsGrid" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))"></div>
+    <div id="noResults" class="cs-empty" style="display:none">No events match your search.</div>
+  </div>
+
+  <div id="errorState" class="cs-empty" style="display:none">
+    <span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px">wifi_off</span>
+    Could not load events. Check your connection or try again.
+    <br/><br/>
+    <button class="cs-btn cs-btn-secondary" onclick="loadEvents()">Retry</button>
+  </div>
+
+</main>
+
+<nav class="cs-mobile-nav">
+  <a href="home.html"><span class="material-symbols-outlined">home</span>Home</a>
+  <a href="scout.html"><span class="material-symbols-outlined">edit_note</span>Scout</a>
+  <a href="events.html" class="active"><span class="material-symbols-outlined">event</span>Events</a>
+  <a href="teams.html"><span class="material-symbols-outlined">groups</span>Teams</a>
+  <a href="profile.html"><span class="material-symbols-outlined">person</span>Profile</a>
+</nav>
+
+<div id="cs-toast-container"></div>
+
+<script>
+let allEvents = [];
+
+(async function init() {
+  await loadEvents();
+})();
+
+async function loadEvents() {
+  document.getElementById("loadingState").style.display = "";
+  document.getElementById("eventsList").style.display = "none";
+  document.getElementById("errorState").style.display = "none";
+
+  // Try offline cache first
+  const cachedEvents = await window.CS.offline.cache.getAllEvents();
+
+  let events = null;
+  if (navigator.onLine) {
+    events = await window.CS.tba.getSeasonEvents(2026);
+    if (events) {
+      // cache them
+      for (const e of events) {
+        await window.CS.offline.cache.putEvent({ ...e, event_key: e.key });
+      }
+    }
+  }
+
+  if (!events && cachedEvents.length) {
+    events = cachedEvents.map(e => ({ ...e, key: e.event_key }));
+    window.CS.ui.toast("Showing cached events (offline)", "warning");
+  }
+
+  document.getElementById("loadingState").style.display = "none";
+
+  if (!events || !events.length) {
+    document.getElementById("errorState").style.display = "";
+    return;
+  }
+
+  // Sort by start_date
+  allEvents = events.sort((a, b) => (a.start_date || "").localeCompare(b.start_date || ""));
+  document.getElementById("eventsList").style.display = "";
+  renderEvents(allEvents);
+}
+
+function filterEvents() {
+  const q = document.getElementById("searchInput").value.toLowerCase();
+  const week = document.getElementById("weekFilter").value;
+  let filtered = allEvents;
+  if (q) filtered = filtered.filter(e =>
+    (e.name || "").toLowerCase().includes(q) ||
+    (e.key || "").toLowerCase().includes(q) ||
+    (e.city || "").toLowerCase().includes(q) ||
+    (e.state_prov || "").toLowerCase().includes(q)
+  );
+  if (week === "CMP") {
+    filtered = filtered.filter(e => (e.event_type_string || "").includes("Championship"));
+  } else if (week) {
+    filtered = filtered.filter(e => String(e.week) === week || String(e.week + 1) === week);
+  }
+  renderEvents(filtered);
+}
+
+function renderEvents(events) {
+  const grid = document.getElementById("eventsGrid");
+  const noResults = document.getElementById("noResults");
+
+  if (!events.length) {
+    grid.innerHTML = "";
+    noResults.style.display = "";
+    return;
+  }
+  noResults.style.display = "none";
+
+  grid.innerHTML = events.map(e => {
+    const start = e.start_date ? window.CS.ui.fmtDate(e.start_date) : "TBD";
+    const end   = e.end_date   ? window.CS.ui.fmtDate(e.end_date)   : "";
+    const loc   = [e.city, e.state_prov, e.country].filter(Boolean).join(", ");
+    const key   = e.key || e.event_key || "";
+    return `
+      <a href="event.html?key=${encodeURIComponent(key)}" style="display:block;text-decoration:none">
+        <div class="cs-card" style="cursor:pointer;height:100%">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+            <span class="cs-event-chip" style="font-size:0.75rem">${key}</span>
+            <span style="font-size:0.72rem;color:var(--surface-500)">${start}${end ? " – " + end : ""}</span>
+          </div>
+          <div style="font-weight:700;color:var(--surface-950);margin-bottom:4px;font-size:0.95rem">${e.name || key}</div>
+          ${loc ? `<div style="font-size:0.8rem;color:var(--surface-500);display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:14px">location_on</span>${loc}</div>` : ""}
+        </div>
+      </a>
+    `;
+  }).join("");
+}
+</script>
+</body>
+</html>

@@ -2,56 +2,152 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Login — CrowdScout</title>
-
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Sign In — CrowdScout</title>
+  <meta name="theme-color" content="#111312"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
   <link rel="stylesheet" href="styles.css"/>
-  <link rel="stylesheet" href="auth.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="auth.js"></script>
+  <script src="lib/supabase-client.js"></script>
+  <style>
+    .google-btn {
+      width:100%;display:flex;align-items:center;justify-content:center;gap:12px;
+      background:#fff;color:#1a1a1a;border:none;border-radius:8px;
+      padding:12px 20px;font-size:1rem;font-weight:600;cursor:pointer;
+      min-height:48px;box-shadow:0 1px 6px rgba(0,0,0,.2);
+    }
+    .google-btn:hover { background:#f5f5f5; }
+    .google-btn:disabled { opacity:.6;cursor:not-allowed; }
+  </style>
 </head>
-<body>
-  <main class="modal-centered">
-    <div class="card bg-gradient-dark">
-      <header style="text-align:center; margin-bottom:10px;"><h1 style="color:white">Sign In</h1></header>
+<body style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px">
 
-      <form id="loginForm" style="display:flex; flex-direction:column; gap:12px;">
-        <label style="font-weight:600; color:white;">Email</label>
-        <input id="loginEmail" type="email" required />
-        <label style="font-weight:600; color:white;">Password</label>
-        <input id="loginPassword" type="password" required />
+<div style="width:100%;max-width:400px">
 
-        <div style="display:flex; gap:8px;">
-          <button type="submit" class="cta" style="flex:1">Sign In</button>
-          <a href="landing.html" style="background:#333; color:#fff; padding:12px 14px; border-radius:9999px; display:inline-flex; align-items:center; text-decoration:none;">Cancel</a>
-        </div>
+  <div style="text-align:center;margin-bottom:28px">
+    <a href="landing.html">
+      <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png"
+           alt="CrowdScout" style="height:52px;width:52px;border-radius:12px;margin-bottom:12px"/>
+    </a>
+    <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 4px">Sign In to CrowdScout</h1>
+    <p style="color:var(--surface-500);font-size:0.875rem;margin:0">Scout smarter with crowd-sourced data</p>
+  </div>
 
-        <div id="loginMsg" class="small-muted" style="color:var(--surface-400)"></div>
-      </form>
+  <div class="cs-card">
+    <!-- Google -->
+    <button class="google-btn" id="googleBtn" onclick="signInGoogle()">
+      <svg width="20" height="20" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+        <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
+        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/>
+      </svg>
+      Continue with Google
+    </button>
+
+    <div style="display:flex;align-items:center;gap:10px;margin:16px 0">
+      <div style="flex:1;height:1px;background:var(--surface-200)"></div>
+      <span style="font-size:0.75rem;color:var(--surface-400)">or use email</span>
+      <div style="flex:1;height:1px;background:var(--surface-200)"></div>
     </div>
-  </main>
 
-  <script>
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('loginEmail').value.trim();
-      const password = document.getElementById('loginPassword').value;
-      const msg = document.getElementById('loginMsg');
-      msg.textContent = 'Signing in...';
+    <!-- Email / password -->
+    <div class="cs-field">
+      <label class="cs-label">Email</label>
+      <input id="email" type="email" class="cs-input" placeholder="you@example.com" autocomplete="email"/>
+    </div>
+    <div class="cs-field">
+      <label class="cs-label">Password</label>
+      <input id="password" type="password" class="cs-input" placeholder="••••••••"
+             autocomplete="current-password" onkeydown="if(event.key==='Enter')handleEmail()"/>
+    </div>
+    <div id="errMsg" style="font-size:0.8rem;color:#f87171;margin-bottom:8px;display:none"></div>
+    <button class="cs-btn cs-btn-secondary" style="width:100%;margin-bottom:10px" id="emailBtn" onclick="handleEmail()">
+      Sign In with Email
+    </button>
 
-      try {
-        const { data, error } = await window.MyAuth.signIn(email, password);
-        if (error) {
-          msg.textContent = 'Sign in failed: ' + error.message;
-          return;
-        }
-        // Signed in. Go to input page.
-        msg.textContent = 'Signed in. Redirecting...';
-        setTimeout(() => window.location.href = 'input.html', 700);
-      } catch (err) {
-        msg.textContent = 'Unexpected error: ' + err.message;
-      }
-    });
-  </script>
+    <div style="text-align:center;font-size:0.8rem;color:var(--surface-500)">
+      No account?
+      <button onclick="switchToSignup()" style="background:none;border:none;color:var(--primary-500);cursor:pointer;font-weight:600;padding:0">Create one</button>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:16px">
+    <a href="landing.html" style="font-size:0.8rem;color:var(--surface-400)">← Back to home</a>
+  </div>
+
+</div>
+
+<div id="cs-toast-container"></div>
+
+<script>
+// If already logged in, skip to home
+(async function init() {
+  const session = await window.CS?.auth?.getSession?.();
+  if (session) { window.location.href = "home.html"; return; }
+
+  // Handle OAuth redirect callback (hash-based token from Supabase)
+  if (window.location.hash.includes("access_token")) {
+    setTimeout(async () => {
+      const s = await window.CS?.auth?.getSession?.();
+      if (s) window.location.href = "home.html";
+    }, 600);
+  }
+})();
+
+async function signInGoogle() {
+  const btn = document.getElementById("googleBtn");
+  btn.disabled = true;
+  btn.childNodes[btn.childNodes.length - 1].textContent = " Redirecting…";
+  await window.CS.auth.signInWithGoogle();
+}
+
+let _mode = "login";
+function switchToSignup() {
+  _mode = "signup";
+  document.getElementById("emailBtn").textContent = "Create Account";
+  document.getElementById("errMsg").style.display = "none";
+}
+
+async function handleEmail() {
+  const email    = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  if (!email || !password) { showErr("Enter your email and password."); return; }
+  if (password.length < 6) { showErr("Password must be at least 6 characters."); return; }
+
+  const btn = document.getElementById("emailBtn");
+  btn.disabled = true;
+  btn.textContent = "Please wait…";
+  document.getElementById("errMsg").style.display = "none";
+
+  const db = window.CS.db;
+  let result;
+  if (_mode === "login") {
+    result = await db.auth.signInWithPassword({ email, password });
+  } else {
+    result = await db.auth.signUp({ email, password });
+  }
+
+  btn.disabled = false;
+  btn.textContent = _mode === "login" ? "Sign In with Email" : "Create Account";
+
+  if (result.error) { showErr(result.error.message); return; }
+
+  if (_mode === "signup" && !result.data?.session) {
+    showErr("Check your email for a confirmation link, then sign in.", "info");
+    return;
+  }
+  window.location.href = "home.html";
+}
+
+function showErr(msg, type = "error") {
+  const el = document.getElementById("errMsg");
+  el.textContent = msg;
+  el.style.color = type === "info" ? "var(--primary-400)" : "#f87171";
+  el.style.display = "";
+}
+</script>
 </body>
 </html>

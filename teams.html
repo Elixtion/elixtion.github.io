@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Teams — CrowdScout</title>
+  <meta name="theme-color" content="#111312"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;600;700;900&display=swap"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="lib/supabase-client.js"></script>
+  <script src="lib/tba.js"></script>
+  <script src="lib/offline.js"></script>
+  <script src="lib/ui.js"></script>
+</head>
+<body>
+
+<header class="cs-header">
+  <a href="home.html" class="cs-header-brand">
+    <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
+    <span>Teams</span>
+  </a>
+  <nav class="cs-nav">
+    <a href="scout.html">Scout</a>
+    <a href="events.html">Events</a>
+    <a href="profile.html">Profile</a>
+  </nav>
+</header>
+
+<main class="cs-page-wide" style="padding-top:16px">
+
+  <!-- Search -->
+  <div style="display:flex;gap:10px;margin-bottom:16px;align-items:flex-end;flex-wrap:wrap">
+    <div class="cs-search" style="flex:1;min-width:220px">
+      <span class="material-symbols-outlined">search</span>
+      <input id="teamSearch" class="cs-input" placeholder="Team number or name…"
+             oninput="onSearch()" onkeydown="if(event.key==='Enter')doSearch()"/>
+    </div>
+    <div class="cs-field" style="margin:0;min-width:180px">
+      <label class="cs-label">Find teams at event</label>
+      <div style="display:flex;gap:6px">
+        <input id="eventKeyInput" class="cs-input" placeholder="2026txhou" autocapitalize="none" style="flex:1"/>
+        <button class="cs-btn cs-btn-primary cs-btn-sm" onclick="loadEventTeams()">Go</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resultsLabel" style="font-size:0.8rem;color:var(--surface-400);margin-bottom:10px"></div>
+  <div id="teamsList"><div class="cs-empty" style="padding-top:60px">
+    <span class="material-symbols-outlined" style="font-size:48px;display:block;margin-bottom:8px;color:var(--surface-300)">groups</span>
+    Enter a team number or search by name.<br/>Or enter an event key to see all teams.
+  </div></div>
+
+  <div id="loadingState" style="display:none;text-align:center;padding:40px;color:var(--surface-400)">
+    <span class="material-symbols-outlined" style="font-size:36px;display:block;margin-bottom:8px">hourglass_top</span>
+    Loading…
+  </div>
+
+</main>
+
+<nav class="cs-mobile-nav">
+  <a href="home.html"><span class="material-symbols-outlined">home</span>Home</a>
+  <a href="scout.html"><span class="material-symbols-outlined">edit_note</span>Scout</a>
+  <a href="events.html"><span class="material-symbols-outlined">event</span>Events</a>
+  <a href="teams.html" class="active"><span class="material-symbols-outlined">groups</span>Teams</a>
+  <a href="profile.html"><span class="material-symbols-outlined">person</span>Profile</a>
+</nav>
+
+<div id="cs-toast-container"></div>
+
+<script>
+let searchTimeout = null;
+
+function onSearch() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(doSearch, 350);
+}
+
+async function doSearch() {
+  const q = document.getElementById("teamSearch").value.trim();
+  if (!q) return;
+
+  setLoading(true);
+
+  // If it's a pure number, fetch that team directly
+  if (/^\d+$/.test(q)) {
+    const team = await window.CS.tba.getTeam(parseInt(q));
+    setLoading(false);
+    if (team) renderTeams([team]);
+    else renderTeams([]);
+    return;
+  }
+
+  // Try offline cache
+  const cached = await window.CS.offline.cache.getAllTeams();
+  const filtered = cached.filter(t =>
+    (t.nickname || "").toLowerCase().includes(q.toLowerCase()) ||
+    (t.name || "").toLowerCase().includes(q.toLowerCase()) ||
+    String(t.team_number).includes(q)
+  );
+  setLoading(false);
+  if (filtered.length) renderTeams(filtered);
+  else renderTeams([], "No teams found. Try a team number for a direct lookup.");
+}
+
+async function loadEventTeams() {
+  const key = document.getElementById("eventKeyInput").value.trim();
+  if (!key) { window.CS.ui.toast("Enter an event key first.", "error"); return; }
+  setLoading(true);
+  const teams = await window.CS.tba.getEventTeams(key);
+  setLoading(false);
+  if (!teams || !teams.length) {
+    renderTeams([], "No teams found for that event key.");
+    return;
+  }
+  // Cache them
+  for (const t of teams) await window.CS.offline.cache.putTeam(t);
+  renderTeams(teams.sort((a, b) => a.team_number - b.team_number));
+  document.getElementById("resultsLabel").textContent = `${teams.length} teams at ${key}`;
+}
+
+function setLoading(on) {
+  document.getElementById("loadingState").style.display = on ? "" : "none";
+  if (on) document.getElementById("teamsList").innerHTML = "";
+}
+
+function renderTeams(teams, emptyMsg) {
+  const el = document.getElementById("teamsList");
+  if (!teams.length) {
+    el.innerHTML = `<div class="cs-empty">${emptyMsg || "No teams found."}</div>`;
+    return;
+  }
+  document.getElementById("resultsLabel").textContent = `${teams.length} team${teams.length !== 1 ? "s" : ""}`;
+  el.innerHTML = `
+    <div style="display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      ${teams.map(t => {
+        const loc = [t.city, t.state_prov, t.country].filter(Boolean).join(", ");
+        return `
+          <a href="team.html?number=${t.team_number}" style="text-decoration:none">
+            <div class="cs-card" style="cursor:pointer;display:flex;align-items:center;gap:12px">
+              <span class="cs-team-chip" style="font-size:1rem;min-width:56px;justify-content:center">${t.team_number}</span>
+              <div style="min-width:0">
+                <div style="font-weight:700;color:var(--surface-950);font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.nickname || t.name || "Team " + t.team_number}</div>
+                ${loc ? `<div style="font-size:0.75rem;color:var(--surface-500)">${loc}</div>` : ""}
+                ${t.rookie_year ? `<div style="font-size:0.7rem;color:var(--surface-400)">Since ${t.rookie_year}</div>` : ""}
+              </div>
+              <span class="material-symbols-outlined" style="margin-left:auto;color:var(--surface-300);font-size:18px">chevron_right</span>
+            </div>
+          </a>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

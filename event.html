@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Event — CrowdScout</title>
+  <meta name="theme-color" content="#111312"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;600;700;900&display=swap"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="lib/supabase-client.js"></script>
+  <script src="lib/tba.js"></script>
+  <script src="lib/offline.js"></script>
+  <script src="lib/reliability.js"></script>
+  <script src="lib/schema2026.js"></script>
+  <script src="lib/ui.js"></script>
+</head>
+<body>
+
+<header class="cs-header">
+  <a href="events.html" class="cs-header-brand">
+    <span class="material-symbols-outlined" style="color:var(--surface-500);font-size:20px">arrow_back</span>
+    <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
+    <span id="headerTitle">Event</span>
+  </a>
+  <nav class="cs-nav">
+    <a href="scout.html">Scout</a>
+    <a href="teams.html">Teams</a>
+  </nav>
+</header>
+
+<!-- Tab bar -->
+<div style="background:var(--surface-50);border-bottom:1px solid var(--surface-100);display:flex;overflow-x:auto;gap:0">
+  <button class="cs-tab active" onclick="showTab('teams')" id="tab-teams">Teams</button>
+  <button class="cs-tab" onclick="showTab('schedule')" id="tab-schedule">Schedule</button>
+  <button class="cs-tab" onclick="showTab('stats')" id="tab-stats">Team Stats</button>
+  <button class="cs-tab" onclick="showTab('rankings')" id="tab-rankings">Rankings</button>
+</div>
+<style>
+  .cs-tab {
+    padding: 12px 18px; font-size: 0.875rem; font-weight: 600;
+    background: transparent; border: none; cursor: pointer;
+    color: var(--surface-500); border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+  .cs-tab.active { color: var(--primary-500); border-bottom-color: var(--primary-500); }
+</style>
+
+<main class="cs-page-wide" style="padding-top:16px">
+
+  <!-- Event header card -->
+  <div class="cs-card" style="margin-bottom:16px" id="eventHeader">
+    <div class="cs-skeleton" style="height:24px;width:60%;margin-bottom:8px"></div>
+    <div class="cs-skeleton" style="height:16px;width:40%"></div>
+  </div>
+
+  <!-- Teams tab -->
+  <div id="pane-teams">
+    <div class="cs-search" style="margin-bottom:12px">
+      <span class="material-symbols-outlined">search</span>
+      <input id="teamSearch" class="cs-input" placeholder="Search teams…" oninput="filterTeams()"/>
+    </div>
+    <div id="teamsList"><div class="cs-empty">Loading teams…</div></div>
+  </div>
+
+  <!-- Schedule tab -->
+  <div id="pane-schedule" style="display:none">
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="cs-btn cs-btn-sm cs-btn-secondary" onclick="filterMatches('all')" id="mf-all">All</button>
+      <button class="cs-btn cs-btn-sm cs-btn-ghost" onclick="filterMatches('qualification')" id="mf-qual">Quals</button>
+      <button class="cs-btn cs-btn-sm cs-btn-ghost" onclick="filterMatches('playoff')" id="mf-playoff">Playoffs</button>
+    </div>
+    <div id="matchList"><div class="cs-empty">Loading schedule…</div></div>
+  </div>
+
+  <!-- Stats tab -->
+  <div id="pane-stats" style="display:none">
+    <p class="cs-section-sub">Weighted averages across all scout submissions for this event.</p>
+    <div id="statsList"><div class="cs-empty">Loading stats…</div></div>
+  </div>
+
+  <!-- Rankings tab -->
+  <div id="pane-rankings" style="display:none">
+    <div id="rankingsList"><div class="cs-empty">Loading rankings…</div></div>
+  </div>
+
+</main>
+
+<nav class="cs-mobile-nav">
+  <a href="home.html"><span class="material-symbols-outlined">home</span>Home</a>
+  <a href="scout.html"><span class="material-symbols-outlined">edit_note</span>Scout</a>
+  <a href="events.html" class="active"><span class="material-symbols-outlined">event</span>Events</a>
+  <a href="teams.html"><span class="material-symbols-outlined">groups</span>Teams</a>
+  <a href="profile.html"><span class="material-symbols-outlined">person</span>Profile</a>
+</nav>
+
+<div id="cs-toast-container"></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const EVENT_KEY = params.get("key") || "";
+let allTeams = [];
+let allMatches = [];
+
+(async function init() {
+  if (!EVENT_KEY) { window.location.href = "events.html"; return; }
+  await Promise.all([loadEventInfo(), loadTeams(), loadMatches()]);
+  loadStats();
+  loadRankings();
+})();
+
+// ── Tab switching ──────────────────────────────────────────────────
+function showTab(name) {
+  ["teams","schedule","stats","rankings"].forEach(t => {
+    document.getElementById("pane-" + t).style.display = t === name ? "" : "none";
+    document.getElementById("tab-" + t).className = "cs-tab" + (t === name ? " active" : "");
+  });
+}
+
+// ── Event info ─────────────────────────────────────────────────────
+async function loadEventInfo() {
+  const e = await window.CS.tba.getEvent(EVENT_KEY);
+  const el = document.getElementById("eventHeader");
+  if (!e) { el.innerHTML = `<div style="font-weight:700">${EVENT_KEY}</div>`; return; }
+  document.getElementById("headerTitle").textContent = e.short_name || e.name;
+  const loc = [e.city, e.state_prov, e.country].filter(Boolean).join(", ");
+  const start = window.CS.ui.fmtDate(e.start_date);
+  const end = window.CS.ui.fmtDate(e.end_date);
+  el.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:1.2rem;font-weight:800;color:var(--surface-950);margin-bottom:4px">${e.name}</div>
+        <div style="font-size:0.85rem;color:var(--surface-500);display:flex;align-items:center;gap:4px">
+          <span class="material-symbols-outlined" style="font-size:14px">location_on</span>${loc}
+        </div>
+      </div>
+      <div style="text-align:right">
+        <span class="cs-event-chip">${EVENT_KEY}</span>
+        <div style="font-size:0.8rem;color:var(--surface-500);margin-top:4px">${start} – ${end}</div>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <a href="scout.html" onclick="localStorage.setItem('cs_last_event','${EVENT_KEY}')" class="cs-btn cs-btn-primary cs-btn-sm">
+        <span class="material-symbols-outlined" style="font-size:16px">edit_note</span> Scout This Event
+      </a>
+    </div>
+  `;
+}
+
+// ── Teams ─────────────────────────────────────────────────────────
+async function loadTeams() {
+  const teams = await window.CS.tba.getEventTeams(EVENT_KEY);
+  const el = document.getElementById("teamsList");
+  if (!teams || !teams.length) { el.innerHTML = '<div class="cs-empty">No teams found.</div>'; return; }
+  allTeams = teams.sort((a, b) => a.team_number - b.team_number);
+  renderTeams(allTeams);
+}
+
+function filterTeams() {
+  const q = document.getElementById("teamSearch").value.toLowerCase();
+  const filtered = q ? allTeams.filter(t =>
+    String(t.team_number).includes(q) || (t.nickname || "").toLowerCase().includes(q) || (t.city || "").toLowerCase().includes(q)
+  ) : allTeams;
+  renderTeams(filtered);
+}
+
+function renderTeams(teams) {
+  const el = document.getElementById("teamsList");
+  if (!teams.length) { el.innerHTML = '<div class="cs-empty">No teams match.</div>'; return; }
+  el.innerHTML = `
+    <div style="display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
+      ${teams.map(t => `
+        <a href="team.html?number=${t.team_number}" style="text-decoration:none">
+          <div class="cs-card cs-card-sm" style="display:flex;align-items:center;gap:10px;cursor:pointer">
+            <span class="cs-team-chip">${t.team_number}</span>
+            <div>
+              <div style="font-weight:600;font-size:0.85rem;color:var(--surface-950)">${t.nickname || t.name || "Team " + t.team_number}</div>
+              <div style="font-size:0.72rem;color:var(--surface-500)">${[t.city, t.state_prov].filter(Boolean).join(", ")}</div>
+            </div>
+          </div>
+        </a>
+      `).join("")}
+    </div>
+  `;
+}
+
+// ── Schedule ───────────────────────────────────────────────────────
+async function loadMatches() {
+  const matches = await window.CS.tba.getEventMatches(EVENT_KEY);
+  const el = document.getElementById("matchList");
+  if (!matches || !matches.length) { el.innerHTML = '<div class="cs-empty">No matches found.</div>'; return; }
+  allMatches = matches.sort((a, b) => (a.match_number || 0) - (b.match_number || 0));
+  renderMatches(allMatches);
+}
+
+function filterMatches(type) {
+  ["all","qual","playoff"].forEach(t => {
+    document.getElementById("mf-" + t).className = "cs-btn cs-btn-sm " + (t === type ? "cs-btn-secondary" : "cs-btn-ghost");
+  });
+  const filtered = type === "all" ? allMatches : allMatches.filter(m => m.comp_level === (type === "qual" ? "qm" : "sf") || m.comp_level === "f");
+  renderMatches(filtered);
+}
+
+function renderMatches(matches) {
+  const el = document.getElementById("matchList");
+  if (!matches.length) { el.innerHTML = '<div class="cs-empty">No matches.</div>'; return; }
+  el.innerHTML = matches.map(m => {
+    const red  = (m.alliances?.red?.team_keys  || []).map(k => k.replace("frc",""));
+    const blue = (m.alliances?.blue?.team_keys || []).map(k => k.replace("frc",""));
+    const redScore  = m.alliances?.red?.score  ?? "?";
+    const blueScore = m.alliances?.blue?.score ?? "?";
+    const label = m.comp_level === "qm" ? `Q${m.match_number}` : `${m.comp_level?.toUpperCase()} ${m.set_number}-${m.match_number}`;
+    return `
+      <div class="cs-card cs-card-sm" style="margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span style="font-weight:700;font-size:0.9rem;min-width:44px">${label}</span>
+          <div style="display:flex;flex:1;gap:6px;align-items:center;font-size:0.8rem">
+            <div style="flex:1;text-align:right;color:#f87171">${red.join(" · ")}</div>
+            <div style="font-weight:800;color:var(--surface-500);font-size:0.75rem;white-space:nowrap">${redScore} – ${blueScore}</div>
+            <div style="flex:1;text-align:left;color:#60a5fa">${blue.join(" · ")}</div>
+          </div>
+          <a href="scout-match.html?event=${EVENT_KEY}&match=${m.match_number}&type=${m.comp_level === 'qm' ? 'qualification' : 'playoff'}" class="cs-btn cs-btn-sm cs-btn-primary" style="flex-shrink:0">Scout</a>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ── Stats ──────────────────────────────────────────────────────────
+async function loadStats() {
+  const db = window.CS.db;
+  if (!db) return;
+  const { data: subs } = await db.from("scout_submissions")
+    .select("team_number, answers, reliability_score")
+    .eq("event_key", EVENT_KEY);
+
+  const el = document.getElementById("statsList");
+  if (!subs || !subs.length) { el.innerHTML = '<div class="cs-empty">No scouting data yet for this event.</div>'; return; }
+
+  // Group by team
+  const byTeam = {};
+  for (const s of subs) {
+    if (!byTeam[s.team_number]) byTeam[s.team_number] = [];
+    byTeam[s.team_number].push(s);
+  }
+
+  const schema = window.CS.schema2026;
+  const fuelFields = ["auto_fuel_scored", "teleop_fuel_scored"];
+  const climbField = "endgame_climb_level";
+
+  const rows = Object.entries(byTeam).map(([tn, teamSubs]) => {
+    const agg = window.CS.reliability.aggregateTeamStats(teamSubs, schema.sections.flatMap(s => s.fields));
+    const autoFuel   = agg.auto_fuel_scored?.mean  ?? "—";
+    const teleopFuel = agg.teleop_fuel_scored?.mean ?? "—";
+    const totalFuel  = (parseFloat(autoFuel) || 0) + (parseFloat(teleopFuel) || 0);
+    const climb      = agg.endgame_climb_level?.mean ?? "—";
+    const sampleSize = teamSubs.length;
+    return { tn, autoFuel, teleopFuel, totalFuel, climb, sampleSize };
+  }).sort((a, b) => b.totalFuel - a.totalFuel);
+
+  el.innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="cs-stats-table">
+        <thead>
+          <tr>
+            <th>Team</th>
+            <th>Auto FUEL</th>
+            <th>Teleop FUEL</th>
+            <th>Total FUEL</th>
+            <th>Climb</th>
+            <th>Samples</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td><a href="team.html?number=${r.tn}" style="color:var(--primary-500);font-weight:600">${r.tn}</a></td>
+              <td>${typeof r.autoFuel === 'number' ? r.autoFuel.toFixed(1) : r.autoFuel}</td>
+              <td>${typeof r.teleopFuel === 'number' ? r.teleopFuel.toFixed(1) : r.teleopFuel}</td>
+              <td style="font-weight:700;color:var(--primary-400)">${r.totalFuel.toFixed(1)}</td>
+              <td>${window.CS.ui.climbLabel(r.climb)}</td>
+              <td style="color:var(--surface-500)">${r.sampleSize}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ── Rankings ───────────────────────────────────────────────────────
+async function loadRankings() {
+  const data = await window.CS.tba.getEventRankings(EVENT_KEY);
+  const el = document.getElementById("rankingsList");
+  if (!data || !data.rankings || !data.rankings.length) {
+    el.innerHTML = '<div class="cs-empty">Rankings not yet available.</div>';
+    return;
+  }
+  const extra = data.extra_stats_info || [];
+  const sort  = data.sort_order_info  || [];
+  el.innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="cs-stats-table">
+        <thead>
+          <tr>
+            <th>Rank</th><th>Team</th><th>RP</th>
+            ${sort.slice(0,3).map(s => `<th>${s.name}</th>`).join("")}
+            <th>W-L-T</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.rankings.map(r => `
+            <tr>
+              <td style="font-weight:700;color:var(--primary-400)">${r.rank}</td>
+              <td><a href="team.html?number=${r.team_key.replace('frc','')}" style="color:var(--primary-500);font-weight:600">${r.team_key.replace('frc','')}</a></td>
+              <td style="font-weight:700">${r.extra_stats?.[0] ?? "—"}</td>
+              ${r.sort_orders?.slice(0,3).map(v => `<td>${typeof v === 'number' ? v.toFixed(2) : v}</td>`).join("") || ""}
+              <td style="color:var(--surface-500)">${r.record?.wins ?? 0}-${r.record?.losses ?? 0}-${r.record?.ties ?? 0}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

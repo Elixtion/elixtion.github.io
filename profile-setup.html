@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Setup Profile — CrowdScout</title>
+  <meta name="theme-color" content="#111312"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="lib/supabase-client.js"></script>
+  <script src="lib/ui.js"></script>
+</head>
+<body style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px">
+
+<div style="width:100%;max-width:440px">
+  <div style="text-align:center;margin-bottom:28px">
+    <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png"
+         alt="CrowdScout" style="height:56px;width:56px;border-radius:12px;margin-bottom:12px"/>
+    <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 6px">Complete Your Profile</h1>
+    <p style="color:var(--surface-500);font-size:0.875rem;margin:0">This info helps calibrate your reliability score.</p>
+  </div>
+
+  <div class="cs-card">
+    <div class="cs-field">
+      <label class="cs-label">Display Name *</label>
+      <input id="displayName" class="cs-input" placeholder="e.g. Alex Chen" maxlength="50"/>
+    </div>
+    <div class="cs-field">
+      <label class="cs-label">Username *</label>
+      <div style="position:relative">
+        <input id="username" class="cs-input" placeholder="e.g. alexchen254" maxlength="30"
+               oninput="checkUsername()" autocapitalize="none" autocomplete="off"/>
+        <span id="usernameStatus" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:18px"></span>
+      </div>
+      <div id="usernameMsg" style="font-size:0.75rem;color:var(--surface-400);margin-top:4px">3–30 chars, letters, numbers, underscores only.</div>
+    </div>
+    <div class="cs-field">
+      <label class="cs-label">FRC Team Number <span style="color:var(--surface-400);font-weight:400">(optional)</span></label>
+      <input id="teamNumber" class="cs-input" type="number" min="1" max="99999" placeholder="e.g. 254"/>
+      <div style="font-size:0.75rem;color:var(--surface-400);margin-top:4px">Adds +0.1 to your reliability multiplier when verified.</div>
+    </div>
+    <div class="cs-field">
+      <label class="cs-label">Role <span style="color:var(--surface-400);font-weight:400">(optional)</span></label>
+      <select id="role" class="cs-select">
+        <option value="">— Select role —</option>
+        <option value="student">Student</option>
+        <option value="mentor">Mentor</option>
+        <option value="volunteer">Volunteer</option>
+        <option value="spectator">Spectator / Fan</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="cs-field">
+      <label class="cs-label">Bio <span style="color:var(--surface-400);font-weight:400">(optional)</span></label>
+      <textarea id="bio" class="cs-textarea" placeholder="Tell other scouts about yourself…" rows="3" maxlength="200"></textarea>
+    </div>
+
+    <button class="cs-btn cs-btn-primary cs-btn-lg" style="width:100%;margin-top:4px" id="saveBtn" onclick="saveProfile()">
+      <span class="material-symbols-outlined">check_circle</span> Save Profile
+    </button>
+  </div>
+
+  <div style="text-align:center;margin-top:16px">
+    <a href="home.html" style="font-size:0.85rem;color:var(--surface-400)">Skip for now →</a>
+  </div>
+</div>
+
+<div id="cs-toast-container"></div>
+
+<script>
+let _session = null;
+let _usernameValid = false;
+let _usernameTimer = null;
+
+(async function init() {
+  _session = await window.CS.auth.requireAuth("landing.html");
+  if (!_session) return;
+
+  // Pre-fill from OAuth metadata
+  const meta = _session.user.user_metadata || {};
+  document.getElementById("displayName").value = meta.full_name || meta.name || "";
+
+  // Check if profile already exists
+  const profile = await window.CS.profile.get(_session.user.id);
+  if (profile) {
+    document.getElementById("displayName").value = profile.display_name || document.getElementById("displayName").value;
+    document.getElementById("username").value = profile.username || "";
+    document.getElementById("teamNumber").value = profile.team_number || "";
+    document.getElementById("role").value = profile.role || "";
+    document.getElementById("bio").value = profile.bio || "";
+  }
+})();
+
+function checkUsername() {
+  clearTimeout(_usernameTimer);
+  _usernameTimer = setTimeout(_doCheckUsername, 400);
+}
+
+async function _doCheckUsername() {
+  const val = document.getElementById("username").value.trim();
+  const statusEl = document.getElementById("usernameStatus");
+  const msgEl = document.getElementById("usernameMsg");
+
+  if (!val) { statusEl.textContent = ""; _usernameValid = false; return; }
+  if (!/^[a-z0-9_]{3,30}$/.test(val)) {
+    statusEl.textContent = "❌";
+    msgEl.textContent = "Only lowercase letters, numbers, underscores. 3–30 chars.";
+    msgEl.style.color = "#f87171";
+    _usernameValid = false;
+    return;
+  }
+
+  statusEl.textContent = "⏳";
+  const db = window.CS.db;
+  const { data } = await db.from("profiles").select("id").eq("username", val).neq("id", _session.user.id);
+  if (data && data.length > 0) {
+    statusEl.textContent = "❌";
+    msgEl.textContent = "Username already taken.";
+    msgEl.style.color = "#f87171";
+    _usernameValid = false;
+  } else {
+    statusEl.textContent = "✅";
+    msgEl.textContent = "Username available!";
+    msgEl.style.color = "var(--primary-500)";
+    _usernameValid = true;
+  }
+}
+
+async function saveProfile() {
+  const displayName = document.getElementById("displayName").value.trim();
+  const username    = document.getElementById("username").value.trim();
+  const teamNumber  = parseInt(document.getElementById("teamNumber").value) || null;
+  const role        = document.getElementById("role").value;
+  const bio         = document.getElementById("bio").value.trim();
+
+  if (!displayName) { window.CS.ui.toast("Display name is required.", "error"); return; }
+  if (!username)    { window.CS.ui.toast("Username is required.", "error"); return; }
+  if (!/^[a-z0-9_]{3,30}$/.test(username)) { window.CS.ui.toast("Invalid username format.", "error"); return; }
+
+  const btn = document.getElementById("saveBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span> Saving…';
+
+  const payload = {
+    id: _session.user.id,
+    username,
+    display_name: displayName,
+    team_number: teamNumber,
+    role,
+    bio,
+    profile_completed: true,
+    updated_at: new Date().toISOString(),
+  };
+
+  const result = await window.CS.profile.upsert(payload);
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Save Profile';
+
+  if (result) {
+    window.CS.ui.toast("Profile saved!", "success");
+    setTimeout(() => window.location.href = "home.html", 1000);
+  } else {
+    window.CS.ui.toast("Failed to save profile. Try again.", "error");
+  }
+}
+</script>
+</body>
+</html>

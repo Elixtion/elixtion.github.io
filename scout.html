@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Scout — CrowdScout</title>
+  <meta name="theme-color" content="#111312"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;600;700;900&display=swap"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="lib/supabase-client.js"></script>
+  <script src="lib/offline.js"></script>
+  <script src="lib/ui.js"></script>
+</head>
+<body>
+
+<header class="cs-header">
+  <a href="home.html" class="cs-header-brand">
+    <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
+    <span>Scout</span>
+  </a>
+  <nav class="cs-nav">
+    <a href="events.html">Events</a>
+    <a href="teams.html">Teams</a>
+    <a href="profile.html">Profile</a>
+  </nav>
+</header>
+
+<main class="cs-page">
+
+  <!-- ── Connectivity + sync status ──────────────────────────────── -->
+  <div id="syncStatus" class="cs-card cs-card-sm" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+    <span id="connText" style="font-size:0.85rem;color:var(--surface-500)">Checking connectivity…</span>
+    <button class="cs-btn cs-btn-sm cs-btn-secondary" onclick="manualSync()">
+      <span class="material-symbols-outlined" style="font-size:16px">sync</span> Sync
+    </button>
+  </div>
+
+  <!-- ── Quick Scout ──────────────────────────────────────────────── -->
+  <div class="cs-card" style="margin-bottom:16px">
+    <h2 class="cs-section-title" style="margin-top:0">Scout a Match</h2>
+    <p class="cs-section-sub">Enter match details or select from your event schedule.</p>
+
+    <div class="cs-field">
+      <label class="cs-label">Event Key</label>
+      <input id="quickEvent" class="cs-input" placeholder="e.g. 2026txhou" autocapitalize="none"
+             oninput="loadMatches()"/>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div class="cs-field" style="flex:1">
+        <label class="cs-label">Match #</label>
+        <input id="quickMatch" class="cs-input" type="number" min="1" placeholder="1"/>
+      </div>
+      <div class="cs-field" style="flex:1">
+        <label class="cs-label">Type</label>
+        <select id="quickType" class="cs-select">
+          <option value="qualification">Qual</option>
+          <option value="playoff">Playoff</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div class="cs-field" style="flex:1">
+        <label class="cs-label">Team #</label>
+        <input id="quickTeam" class="cs-input" type="number" min="1" placeholder="254"/>
+      </div>
+      <div class="cs-field" style="flex:1">
+        <label class="cs-label">Station</label>
+        <select id="quickStation" class="cs-select">
+          <option value="1">Red 1</option>
+          <option value="2">Red 2</option>
+          <option value="3">Red 3</option>
+          <option value="4">Blue 1</option>
+          <option value="5">Blue 2</option>
+          <option value="6">Blue 3</option>
+        </select>
+      </div>
+    </div>
+    <button class="cs-btn cs-btn-primary" style="width:100%;margin-top:4px" onclick="startScouting()">
+      <span class="material-symbols-outlined">edit_note</span> Start Scouting
+    </button>
+  </div>
+
+  <!-- ── Upcoming matches from schedule ──────────────────────────── -->
+  <div id="scheduleSection" style="display:none">
+    <h2 class="cs-section-title">Upcoming Matches</h2>
+    <div id="scheduleList"></div>
+  </div>
+
+  <!-- ── Offline queue ─────────────────────────────────────────────── -->
+  <div style="margin-top:20px">
+    <h2 class="cs-section-title">Pending Submissions</h2>
+    <div id="queueList"><div class="cs-empty">No pending submissions.</div></div>
+  </div>
+
+</main>
+
+<nav class="cs-mobile-nav">
+  <a href="home.html"><span class="material-symbols-outlined">home</span>Home</a>
+  <a href="scout.html" class="active"><span class="material-symbols-outlined">edit_note</span>Scout</a>
+  <a href="events.html"><span class="material-symbols-outlined">event</span>Events</a>
+  <a href="teams.html"><span class="material-symbols-outlined">groups</span>Teams</a>
+  <a href="profile.html"><span class="material-symbols-outlined">person</span>Profile</a>
+</nav>
+
+<div id="cs-toast-container"></div>
+
+<script>
+(async function init() {
+  const r = await window.CS.ui.requireAuth("landing.html");
+  if (!r) return;
+  updateConnUI();
+  renderQueue();
+  window.addEventListener("cs-connectivity", () => { updateConnUI(); renderQueue(); });
+
+  // Restore last event key
+  const saved = localStorage.getItem("cs_last_event");
+  if (saved) document.getElementById("quickEvent").value = saved;
+})();
+
+function updateConnUI() {
+  const c = window.CS.offline.connectivity;
+  const el = document.getElementById("connText");
+  if (!c.isOnline) {
+    el.innerHTML = `<span style="color:#f87171">⬤</span> Offline — ${c.pendingCount} saved locally`;
+  } else if (c.pendingCount > 0) {
+    el.innerHTML = `<span style="color:#fbbf24">⬤</span> Online — syncing ${c.pendingCount} submission${c.pendingCount > 1 ? "s" : ""}…`;
+  } else {
+    const ts = c.lastSyncTime ? ` · Synced ${new Date(c.lastSyncTime).toLocaleTimeString()}` : "";
+    el.innerHTML = `<span style="color:var(--primary-500)">⬤</span> Online — all synced${ts}`;
+  }
+}
+
+async function manualSync() {
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  const result = await window.CS.offline.syncAll();
+  btn.disabled = false;
+  window.CS.ui.toast(`Synced: ${result.synced} · Failed: ${result.failed}`, result.failed > 0 ? "warning" : "success");
+  updateConnUI();
+  renderQueue();
+}
+
+async function renderQueue() {
+  const queue = await window.CS.offline.getSyncQueue();
+  const el = document.getElementById("queueList");
+  if (!queue.length) { el.innerHTML = '<div class="cs-empty">No pending submissions.</div>'; return; }
+
+  el.innerHTML = queue.map((item) => `
+    <div class="cs-card cs-card-sm" style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-weight:600;font-size:0.9rem">
+          Team ${item.data?.team_number ?? "??"} · ${item.data?.event_key ?? "?"} Q${item.data?.match_number ?? "?"}
+        </div>
+        <div style="font-size:0.75rem;color:var(--surface-500)">${new Date(item.createdAt).toLocaleString()}</div>
+      </div>
+      <span class="cs-pill ${item.syncStatus === 'pending' ? 'cs-pill-yellow' : item.syncStatus === 'failed' ? 'cs-pill-red' : 'cs-pill-green'}">
+        ${item.syncStatus}
+      </span>
+    </div>
+  `).join("");
+}
+
+function startScouting() {
+  const event   = document.getElementById("quickEvent").value.trim();
+  const match   = document.getElementById("quickMatch").value;
+  const type    = document.getElementById("quickType").value;
+  const team    = document.getElementById("quickTeam").value;
+  const station = document.getElementById("quickStation").value;
+
+  if (!event || !match || !team) {
+    window.CS.ui.toast("Please fill in Event, Match, and Team.", "error");
+    return;
+  }
+  localStorage.setItem("cs_last_event", event);
+  const url = `scout-match.html?event=${encodeURIComponent(event)}&match=${match}&type=${type}&team=${team}&station=${station}`;
+  window.location.href = url;
+}
+
+// Stub — load matches from TBA for a given event key
+async function loadMatches() {
+  // Future: populate schedule
+}
+</script>
+</body>
+</html>

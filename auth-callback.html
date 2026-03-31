@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Signing in… — CrowdScout</title>
+  <meta name="theme-color" content="#111312"/>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="lib/supabase-client.js"></script>
+</head>
+<body style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;text-align:center;padding:20px">
+
+  <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png"
+       alt="CrowdScout" style="height:52px;width:52px;border-radius:12px;margin-bottom:4px"/>
+  <div style="font-size:1.1rem;font-weight:700" id="statusMsg">Signing you in…</div>
+  <div style="color:var(--surface-500);font-size:0.875rem" id="subMsg">Just a moment.</div>
+
+  <!-- Spinner -->
+  <div style="width:32px;height:32px;border:3px solid var(--surface-200);border-top-color:var(--primary-500);border-radius:50%;animation:spin .8s linear infinite" id="spinner"></div>
+  <style>@keyframes spin { to { transform:rotate(360deg); } }</style>
+
+<script>
+(async function handleCallback() {
+  // Supabase automatically exchanges the code/token from the URL hash or query string
+  // when the client is initialised — we just need to wait for a session.
+
+  let attempts = 0;
+  const MAX = 20; // 10 seconds max
+
+  async function check() {
+    attempts++;
+    const session = await window.CS?.auth?.getSession?.();
+
+    if (session) {
+      document.getElementById("statusMsg").textContent = "Signed in!";
+      document.getElementById("subMsg").textContent = "Redirecting…";
+      document.getElementById("spinner").style.display = "none";
+
+      // Check if profile is complete
+      const profile = await window.CS.profile.get(session.user.id);
+      if (!window.CS.profile.isComplete(profile)) {
+        window.location.href = "profile-setup.html";
+      } else {
+        window.location.href = "home.html";
+      }
+      return;
+    }
+
+    if (attempts >= MAX) {
+      document.getElementById("statusMsg").textContent = "Sign-in failed";
+      document.getElementById("subMsg").innerHTML = 'Could not establish a session. <a href="login.html" style="color:var(--primary-500)">Try again</a>';
+      document.getElementById("spinner").style.display = "none";
+      return;
+    }
+
+    setTimeout(check, 500);
+  }
+
+  // Give Supabase 300ms to process the URL hash before polling
+  setTimeout(check, 300);
+})();
+</script>
+</body>
+</html>

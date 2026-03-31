@@ -1,0 +1,31 @@
+{
+  "name": "CrowdScout",
+  "short_name": "CrowdScout",
+  "description": "Crowd-sourced FRC scouting platform",
+  "start_url": "/home.html",
+  "display": "standalone",
+  "background_color": "#111312",
+  "theme_color": "#111312",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Scout Match",
+      "url": "/scout.html",
+      "description": "Quickly start scouting a match"
+    },
+    {
+      "name": "Events",
+      "url": "/events.html",
+      "description": "Browse 2026 FRC events"
+    }
+  ],
+  "categories": ["sports", "utilities"]
+}

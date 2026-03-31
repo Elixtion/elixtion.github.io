@@ -1,988 +1,197 @@
 <!DOCTYPE html>
-<html><head>
-<meta charset="utf-8"/>
-<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
-<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B600%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B600%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
-<title>Stitch Design</title>
-<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<style type="text/tailwindcss">
-    :root {
-      --primary-50: #f7fdf0;
-      --primary-100: #eefad9;
-      --primary-200: #dff6ba;
-      --primary-300: #c9eea7;
-      --primary-400: #b1e48b;
-      --primary-500: #99e550;
-      --primary-600: #74c13a;
-      --primary-700: #58962e;
-      --primary-800: #447526;
-      --primary-900: #396122;
-      --primary-950: #1b350e;
-      --secondary-50: #f2f7f5;
-      --secondary-100: #e4eee9;
-      --secondary-200: #c9ddd4;
-      --secondary-300: #a7c6b9;
-      --secondary-400: #82ab9a;
-      --secondary-500: #658e7f;
-      --secondary-600: #527366;
-      --secondary-700: #445f55;
-      --secondary-800: #384d45;
-      --secondary-900: #30413a;
-      --secondary-950: #1a2420;
-      --surface-0: #111312;
-      --surface-50: #171a18;
-      --surface-100: #262e2a;
-      --surface-200: #3f4e46;
-      --surface-300: #576e62;
-      --surface-400: #6e8e7d;
-      --surface-500: #8cae9d;
-      --surface-600: #a9c8b9;
-      --surface-700: #c6e0d4;
-      --surface-800: #e2f4ea;
-      --surface-900: #f1faf5;
-      --surface-950: #ffffff;
-    }
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    .animate-fadeIn {
-      animation: fadeIn 0.5s ease-out forwards;
-    }
-    .group:hover .group-hover\:block {
-        display: block;
-    }
-    
-    /* Profile dropdown styles */
-    .profile-container {
-      position: relative;
-    }
-    .profile-btn {
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-    }
-    .profile-avatar {
-      height: 40px;
-      width: 40px;
-      border-radius: 50%;
-      object-fit: cover;
-      transition: transform 0.3s;
-    }
-    .profile-avatar:hover {
-      transform: scale(1.1);
-    }
-    .dropdown {
-      display: flex;
-      flex-direction: column;
-      position: absolute;
-      right: 0;
-      top: calc(100% + 8px);
-      background: var(--surface-50);
-      border: 1px solid var(--surface-100);
-      border-radius: 8px;
-      min-width: 180px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-      z-index: 1000;
-      overflow: hidden;
-    }
-    .dropdown button,
-    .dropdown a {
-      display: flex;
-      align-items: center;
-      width: 100%;
-      padding: 10px 14px;
-      background: none;
-      border: none;
-      color: var(--surface-950);
-      text-decoration: none;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .dropdown button:hover,
-    .dropdown a:hover {
-      background: var(--surface-100);
-    }
-    
-    /* Modal styles */
-    .modal-centered {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    }
-    .card {
-      position: relative;
-      background: var(--surface-50);
-      border: 1px solid var(--surface-100);
-      border-radius: 16px;
-      padding: 32px;
-      max-width: 450px;
-      width: 90%;
-    }
-    .bg-gradient-dark {
-      background: linear-gradient(to bottom right, var(--surface-50), var(--surface-0));
-    }
-    .text-white {
-      color: var(--surface-950);
-    }
-    .modal-centered input {
-      width: 100%;
-      padding: 12px;
-      background: var(--surface-0);
-      border: 1px solid var(--surface-100);
-      border-radius: 8px;
-      color: var(--surface-950);
-      font-size: 14px;
-    }
-    .modal-centered input:focus {
-      outline: none;
-      border-color: var(--primary-500);
-      box-shadow: 0 0 0 2px rgba(153, 229, 80, 0.2);
-    }
-    .cta {
-      background: var(--primary-500);
-      color: var(--primary-950);
-      border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    .cta:hover {
-      background: var(--primary-400);
-      transform: translateY(-2px);
-    }
-    .small-muted {
-      font-size: 12px;
-      color: var(--surface-400);
-      text-align: center;
-      margin-top: 8px;
-    }
-    /* Error Style */
-    .error-display {
-      background: rgba(220, 38, 38, 0.2);
-      border: 1px solid rgba(220, 38, 38, 0.7);
-      color: rgba(252, 165, 165, 1);
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 14px;
-      margin-top: 10px;
-      text-align: center;
-    }
-    /* Placeholder-style option colors */
-    select option:first-child {
-      color: var(--surface-500);
-    }
-    select option:not(:first-child) {
-      color: var(--surface-900);
-    }
-  </style>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Profile — CrowdScout</title>
+  <meta name="theme-color" content="#111312"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="lib/supabase-client.js"></script>
+  <script src="lib/reliability.js"></script>
+  <script src="lib/ui.js"></script>
 </head>
-<body class="bg-[var(--surface-0)] text-[var(--surface-900)]">
-<div class="relative flex size-full min-h-screen flex-col" style='font-family: Inter, "Noto Sans", sans-serif;'>
-<div class="flex h-full grow flex-col">
-<header class="sticky top-0 z-20 flex items-center justify-between whitespace-nowrap border-b border-[var(--surface-100)] bg-[var(--surface-0)]/80 px-10 py-4 backdrop-blur-lg">
-<div class="flex items-center gap-10">
-<a class="flex items-center gap-3 text-[var(--surface-950)]" href="https://elixtion.github.io/test">
-<img class="h-12 w-12" src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout Logo">
-<h1 class="text-xl font-bold">CrowdScout</h1>
-</a>
-<nav class="flex items-center gap-2">
-<a class="relative rounded-md px-4 py-2 text-sm font-semibold text-[var(--surface-500)] transition-colors hover:text-[var(--surface-950)]" href="#">Teams</a>
-<a class="relative rounded-md px-4 py-2 text-sm font-semibold text-[var(--surface-500)] transition-colors hover:text-[var(--surface-950)]" href="#">Events</a>
-<a class="relative rounded-md px-4 py-2 text-sm font-semibold text-[var(--surface-500)] transition-colors hover:text-[var(--surface-950)]" href="#">Matches</a>
-</nav>
-</div>
-<div class="flex flex-1 items-center justify-end gap-4">
-<label class="relative flex w-full max-w-xs">
-<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--surface-500)]">
-<span class="material-symbols-outlined text-xl"> search </span>
-</div>
-<input class="h-10 w-full rounded-md border border-transparent bg-[var(--surface-50)] py-2 pl-10 pr-4 text-sm text-[var(--surface-950)] placeholder:text-[var(--surface-500)] transition-colors focus:border-[var(--primary-500)] focus:bg-[var(--surface-0)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" placeholder="Search for a team or event" value=""/>
-</label>
-<a href="https://elixtion.github.io/input" target="_blank" 
-   class="flex h-10 flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md bg-[var(--surface-950)] px-4 text-sm font-semibold text-black transition-colors hover:bg-[var(--surface-800)]">
-  <span>Input Data</span>
-  <span class="material-symbols-outlined text-xl"> open_in_new </span>
-</a>
+<body>
 
-<div class="profile-container">
-  <button id="profileBtn" class="profile-btn flex-shrink-0" aria-label="Profile">
-    <img id="landingAvatar" class="profile-avatar" src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png" alt="Profile" />
+<header class="cs-header">
+  <a href="home.html" class="cs-header-brand">
+    <span class="material-symbols-outlined" style="color:var(--surface-500);font-size:20px">arrow_back</span>
+    <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
+    <span>Profile</span>
+  </a>
+  <button class="cs-btn cs-btn-ghost cs-btn-sm" onclick="signOut()">
+    <span class="material-symbols-outlined" style="font-size:16px">logout</span> Sign Out
   </button>
-  <div id="profileDropdown" class="dropdown" style="display: none;">
-    <a href="https://elixtion.github.io/test">Home</a>
-    <button id="signupOpen">Sign Up</button>
-    <button id="loginLinkBtn">Log In</button>
-    <a href="https://www.chiefdelphi.com" target="_blank" rel="noopener">Chief Delphi <span class="material-symbols-outlined" style="margin-left:auto;font-size:18px">open_in_new</span></a>
-  </div>
-</div>
-</div>
 </header>
-<main class="flex-1 overflow-y-auto p-10">
-<div class="mx-auto max-w-7xl">
-<div class="flex gap-4">
-<aside id="navSidebar" class="flex-shrink-0">
-<div class="w-48 rounded-xl border border-[var(--surface-100)] bg-[var(--surface-50)] p-4">
-<nav class="flex flex-col gap-2">
-<a class="flex items-center gap-3 rounded-md bg-[var(--primary-500)] px-4 py-3 text-sm font-semibold text-[var(--primary-950)]" href="#">
-<span class="material-symbols-outlined text-xl"> person </span>
-<span>Profile</span>
-</a>
-<a class="flex items-center gap-3 rounded-md px-4 py-3 text-sm font-semibold text-[var(--surface-500)] hover:bg-[var(--surface-100)] hover:text-[var(--surface-950)]" href="#">
-<span class="material-symbols-outlined text-xl"> settings </span>
-<span>Settings</span>
-</a>
-<a class="flex items-center gap-3 rounded-md px-4 py-3 text-sm font-semibold text-[var(--surface-500)] hover:bg-[var(--surface-100)] hover:text-[var(--surface-950)]" href="#">
-<span class="material-symbols-outlined text-xl"> notifications </span>
-<span>Notifications</span>
-</a>
-</nav>
-</div>
-</aside>
-<div class="flex-1">
-<div class="mx-auto max-w-4xl">
-<div id="noUserContent" style="display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 24px;">
-<h2 class="text-3xl font-bold text-white">No user is currently logged in.</h2>
-<div class="flex gap-4">
-<button id="noUserSignupBtn" class="flex h-12 cursor-pointer items-center justify-center rounded-md bg-[var(--primary-500)] px-8 text-base font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40">
-Sign Up
-</button>
-<button id="noUserLoginBtn" class="flex h-12 cursor-pointer items-center justify-center rounded-md bg-[var(--surface-200)] px-8 text-base font-bold text-[var(--surface-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--surface-300)] hover:shadow-2xl">
-Log In
-</button>
-</div>
-</div>
-<div id="profileContent" style="display: flex; flex-direction: column;">
-<h2 class="text-2xl font-bold tracking-tight text-white">Profile</h2>
-<p class="mt-1 text-[var(--surface-400)]">Manage your account details.</p>
-<div class="mt-8 space-y-10">
-<div class="flex items-center justify-between gap-4">
-<div class="flex-shrink-0" style="width: calc(50% - 0.75rem);">
-<h3 class="text-lg font-semibold text-[var(--surface-200)] mb-4">Account Status</h3>
-<div class="flex items-center justify-between rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] p-4">
-<div class="flex items-center gap-4">
-<span class="font-medium text-[var(--surface-400)]">Profile Complete</span>
-</div>
-<span id="profileCompleteIcon" class="material-symbols-outlined text-2xl text-green-500"> check_circle </span>
-</div>
-</div>
-<button id="saveChangesBtn" class="flex h-10 cursor-pointer items-center justify-center rounded-md bg-[var(--primary-500)] px-6 text-sm font-bold text-[var(--primary-950)] shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:bg-[var(--primary-400)] hover:shadow-2xl hover:shadow-[var(--primary-500)]/40 self-end mb-0">Save Changes</button>
 
-</div>
-<div class="space-y-6">
-<h3 class="text-lg font-semibold text-[var(--surface-200)]">Personal Information</h3>
-<div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-<div>
-<label class="block text-sm font-medium text-[var(--surface-400)]" for="username">Username</label>
-<div class="relative mt-1">
-<input class="w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-100)] px-4 py-2 text-[var(--surface-700)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" disabled="" id="username" type="text" value=""/>
-<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-<span class="material-symbols-outlined text-xl text-[var(--surface-500)]"> lock </span>
-</div>
-</div>
-</div>
-<div>
-<label class="block text-sm font-medium text-[var(--surface-400)]" for="display-name">Display Name</label>
-<input class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="display-name" type="text" placeholder="Enter a name everyone can see"/>
-</div>
-<div>
-<label class="block text-sm font-medium text-[var(--surface-400)]" for="email">Email</label>
-<div class="relative mt-1">
-<input class="w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-100)] px-4 py-2 text-[var(--surface-700)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" disabled="" id="email" type="email" value=""/>
-<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-<span class="material-symbols-outlined text-xl text-[var(--surface-500)]"> lock </span>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="space-y-6">
-<h3 class="text-lg font-semibold text-[var(--surface-200)]">Professional Information</h3>
-<div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-<div>
-<label class="block text-sm font-medium text-[var(--surface-400)]" for="team">Team / Organization</label>
-<input class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="team" type="number" value="" placeholder="Enter team number"/>
-</div>
-<div>
-<label class="block text-sm font-medium text-[var(--surface-400)]" for="student-lead">Student Lead</label>
-<select class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="student-lead">
-<option value="">Select</option>
-<option value="true">True</option>
-<option value="false" selected>False</option>
-</select>
-</div>
-<div>
-<label class="block text-sm font-medium text-[var(--surface-400)]" for="role">Role</label>
-<select class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="role">
-<option value="">Set Role</option>
-<option value="student">Student</option>
-<option value="mentor">Mentor</option>
-<option value="spectator">Spectator</option>
-<option value="other">Other</option>
-</select>
-</div>
-</div>
-<div>
-<label class="block text-sm font-medium text-[var(--surface-400)]" for="bio">Bio</label>
-<textarea class="mt-1 w-full rounded-md border border-[var(--surface-200)] bg-[var(--surface-50)] px-4 py-2 text-[var(--surface-900)] focus:border-[var(--primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--primary-500)]" id="bio" rows="4" maxlength="250" placeholder="Tell us about yourself (max 250 characters)"></textarea>
-<div class="mt-1 text-right text-xs text-[var(--surface-500)]">
-<span id="bioCount">0</span>/250 characters
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</main>
-</div>
-</div>
+<main class="cs-page" style="padding-top:20px">
 
-<div id="signupModal" class="modal-centered" style="display:none">
-  <div class="card bg-gradient-dark text-white">
-    <button id="closeSignup" style="position:absolute; right:16px; top:16px; background:none; border:none; color:var(--surface-400); cursor:pointer; font-size:24px;"><span class="material-symbols-outlined">close</span></button>
-    <header style="text-align:center; margin-bottom:10px">
-      <h1 style="font-size:28px; margin:0;">Sign Up</h1>
-    </header>
+  <div style="text-align:center;margin-bottom:24px" id="profileHeader">
+    <div class="cs-skeleton" style="height:80px;width:80px;border-radius:50%;margin:0 auto 12px"></div>
+    <div class="cs-skeleton" style="height:22px;width:50%;margin:0 auto 8px"></div>
+    <div class="cs-skeleton" style="height:16px;width:35%;margin:0 auto"></div>
+  </div>
 
-    <form id="signupStep1Form" style="display:flex; flex-direction:column; gap:12px;">
-      <label style="font-weight:600">Display Name (Permanent)</label>
-      <input id="step1Username" type="text" required />
+  <div id="statsRow" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+    <div class="cs-skeleton" style="height:72px;border-radius:12px"></div>
+    <div class="cs-skeleton" style="height:72px;border-radius:12px"></div>
+    <div class="cs-skeleton" style="height:72px;border-radius:12px"></div>
+  </div>
 
-      <label style="font-weight:600">Email</label>
-      <input id="step1Email" type="email" required />
-
-      <label style="font-weight:600">Password</label>
-      <input id="step1Password" type="password" required />
-
-      <div style="display:flex; gap:8px;">
-        <button type="submit" class="cta" style="flex:1">Continue</button>
-        <button type="button" id="cancelSignup" style="background:#333; color:#fff; border:none; padding:12px 14px; border-radius:8px; cursor:pointer;">Cancel</button>
-      </div>
-      
-      <div id="signupError" class="error-display" style="display:none;"></div>
-      </form>
-    
-    <div id="signupSuccessContent" style="display:none; text-align:center; padding:20px; flex-direction: column;">
-      <span class="material-symbols-outlined" style="font-size: 64px; color: var(--primary-500); margin-bottom: 20px;">
-        check_circle
-      </span>
-      <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 10px; color: var(--surface-950);">
-        Account Created!
-      </h2>
-      <p style="color: var(--surface-400); margin-bottom: 30px; font-size: 16px;">
-        <b>Please check your email</b> for the confirmation link to activate your account and log in.
-      </p>
-      <button type="button" class="cta" onclick="document.getElementById('signupModal').style.display='none';" style="width: 100%;">
-        Got It
+  <div class="cs-card" id="editForm" style="display:none">
+    <h3 class="cs-section-title" style="margin-top:0">Edit Profile</h3>
+    <div class="cs-field">
+      <label class="cs-label">Display Name *</label>
+      <input id="displayName" class="cs-input" maxlength="50"/>
+    </div>
+    <div class="cs-field">
+      <label class="cs-label">FRC Team Number</label>
+      <input id="teamNumber" class="cs-input" type="number" min="1" max="99999"/>
+    </div>
+    <div class="cs-field">
+      <label class="cs-label">Role</label>
+      <select id="role" class="cs-select">
+        <option value="">—</option>
+        <option value="student">Student</option>
+        <option value="mentor">Mentor</option>
+        <option value="volunteer">Volunteer</option>
+        <option value="spectator">Spectator / Fan</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="cs-field">
+      <label class="cs-label">Bio</label>
+      <textarea id="bio" class="cs-textarea" rows="3" maxlength="200"></textarea>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="cs-btn cs-btn-secondary" style="flex:1" onclick="cancelEdit()">Cancel</button>
+      <button class="cs-btn cs-btn-primary" style="flex:2" id="saveBtn" onclick="saveProfile()">
+        <span class="material-symbols-outlined">save</span> Save
       </button>
     </div>
-    </div>
-</div>
-
-<div id="loginModal" class="modal-centered" style="display:none">
-  <div class="card bg-gradient-dark text-white">
-    <button id="closeLogin" style="position:absolute; right:16px; top:16px; background:none; border:none; color:var(--surface-400); cursor:pointer; font-size:24px;">
-      <span class="material-symbols-outlined">close</span>
-    </button>
-    <header style="text-align:center; margin-bottom:10px">
-      <h1 style="font-size:28px; margin:0;">Login</h1>
-    </header>
-    <form id="loginForm" style="display:flex; flex-direction:column; gap:12px;">
-      <label style="font-weight:600">Email</label>
-      <input id="loginEmail" type="email" required />
-      <label style="font-weight:600">Password</label>
-      <input id="loginPassword" type="password" required />
-      <div style="display:flex; gap:8px;">
-        <button type="submit" class="cta" style="flex:1">Login</button>
-        <button type="button" id="cancelLogin" style="background:#333; color:#fff; border:none; padding:12px 14px; border-radius:8px; cursor:pointer;">Cancel</button>
-      </div>
-      
-      <div id="loginError" class="error-display" style="display:none;"></div>
-      <div style="display:flex; justify-content:center; gap:8px; margin-top:6px; align-items:center;">
-        <button type="button" id="forgotPasswordBtn" style="background:none; border:none; color:var(--surface-400); cursor:pointer; font-size:14px; text-decoration:underline;">Forgot password?</button>
-      </div>
-    </form>
   </div>
-</div>
 
-<div id="resetPasswordModal" class="modal-centered" style="display:none">
-  <div class="card bg-gradient-dark text-white">
-    <button id="closeReset" style="position:absolute; right:16px; top:16px; background:none; border:none; color:var(--surface-400); cursor:pointer; font-size:24px;">
-      <span class="material-symbols-outlined">close</span>
+  <div id="actionsSection" style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+    <button class="cs-btn cs-btn-secondary" style="width:100%" onclick="showEdit()">
+      <span class="material-symbols-outlined">edit</span> Edit Profile
     </button>
-    <header style="text-align:center; margin-bottom:10px">
-      <h1 style="font-size:22px; margin:0;">Reset password</h1>
-    </header>
-    <form id="resetForm" style="display:flex; flex-direction:column; gap:12px;">
-      <label style="font-weight:600">Enter the email for your account</label>
-      <input id="resetEmail" type="email" required />
-      <div style="display:flex; gap:8px;">
-        <button type="submit" class="cta" style="flex:1">Send reset link</button>
-        <button type="button" id="cancelReset" style="background:#333; color:#fff; border:none; padding:12px 14px; border-radius:8px; cursor:pointer;">Cancel</button>
-      </div>
-    </form>
+    <a href="scout-history.html" class="cs-btn cs-btn-ghost" style="width:100%;justify-content:center">
+      <span class="material-symbols-outlined">history</span> My Submissions
+    </a>
+    <a href="export.html" class="cs-btn cs-btn-ghost" style="width:100%;justify-content:center">
+      <span class="material-symbols-outlined">download</span> Export My Data
+    </a>
   </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <div style="margin-top:32px;padding-top:20px;border-top:1px solid var(--surface-100)">
+    <div style="font-size:0.8rem;color:var(--surface-400);margin-bottom:8px">Account</div>
+    <button class="cs-btn cs-btn-danger cs-btn-sm" onclick="signOut()">
+      <span class="material-symbols-outlined" style="font-size:16px">logout</span> Sign Out
+    </button>
+  </div>
+
+</main>
+
+<nav class="cs-mobile-nav">
+  <a href="home.html"><span class="material-symbols-outlined">home</span>Home</a>
+  <a href="scout.html"><span class="material-symbols-outlined">edit_note</span>Scout</a>
+  <a href="events.html"><span class="material-symbols-outlined">event</span>Events</a>
+  <a href="teams.html"><span class="material-symbols-outlined">groups</span>Teams</a>
+  <a href="profile.html" class="active"><span class="material-symbols-outlined">person</span>Profile</a>
+</nav>
+
+<div id="cs-toast-container"></div>
+
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  // -------------------------
-  // Supabase initialization
-  // -------------------------
-  const SUPABASE_URL = "https://kstzwynylwcvqmkzkjvr.supabase.co"
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzdHp3eW55bHdjdnFta3pranZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1OTc3OTgsImV4cCI6MjA3MjE3Mzc5OH0.JvilpVaPUCEj0p9Ty4EHdtruq5yico79HWn8Uq6Lqjo'
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let _session = null;
+let _profile = null;
 
+(async function init() {
+  _session = await window.CS.auth.requireAuth("landing.html");
+  if (!_session) return;
+  await loadProfile();
+})();
 
+async function loadProfile() {
+  _profile = await window.CS.profile.get(_session.user.id);
+  const db = window.CS.db;
+  const { data: subs } = await db.from("scout_submissions").select("id").eq("owner_id", _session.user.id);
+  const { data: rel } = await db.from("scout_reliability").select("*").eq("user_id", _session.user.id).maybeSingle();
 
-  // -------------------------
-  // DOM references
-  // -------------------------
-  const profileBtn = document.getElementById('profileBtn');
-  const profileDropdown = document.getElementById('profileDropdown'); 
-  const landingAvatar = document.getElementById('landingAvatar');
+  const count = subs?.length ?? 0;
+  const relScore = rel?.reliability_score ?? 1.0;
+  const trustLevel = window.CS.reliability.getTrustLevel(count);
+  const meta = _session.user.user_metadata || {};
+  const avatarUrl = meta.avatar_url ||
+    `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(_profile?.display_name || meta.full_name || "?")}`;
 
-  // Modals & forms
-  const signupModal = document.getElementById('signupModal');
-  const signupForm = document.getElementById('signupStep1Form');
-  const closeSignup = document.getElementById('closeSignup');
-  const cancelSignup = document.getElementById('cancelSignup');
-  const signupError = document.getElementById('signupError'); 
-  const signupSuccessContent = document.getElementById('signupSuccessContent'); 
+  document.getElementById("profileHeader").innerHTML = `
+    <img src="${avatarUrl}" alt="avatar"
+         style="height:80px;width:80px;border-radius:50%;object-fit:cover;border:3px solid var(--primary-700);margin:0 auto 12px;display:block"/>
+    <div style="font-size:1.2rem;font-weight:800;color:var(--surface-950)">${_profile?.display_name || meta.full_name || "Scout"}</div>
+    <div style="font-size:0.85rem;color:var(--surface-400);margin-top:2px">@${_profile?.username || "—"}</div>
+    ${_profile?.team_number ? `<div style="margin-top:8px"><span class="cs-team-chip">Team ${_profile.team_number}</span></div>` : ""}
+    ${_profile?.bio ? `<div style="margin-top:10px;font-size:0.85rem;color:var(--surface-600);max-width:320px;margin-inline:auto">${_profile.bio}</div>` : ""}
+    ${!window.CS.profile.isComplete(_profile) ? `<div style="margin-top:10px"><a href="profile-setup.html" class="cs-btn cs-btn-primary cs-btn-sm">Complete Profile</a></div>` : ""}
+  `;
 
-  const loginModal = document.getElementById('loginModal');
-  const loginForm = document.getElementById('loginForm');
-  const closeLogin = document.getElementById('closeLogin');
-  const cancelLogin = document.getElementById('cancelLogin');
-  const loginError = document.getElementById('loginError'); 
-
-  const resetModal = document.getElementById('resetPasswordModal');
-  const resetForm = document.getElementById('resetForm');
-  const closeReset = document.getElementById('closeReset');
-  const cancelReset = document.getElementById('cancelReset');
-
-  // Buttons
-  const signupOpen = document.getElementById('signupOpen');
-  const loginLinkBtn = document.getElementById('loginLinkBtn');
-  const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
-  const noUserSignupBtn = document.getElementById('noUserSignupBtn');
-  const noUserLoginBtn = document.getElementById('noUserLoginBtn');
-
-  // Profile form fields
-  const usernameInput = document.getElementById('username');
-  const displayNameInput = document.getElementById('display-name');
-  const emailInput = document.getElementById('email');
-  const teamInput = document.getElementById('team');
-  const studentLeadSelectEl = document.getElementById('student-lead');
-  const roleSelectEl = document.getElementById('role');
-  const bioInput = document.getElementById('bio');
-  const saveChangesBtn = document.getElementById('saveChangesBtn');
-  const profileCompleteIcon = document.getElementById('profileCompleteIcon');
-
-  // Utility: simple show/hide helpers
-  const showElem = (el) => { if (el) el.style.display = 'flex'; }
-  const hideElem = (el) => { if (el) el.style.display = 'none'; }
-  
-  // Utility: Error Display
-  const showError = (el, message) => {
-    if (el) {
-      el.textContent = message;
-      el.style.display = 'block';
-    }
-  }
-  const clearError = (el) => {
-    if (el) {
-      el.textContent = '';
-      el.style.display = 'none';
-    }
-  }
-
-  // -------------------------
-  // Create logged-in dropdown (dynamically)
-  // -------------------------
-  function ensureLoggedInDropdown() {
-    let existing = document.getElementById('profileDropdownLoggedIn');
-    if (existing) return existing;
-
-    const dropdown = document.createElement('div');
-    dropdown.id = 'profileDropdownLoggedIn';
-    dropdown.className = 'dropdown';
-    dropdown.setAttribute('role', 'menu');
-    // Note: dropdown.style.display is not set here; it's controlled by JS below
-    // and relies on the new CSS definition of .dropdown
-
-    // Home link
-    const homeLink = document.createElement('a');
-    homeLink.href = 'https://elixtion.github.io/test';
-    homeLink.textContent = 'Home';
-    dropdown.appendChild(homeLink);
-
-    // Logout button
-    const logoutBtn = document.createElement('button');
-    logoutBtn.id = 'logoutBtn';
-    logoutBtn.textContent = 'Logout';
-    dropdown.appendChild(logoutBtn);
-
-    // External link (same as logged-out)
-    const cd = document.createElement('a');
-    cd.href = 'https://www.chiefdelphi.com';
-    cd.target = '_blank';
-    cd.rel = 'noopener';
-    cd.innerHTML = 'Chief Delphi <span class="material-symbols-outlined" style="margin-left:auto;font-size:18px">open_in_new</span>';
-    dropdown.appendChild(cd);
-
-    // attach after the existing logged-out dropdown (or profile container)
-    if (profileDropdown && profileDropdown.parentNode) {
-      profileDropdown.parentNode.appendChild(dropdown);
-    } else {
-      document.body.appendChild(dropdown);
-    }
-
-    // Add logout handler
-    logoutBtn.addEventListener('click', async () => {
-      try {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
-        updateUIForAuthState();
-      } catch (err) {
-        console.error('Logout error', err);
-      }
-    });
-
-    return dropdown;
-  }
-
-  // -------------------------
-  // Dropdown behavior (avatar button)
-  // -------------------------
-  profileBtn.addEventListener('click', async (ev) => {
-    ev.stopPropagation();
-    const sessionResp = await supabase.auth.getSession();
-    const session = sessionResp?.data?.session ?? null;
-    const loggedInDropdown = ensureLoggedInDropdown();
-    const isShowingLoggedIn = loggedInDropdown.style.display === 'flex';
-    const isShowingLoggedOut = profileDropdown.style.display === 'flex';
-
-    if (session) {
-      // toggle logged-in dropdown
-      loggedInDropdown.style.display = isShowingLoggedIn ? 'none' : 'flex';
-      if (profileDropdown) profileDropdown.style.display = 'none';
-    } else {
-      // toggle logged-out dropdown
-      if (profileDropdown) profileDropdown.style.display = isShowingLoggedOut ? 'none' : 'flex';
-      if (loggedInDropdown) loggedInDropdown.style.display = 'none';
-    }
-  });
-
-  // Clicking outside closes any dropdown
-  document.addEventListener('click', () => {
-    if (profileDropdown) profileDropdown.style.display = 'none';
-    const li = document.getElementById('profileDropdownLoggedIn');
-    if (li) li.style.display = 'none';
-  });
-
-  // -------------------------
-  // Modal open/close helpers
-  // -------------------------
-  // Sign up
-  if (signupOpen) signupOpen.addEventListener('click', () => { 
-    showElem(signupModal); 
-    if (profileDropdown) profileDropdown.style.display = 'none'; 
-    clearError(signupError); // Clear error on open
-    showElem(signupForm); // Ensure form is visible
-    hideElem(signupSuccessContent); // Ensure success is hidden
-  });
-  if (noUserSignupBtn) noUserSignupBtn.addEventListener('click', () => { 
-    showElem(signupModal); 
-    clearError(signupError); // Clear error on open
-    showElem(signupForm); // Ensure form is visible
-    hideElem(signupSuccessContent); // Ensure success is hidden
-  });
-  if (closeSignup) closeSignup.addEventListener('click', () => hideElem(signupModal));
-  if (cancelSignup) cancelSignup.addEventListener('click', () => hideElem(signupModal));
-
-  // Login
-  if (loginLinkBtn) loginLinkBtn.addEventListener('click', () => { 
-    showElem(loginModal); 
-    if (profileDropdown) profileDropdown.style.display = 'none'; 
-    clearError(loginError); // Clear error on open
-  });
-  if (noUserLoginBtn) noUserLoginBtn.addEventListener('click', () => { 
-    showElem(loginModal); 
-    clearError(loginError); // Clear error on open
-  });
-  if (closeLogin) closeLogin.addEventListener('click', () => hideElem(loginModal));
-  if (cancelLogin) cancelLogin.addEventListener('click', () => hideElem(loginModal));
-
-  // Reset
-  if (forgotPasswordBtn) forgotPasswordBtn.addEventListener('click', () => { 
-    showElem(resetModal); 
-    hideElem(loginModal); 
-  });
-  if (closeReset) closeReset.addEventListener('click', () => hideElem(resetModal));
-  if (cancelReset) cancelReset.addEventListener('click', () => hideElem(resetModal));
-  // ESC key closes modals
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      hideElem(signupModal);
-      hideElem(loginModal);
-      hideElem(resetModal);
-    }
-  });
-
-  // -------------------------
-  // Signup handler (email confirmation enabled)
-  // -------------------------
-  if (signupForm) {
-    signupForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      clearError(signupError);
-
-      const username = (document.getElementById('step1Username') || {}).value?.trim();
-      const email = (document.getElementById('step1Email') || {}).value?.trim();
-      const password = (document.getElementById('step1Password') || {}).value;
-
-      if (!username || !email || !password) {
-        showError(signupError, 'Please fill in all sign-up fields.');
-        return;
-      }
-
-      try {
-        // Sign up user — duplicate emails will throw automatically
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { username },
-            emailRedirectTo: 'https://elixtion.github.io/confirm'
-          }
-        });
-
-        if (error) throw error;
-        
-        // **(The profile is now created securely by your database trigger)**
-
-        hideElem(signupForm);
-        showElem(signupSuccessContent);
-        signupForm.reset();
-      } catch (err) {
-        console.error('SignUp error', err);
-        // Supabase auth.signUp error message already covers duplicate email
-        showError(signupError, 'Sign-up error: ' + (err.message || err));
-      }
-    });
-  }
-
-  // -------------------------
-  // Login handler
-  // -------------------------
-  if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      clearError(loginError); // Clear previous errors
-      
-      const email = (document.getElementById('loginEmail') || {}).value?.trim();
-      const password = (document.getElementById('loginPassword') || {}).value;
-
-      if (!email || !password) {
-        showError(loginError, 'Please fill in both email and password.');
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-
-        const session = data?.session ?? null;
-        const user = data?.user ?? null;
-
-        // If Supabase requires email confirmation and the user wasn't confirmed, handle gracefully:
-        const confirmedAt = user?.email_confirmed_at || user?.confirmed_at || null;
-        if (user && !confirmedAt) {
-          // if the account isn't confirmed, sign them out and ask them to confirm
-          await supabase.auth.signOut();
-          showError(loginError, 'Please confirm your email address (check your inbox) before logging in.');
-          return;
-        }
-
-        hideElem(loginModal);
-        loginForm.reset();
-        
-        // Check if we're on the test page and redirect to profile
-        if (window.location.pathname.includes('/test')) {
-          window.location.href = 'https://elixtion.github.io/profile';
-        } else {
-          updateUIForAuthState();
-        }
-      } catch (err) {
-        console.error('Login error', err);
-        // supabase may return an error message detailing email not confirmed
-        showError(loginError, 'Login error: ' + (err.message || err));
-      }
-    });
-  }
-
-  // -------------------------
-  // Forgot password (reset) handler
-  // -------------------------
-  if (resetForm) {
-    resetForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = (document.getElementById('resetEmail') || {}).value?.trim();
-      if (!email) {
-        alert('Please provide the email for your account.');
-        return;
-      }
-
-      try {
-        // Supabase v2 client method for sending a password reset email:
-        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin + '/reset-password'
-        });
-        if (error) throw error;
-
-        alert('If that email exists you will receive a password reset link shortly. Check your inbox.');
-        hideElem(resetModal);
-        resetForm.reset();
-      } catch (err) {
-        console.error('Reset error', err);
-        alert('Error sending reset link: ' + (err.message || err));
-      }
-    });
-  }
-
-  // -------------------------
-  // Keep UI in sync with auth state
-  // -------------------------
-  async function updateUIForAuthState() {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const loggedInDropdown = ensureLoggedInDropdown();
-      const profileContent = document.getElementById('profileContent');
-      const noUserContent = document.getElementById('noUserContent');
-      const navSidebar = document.getElementById('navSidebar');
-      
-      if (session && session.user) {
-        // User is logged in - show profile content and navigation
-        if (profileContent) profileContent.style.display = 'flex';
-        if (noUserContent) noUserContent.style.display = 'none';
-        if (navSidebar) navSidebar.style.display = 'block';
-        
-        // show logged-in dropdown option (but default hidden until avatar clicked)
-        hideElem(profileDropdown);
-        hideElem(document.getElementById('profileDropdownLoggedIn')); // to be safe, hide before update
-        // update avatar (if user's metadata contains an avatar url)
-        const user = session.user;
-        const avatarUrl = (user?.user_metadata && user.user_metadata.avatar_url) || null;
-        if (avatarUrl && landingAvatar) landingAvatar.src = avatarUrl;
-        // Optionally show name on avatar title
-        if (landingAvatar) landingAvatar.title = user?.email || (user?.user_metadata?.username || 'Profile');
-
-        await loadUserProfile(session.user);
-
-        // ensure logged-in dropdown exists (created earlier)
-        // we keep it hidden until avatar clicked — so nothing else to show here
-      } else {
-        // not logged in - show no user content, hide navigation
-        if (profileContent) profileContent.style.display = 'none';
-        if (noUserContent) noUserContent.style.display = 'flex';
-        if (navSidebar) navSidebar.style.display = 'none';
-        
-        if (landingAvatar) {
-          landingAvatar.src = 'https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png';
-          landingAvatar.title = 'Not signed in';
-        }
-        hideElem(document.getElementById('profileDropdownLoggedIn'));
-        // ensure logged-out dropdown is hidden by default
-        if (profileDropdown) profileDropdown.style.display = 'none';
-      }
-    } catch (err) {
-      console.error('Error updating UI for auth state', err);
-    }
-  }
-
-  async function loadUserProfile(user) {
-  if (!user) return;
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  if (error) {
-    console.error('Failed to load profile:', error);
-    return;
-  }
-
-  // Display-only fields
-  if (usernameInput) usernameInput.value = user.user_metadata?.username || '';
-  if (emailInput) emailInput.value = user.email || '';
-
-  // Editable fields — ONLY set if not null
-  if (data.display_name !== null && displayNameInput)
-    displayNameInput.value = data.display_name;
-
-  if (data.team_number !== null && teamInput)
-    teamInput.value = data.team_number;
-
-  if (data.bio !== null && bioInput) {
-    bioInput.value = data.bio;
-    bioCount.textContent = data.bio.length;
-  }
-
-  // Dropdown defaults
-  if (roleSelectEl)
-    roleSelectEl.value = data.role || '';
-
-  if (studentLeadSelectEl)
-    studentLeadSelectEl.value =
-      data.is_student_lead === true ? 'true' : 'false';
-
-  // Update dropdown colors
-  updateSelectColor(roleSelectEl);
-  updateSelectColor(studentLeadSelectEl);
-
-  // Update Profile Complete status icon
-  if (profileCompleteIcon) {
-    if (data.profile_completed === true) {
-      profileCompleteIcon.textContent = 'check_circle';
-      profileCompleteIcon.className = 'material-symbols-outlined text-2xl text-green-500';
-    } else {
-      profileCompleteIcon.textContent = 'cancel';
-      profileCompleteIcon.className = 'material-symbols-outlined text-2xl text-red-500';
-    }
-  }
+  document.getElementById("statsRow").innerHTML = `
+    <div class="cs-card" style="text-align:center;padding:14px">
+      <div style="font-size:1.6rem;font-weight:800;color:var(--primary-500)">${count}</div>
+      <div style="font-size:0.7rem;color:var(--surface-500);text-transform:uppercase;letter-spacing:.05em">Matches</div>
+    </div>
+    <div class="cs-card" style="text-align:center;padding:14px">
+      <div style="font-size:1.3rem;font-weight:800">${(relScore*100).toFixed(0)}%</div>
+      <div style="font-size:0.7rem;color:var(--surface-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Reliability</div>
+      <div class="cs-reliability-bar"><div class="cs-reliability-fill" style="width:${Math.min(relScore*100,100)}%"></div></div>
+    </div>
+    <div class="cs-card" style="text-align:center;padding:14px">
+      <div style="font-size:0.9rem;margin-bottom:2px">${window.CS.ui.trustBadge(trustLevel)}</div>
+      <div style="font-size:0.7rem;color:var(--surface-500);text-transform:uppercase;letter-spacing:.05em">Trust</div>
+    </div>
+  `;
 }
 
+function showEdit() {
+  document.getElementById("editForm").style.display = "";
+  document.getElementById("actionsSection").style.display = "none";
+  document.getElementById("displayName").value = _profile?.display_name || "";
+  document.getElementById("teamNumber").value  = _profile?.team_number  || "";
+  document.getElementById("role").value         = _profile?.role         || "";
+  document.getElementById("bio").value          = _profile?.bio          || "";
+}
 
-  // Run once on load
-  updateUIForAuthState();
+function cancelEdit() {
+  document.getElementById("editForm").style.display = "none";
+  document.getElementById("actionsSection").style.display = "";
+}
 
-  // Listen for auth state changes and keep UI in sync
-  supabase.auth.onAuthStateChange((event, session) => {
-    console.log('Auth event:', event);
-    updateUIForAuthState();
+async function saveProfile() {
+  const displayName = document.getElementById("displayName").value.trim();
+  if (!displayName) { window.CS.ui.toast("Display name required.", "error"); return; }
+  document.getElementById("saveBtn").disabled = true;
+  const result = await window.CS.profile.upsert({
+    id: _session.user.id,
+    display_name: displayName,
+    team_number: parseInt(document.getElementById("teamNumber").value) || null,
+    role: document.getElementById("role").value,
+    bio: document.getElementById("bio").value.trim(),
+    profile_completed: true,
+    updated_at: new Date().toISOString(),
   });
+  document.getElementById("saveBtn").disabled = false;
+  if (result) { window.CS.ui.toast("Saved!", "success"); cancelEdit(); await loadProfile(); }
+  else window.CS.ui.toast("Save failed.", "error");
+}
 
-  // -------------------------
-  // Bio character counter
-  // -------------------------
-  const bioTextarea = document.getElementById('bio');
-  const bioCount = document.getElementById('bioCount');
-  
-  if (bioTextarea && bioCount) {
-    // Update counter on input
-    bioTextarea.addEventListener('input', () => {
-      bioCount.textContent = bioTextarea.value.length;
-    });
-    
-    // Set initial count
-    bioCount.textContent = bioTextarea.value.length;
-  }
-
-  // -------------------------
-  // Select dropdown placeholder styling
-  // -------------------------
-  const roleSelect = document.getElementById('role');
-  const studentLeadSelect = document.getElementById('student-lead');
-  
-  const updateSelectColor = (select) => {
-    if (select) {
-      if (select.value === '') {
-        select.style.color = 'var(--surface-500)';
-      } else {
-        select.style.color = 'var(--surface-900)';
-      }
-    }
-  };
-  
-  if (roleSelect) {
-    updateSelectColor(roleSelect);
-    roleSelect.addEventListener('change', () => updateSelectColor(roleSelect));
-  }
-  
-  if (studentLeadSelect) {
-    updateSelectColor(studentLeadSelect);
-    studentLeadSelect.addEventListener('change', () => updateSelectColor(studentLeadSelect));
-  }
-
-  // -------------------------
-  // Save Changes Handler
-  // -------------------------
-  if (saveChangesBtn) {
-    saveChangesBtn.addEventListener('click', async () => {
-      try {
-        // Get current user
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session || !session.user) {
-          alert('You must be logged in to save changes.');
-          return;
-        }
-
-        // Disable button during save
-        saveChangesBtn.disabled = true;
-        saveChangesBtn.textContent = 'Saving...';
-
-        // Prepare update data
-        const updates = {
-          id: session.user.id,
-          display_name: displayNameInput?.value?.trim() || null,
-          team_number: teamInput?.value ? parseInt(teamInput.value) : null,
-          role: roleSelectEl?.value || null,
-          is_student_lead: studentLeadSelectEl?.value === 'true' ? true : 
-                           studentLeadSelectEl?.value === 'false' ? false : null,
-          bio: bioInput?.value?.trim() || null,
-          updated_at: new Date().toISOString()
-        };
-
-        // Update profile in database
-        const { error } = await supabase
-          .from('profiles')
-          .update(updates)
-          .eq('id', session.user.id);
-
-        if (error) throw error;
-
-        // Show success message
-        saveChangesBtn.textContent = 'Saved!';
-        
-        // Reset button after 2 seconds
-        setTimeout(() => {
-          saveChangesBtn.disabled = false;
-          saveChangesBtn.textContent = 'Save Changes';
-        }, 2000);
-
-      } catch (err) {
-        console.error('Error saving profile:', err);
-        alert('Failed to save changes: ' + (err.message || err));
-        
-        // Re-enable button
-        saveChangesBtn.disabled = false;
-        saveChangesBtn.textContent = 'Save Changes';
-      }
-    });
-  }
-});
-
+async function signOut() {
+  await window.CS.auth.signOut();
+  window.location.href = "landing.html";
+}
 </script>
-</body></html>
+</body>
+</html>

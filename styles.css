@@ -1,16 +1,19 @@
-/* styles.css — landing / site theme */
+/* styles.css — CrowdScout design system */
 :root {
+  /* Primary - Green */
   --primary-50: #f7fdf0;
   --primary-100: #eefad9;
   --primary-200: #dff6ba;
   --primary-300: #c9eea7;
   --primary-400: #b1e48b;
-  --primary-500: #99e550;
+  --primary-500: #99e550;  /* Main brand green */
   --primary-600: #74c13a;
   --primary-700: #58962e;
   --primary-800: #447526;
   --primary-900: #396122;
   --primary-950: #1b350e;
+
+  /* Secondary - Muted green/teal */
   --secondary-50: #f2f7f5;
   --secondary-100: #e4eee9;
   --secondary-200: #c9ddd4;
@@ -22,6 +25,8 @@
   --secondary-800: #384d45;
   --secondary-900: #30413a;
   --secondary-950: #1a2420;
+
+  /* Surface - Dark backgrounds */
   --surface-0: #111312;
   --surface-50: #171a18;
   --surface-100: #262e2a;
@@ -35,28 +40,307 @@
   --surface-900: #f1faf5;
   --surface-950: #ffffff;
 }
+
+/* ── Base ────────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--surface-0);
+  color: var(--surface-950);
+  font-family: Inter, "Noto Sans", sans-serif;
+  margin: 0; padding: 0;
+  min-height: 100vh;
+}
+a { color: inherit; text-decoration: none; }
+input, select, textarea, button { font-family: inherit; }
+
+/* ── Landing-only animation ──────────────────────────────────────────────────── */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-.animate-fadeIn {
-  animation: fadeIn 0.5s ease-out forwards;
-}
+.animate-fadeIn { animation: fadeIn 0.5s ease-out forwards; }
 
-/* small helpers used by landing + site */
-body { background: var(--surface-0); color: var(--surface-950); font-family: Inter, "Noto Sans", sans-serif; margin:0; padding:0; }
-
-/* profile dropdown basics used on both pages */
+/* ── Profile dropdown ─────────────────────────────────────────────────────────── */
 .profile-container { position: fixed; top: 12px; right: 12px; z-index: 60; }
-.profile-btn { background: transparent; border: none; cursor: pointer; padding: 2px; border-radius:9999px; }
+.profile-btn { background: transparent; border: none; cursor: pointer; padding: 2px; border-radius: 9999px; }
 .profile-avatar { height: 40px; width: 40px; border-radius: 9999px; object-fit: cover; border: 1px solid #333; background: #222; }
-.dropdown { position: absolute; right: 0; margin-top: 8px; width: 220px; border-radius: 10px; background: var(--surface-50); border: 1px solid var(--surface-200); box-shadow: 0 12px 30px rgba(0,0,0,.4); display: none; overflow: hidden; }
-.dropdown a, .dropdown button { width:100%; text-align:left; padding:10px 12px; font-size:0.95rem; background:transparent; color:var(--surface-900); border: none; cursor:pointer; display:flex; align-items:center; gap:8px; }
+.dropdown {
+  position: absolute; right: 0; margin-top: 8px; width: 220px;
+  border-radius: 10px; background: var(--surface-50);
+  border: 1px solid var(--surface-200); box-shadow: 0 12px 30px rgba(0,0,0,.4);
+  display: none; overflow: hidden;
+}
+.dropdown a, .dropdown button {
+  width: 100%; text-align: left; padding: 10px 12px; font-size: 0.95rem;
+  background: transparent; color: var(--surface-900); border: none; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+}
 .dropdown a:hover, .dropdown button:hover { background: var(--surface-100); }
-.dropdown .divider { height:1px; background:var(--surface-200); margin:4px 0; }
+.dropdown .divider { height: 1px; background: var(--surface-200); margin: 4px 0; }
+
+/* ── Header / Nav ─────────────────────────────────────────────────────────────── */
+.cs-header {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; height: 60px;
+  background: rgba(17,19,18,.85); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--surface-100);
+}
+.cs-header-brand { display: flex; align-items: center; gap: 10px; }
+.cs-header-brand img { height: 36px; width: 36px; border-radius: 6px; }
+.cs-header-brand span { font-size: 1.1rem; font-weight: 700; color: var(--surface-950); }
+.cs-nav { display: flex; gap: 4px; align-items: center; }
+.cs-nav a {
+  padding: 6px 12px; border-radius: 6px; font-size: 0.875rem; font-weight: 500;
+  color: var(--surface-500); transition: color 0.15s, background 0.15s;
+}
+.cs-nav a:hover, .cs-nav a.active { color: var(--surface-950); background: var(--surface-100); }
+.cs-nav a.active { color: var(--primary-500); }
+
+/* ── Bottom mobile nav ────────────────────────────────────────────────────────── */
+.cs-mobile-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+  display: flex; background: var(--surface-50);
+  border-top: 1px solid var(--surface-100); height: 60px;
+}
+.cs-mobile-nav a {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 2px; font-size: 0.65rem; color: var(--surface-400);
+  transition: color 0.15s;
+}
+.cs-mobile-nav a .material-symbols-outlined { font-size: 22px; }
+.cs-mobile-nav a.active, .cs-mobile-nav a:hover { color: var(--primary-500); }
+
+/* ── Connectivity bar ─────────────────────────────────────────────────────────── */
+.cs-conn-bar {
+  position: fixed; bottom: 60px; left: 0; right: 0; z-index: 45;
+  padding: 5px 16px; font-size: 0.78rem; text-align: center;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.cs-conn-bar--online   { background: var(--primary-950); color: var(--primary-400); }
+.cs-conn-bar--syncing  { background: #2d2200; color: #fbbf24; }
+.cs-conn-bar--offline  { background: #3b1c1c; color: #f87171; }
+
+/* ── Cards ─────────────────────────────────────────────────────────────────────── */
+.cs-card {
+  background: var(--surface-50); border: 1px solid var(--surface-100);
+  border-radius: 12px; padding: 16px;
+}
+.cs-card-sm { padding: 12px; border-radius: 8px; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────────── */
+.cs-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 18px; border-radius: 8px; font-size: 0.875rem; font-weight: 600;
+  border: none; cursor: pointer; transition: background 0.12s, opacity 0.12s;
+  white-space: nowrap;
+}
+.cs-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.cs-btn-primary { background: var(--primary-500); color: #0e1a09; }
+.cs-btn-primary:hover:not(:disabled) { background: var(--primary-400); }
+.cs-btn-secondary { background: var(--surface-100); color: var(--surface-800); }
+.cs-btn-secondary:hover:not(:disabled) { background: var(--surface-200); }
+.cs-btn-ghost { background: transparent; color: var(--surface-600); border: 1px solid var(--surface-200); }
+.cs-btn-ghost:hover:not(:disabled) { background: var(--surface-100); }
+.cs-btn-danger { background: #7f1d1d; color: #fca5a5; }
+.cs-btn-danger:hover:not(:disabled) { background: #991b1b; }
+.cs-btn-lg { padding: 14px 24px; font-size: 1rem; border-radius: 10px; }
+.cs-btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
+/* Touch-friendly: min 44px tall for mobile */
+.cs-btn { min-height: 44px; }
+.cs-btn-sm { min-height: 36px; }
+
+/* ── Form inputs ──────────────────────────────────────────────────────────────── */
+.cs-input, .cs-select, .cs-textarea {
+  width: 100%; background: var(--surface-100); border: 1px solid var(--surface-200);
+  border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; color: var(--surface-950);
+  outline: none; transition: border-color 0.15s;
+}
+.cs-input::placeholder, .cs-textarea::placeholder { color: var(--surface-400); }
+.cs-input:focus, .cs-select:focus, .cs-textarea:focus {
+  border-color: var(--primary-500); box-shadow: 0 0 0 2px rgba(153,229,80,.15);
+}
+.cs-select { appearance: none; cursor: pointer; }
+.cs-textarea { resize: vertical; min-height: 80px; }
+.cs-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--surface-500); margin-bottom: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
+.cs-field { margin-bottom: 16px; }
+
+/* ── Toggle (boolean field) ─────────────────────────────────────────────────── */
+.cs-toggle-group { display: flex; gap: 8px; }
+.cs-toggle-btn {
+  flex: 1; min-height: 48px; border: 2px solid var(--surface-200);
+  border-radius: 8px; background: var(--surface-100); color: var(--surface-600);
+  font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: border-color 0.12s, background 0.12s, color 0.12s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.cs-toggle-btn.active-yes { border-color: var(--primary-500); background: var(--primary-950); color: var(--primary-400); }
+.cs-toggle-btn.active-no  { border-color: #7f1d1d; background: #1c0a0a; color: #f87171; }
+
+/* ── Range selector ─────────────────────────────────────────────────────────── */
+.cs-range-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.cs-range-btn {
+  flex: 1; min-height: 44px; border: 2px solid var(--surface-200);
+  border-radius: 8px; background: var(--surface-100); color: var(--surface-600);
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: border-color 0.12s, background 0.12s, color 0.12s;
+  white-space: nowrap; padding: 0 10px;
+}
+.cs-range-btn.active { border-color: var(--primary-500); background: var(--primary-950); color: var(--primary-400); }
+
+/* ── Tally counter ──────────────────────────────────────────────────────────── */
+.cs-tally { background: var(--surface-100); border-radius: 12px; padding: 14px; }
+.cs-tally-total {
+  font-size: 2.5rem; font-weight: 800; color: var(--primary-500);
+  text-align: center; line-height: 1; padding: 8px 0;
+}
+.cs-tally-total-label { font-size: 0.7rem; color: var(--surface-400); text-align: center; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+.cs-tally-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.cs-tally-btn {
+  flex: 1; min-width: 52px; min-height: 52px; border: none;
+  border-radius: 8px; background: var(--surface-200); color: var(--surface-950);
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.08s; user-select: none;
+  /* No animations on scouting forms */
+}
+.cs-tally-btn:active { background: var(--primary-700); }
+.cs-tally-undo {
+  min-height: 36px; padding: 0 14px; font-size: 0.8rem; margin-top: 8px;
+  background: var(--surface-50); border: 1px solid var(--surface-200);
+  border-radius: 6px; color: var(--surface-500); cursor: pointer; width: 100%;
+}
+.cs-tally-undo:disabled { opacity: 0.4; }
+
+/* ── Phase section (collapsible) ──────────────────────────────────────────────── */
+.cs-phase {
+  background: var(--surface-50); border: 1px solid var(--surface-100);
+  border-radius: 12px; overflow: hidden; margin-bottom: 12px;
+}
+.cs-phase-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; cursor: pointer; user-select: none;
+  border-bottom: 1px solid transparent;
+}
+.cs-phase.open .cs-phase-header { border-bottom-color: var(--surface-100); }
+.cs-phase-title { font-size: 1rem; font-weight: 700; color: var(--surface-950); display: flex; align-items: center; gap: 8px; }
+.cs-phase-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+.cs-phase-badge-auto     { background: var(--primary-950); color: var(--primary-400); }
+.cs-phase-badge-teleop   { background: #1c2a40; color: #60a5fa; }
+.cs-phase-badge-endgame  { background: #2d1c40; color: #c084fc; }
+.cs-phase-badge-postmatch{ background: var(--surface-100); color: var(--surface-500); }
+.cs-phase-chevron { color: var(--surface-400); font-size: 20px; transition: transform 0.2s; }
+.cs-phase.open .cs-phase-chevron { transform: rotate(180deg); }
+.cs-phase-body { display: none; padding: 16px; }
+.cs-phase.open .cs-phase-body { display: block; }
+
+/* ── Match meta bar ────────────────────────────────────────────────────────── */
+.cs-match-meta {
+  background: var(--surface-50); border-bottom: 1px solid var(--surface-100);
+  padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.cs-match-meta-chip {
+  background: var(--surface-100); border-radius: 99px;
+  padding: 4px 10px; font-size: 0.78rem; color: var(--surface-700); font-weight: 600;
+}
+.cs-match-meta-chip.red  { background: rgba(127,29,29,.4); color: #fca5a5; }
+.cs-match-meta-chip.blue { background: rgba(30,58,138,.4); color: #93c5fd; }
+
+/* ── Stats table ──────────────────────────────────────────────────────────── */
+.cs-stats-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.cs-stats-table th {
+  text-align: left; padding: 8px 12px;
+  color: var(--surface-500); font-weight: 600; font-size: 0.75rem;
+  text-transform: uppercase; letter-spacing: .05em;
+  border-bottom: 1px solid var(--surface-100);
+}
+.cs-stats-table td { padding: 10px 12px; border-bottom: 1px solid var(--surface-100); color: var(--surface-900); }
+.cs-stats-table tr:last-child td { border-bottom: none; }
+.cs-stats-table tr:hover td { background: var(--surface-50); }
+
+/* ── Reliability / trust badges ────────────────────────────────────────────── */
+.cs-trust-new     { font-size: 0.75rem; }
+.cs-trust-active  { font-size: 0.75rem; }
+.cs-trust-trusted { font-size: 0.75rem; }
+.cs-trust-verified{ font-size: 0.75rem; }
+.cs-reliability-bar { height: 4px; border-radius: 2px; background: var(--surface-200); overflow: hidden; width: 100%; }
+.cs-reliability-fill { height: 100%; background: var(--primary-500); border-radius: 2px; }
+
+/* ── Team / event chips ──────────────────────────────────────────────────── */
+.cs-team-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface-100); border: 1px solid var(--surface-200);
+  border-radius: 8px; padding: 6px 10px; font-size: 0.85rem; font-weight: 600;
+  color: var(--surface-900);
+}
+.cs-event-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--primary-950); border: 1px solid var(--primary-800);
+  border-radius: 8px; padding: 6px 10px; font-size: 0.85rem; font-weight: 600;
+  color: var(--primary-400);
+}
+
+/* ── Alliance colors ─────────────────────────────────────────────────────── */
+.cs-alliance-red  { color: #f87171; }
+.cs-alliance-blue { color: #60a5fa; }
+
+/* ── Skeleton loading ────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.cs-skeleton {
+  background: linear-gradient(90deg, var(--surface-100) 25%, var(--surface-200) 50%, var(--surface-100) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+}
+
+/* ── Page layout helpers ─────────────────────────────────────────────────── */
+.cs-page { padding: 16px 16px 80px; max-width: 640px; margin: 0 auto; }
+.cs-page-wide { padding: 16px 16px 80px; max-width: 960px; margin: 0 auto; }
+.cs-section-title { font-size: 1.2rem; font-weight: 700; margin: 0 0 12px; }
+.cs-section-sub   { font-size: 0.85rem; color: var(--surface-500); margin: -8px 0 12px; }
+.cs-divider { height: 1px; background: var(--surface-100); margin: 20px 0; }
+.cs-empty { text-align: center; padding: 40px 20px; color: var(--surface-400); font-size: 0.9rem; }
+
+/* ── Search input ────────────────────────────────────────────────────────── */
+.cs-search { position: relative; }
+.cs-search .material-symbols-outlined {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  color: var(--surface-400); font-size: 20px; pointer-events: none;
+}
+.cs-search input { padding-left: 36px; }
+
+/* ── Confidence indicator ────────────────────────────────────────────────── */
+.cs-confidence { font-size: 0.7rem; color: var(--surface-400); }
+.cs-confidence-high { color: var(--primary-500); }
+.cs-confidence-med  { color: #fbbf24; }
+.cs-confidence-low  { color: #f87171; }
+
+/* ── Submit footer (scouting form) ──────────────────────────────────────── */
+.cs-submit-footer {
+  position: sticky; bottom: 60px; left: 0; right: 0; z-index: 30;
+  background: rgba(17,19,18,.95); backdrop-filter: blur(8px);
+  border-top: 1px solid var(--surface-100); padding: 12px 16px;
+  display: flex; gap: 10px; align-items: center;
+}
+
+/* ── Status pill ─────────────────────────────────────────────────────────── */
+.cs-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 99px; font-size: 0.72rem; font-weight: 600;
+}
+.cs-pill-green  { background: var(--primary-950); color: var(--primary-400); }
+.cs-pill-yellow { background: #2d2200; color: #fbbf24; }
+.cs-pill-red    { background: #3b1c1c; color: #f87171; }
+.cs-pill-gray   { background: var(--surface-100); color: var(--surface-500); }
+
+/* ── Responsive: hide desktop nav on mobile ──────────────────────────────── */
+@media (min-width: 640px) {
+  .cs-mobile-nav { display: none; }
+  .cs-conn-bar   { bottom: 0; }
+  .cs-submit-footer { bottom: 0; }
+  .cs-page, .cs-page-wide { padding-bottom: 32px; }
+}
+@media (max-width: 640px) {
+  .cs-header .cs-nav { display: none; }
+}

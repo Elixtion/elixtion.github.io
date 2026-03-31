@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>My Submissions — CrowdScout</title>
+  <meta name="theme-color" content="#111312"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="lib/supabase-client.js"></script>
+  <script src="lib/offline.js"></script>
+  <script src="lib/ui.js"></script>
+</head>
+<body>
+
+<header class="cs-header">
+  <a href="profile.html" class="cs-header-brand">
+    <span class="material-symbols-outlined" style="color:var(--surface-500);font-size:20px">arrow_back</span>
+    <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
+    <span>My Submissions</span>
+  </a>
+</header>
+
+<main class="cs-page" style="padding-top:16px">
+
+  <!-- Filters -->
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <div class="cs-search" style="flex:1;min-width:160px">
+      <span class="material-symbols-outlined">search</span>
+      <input id="searchInput" class="cs-input" placeholder="Team, event…" oninput="filterSubs()"/>
+    </div>
+    <select id="eventFilter" class="cs-select" style="width:auto;min-width:120px" onchange="filterSubs()">
+      <option value="">All Events</option>
+    </select>
+  </div>
+
+  <!-- Summary -->
+  <div id="summaryRow" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap"></div>
+
+  <!-- Pending offline -->
+  <div id="offlineSection" style="display:none;margin-bottom:16px">
+    <h3 class="cs-section-title">Pending Offline</h3>
+    <div id="offlineList"></div>
+  </div>
+
+  <!-- Submitted -->
+  <h3 class="cs-section-title">Submitted</h3>
+  <div id="subsList"><div class="cs-empty">Loading…</div></div>
+
+</main>
+
+<nav class="cs-mobile-nav">
+  <a href="home.html"><span class="material-symbols-outlined">home</span>Home</a>
+  <a href="scout.html"><span class="material-symbols-outlined">edit_note</span>Scout</a>
+  <a href="events.html"><span class="material-symbols-outlined">event</span>Events</a>
+  <a href="teams.html"><span class="material-symbols-outlined">groups</span>Teams</a>
+  <a href="profile.html" class="active"><span class="material-symbols-outlined">person</span>Profile</a>
+</nav>
+
+<div id="cs-toast-container"></div>
+
+<script>
+let _allSubs = [];
+let _session = null;
+
+(async function init() {
+  _session = await window.CS.auth.requireAuth("landing.html");
+  if (!_session) return;
+  await Promise.all([loadServerSubs(), loadOfflineSubs()]);
+})();
+
+async function loadServerSubs() {
+  const db = window.CS.db;
+  const { data: subs } = await db
+    .from("scout_submissions")
+    .select("id,event_key,match_number,match_type,team_number,alliance_color,answers,created_at,reliability_score")
+    .eq("owner_id", _session.user.id)
+    .order("created_at", { ascending: false });
+
+  _allSubs = subs || [];
+
+  // Populate event filter
+  const events = [...new Set(_allSubs.map(s => s.event_key).filter(Boolean))].sort();
+  const ef = document.getElementById("eventFilter");
+  events.forEach(e => { const o = document.createElement("option"); o.value = e; o.textContent = e; ef.appendChild(o); });
+
+  // Summary
+  document.getElementById("summaryRow").innerHTML = `
+    <span class="cs-pill cs-pill-green" style="font-size:0.85rem;padding:6px 12px">
+      <span class="material-symbols-outlined" style="font-size:14px">check_circle</span>
+      ${_allSubs.length} submitted
+    </span>
+    <span class="cs-pill cs-pill-gray" style="font-size:0.85rem;padding:6px 12px">
+      ${events.length} event${events.length !== 1 ? "s" : ""}
+    </span>
+  `;
+
+  filterSubs();
+}
+
+async function loadOfflineSubs() {
+  const queue = await window.CS.offline.getSyncQueue();
+  const pending = queue.filter(q => q.syncStatus !== "synced");
+  const section = document.getElementById("offlineSection");
+  if (!pending.length) { section.style.display = "none"; return; }
+  section.style.display = "";
+  document.getElementById("offlineList").innerHTML = pending.map(item => `
+    <div class="cs-card cs-card-sm" style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-weight:600;font-size:0.875rem">Team ${item.data?.team_number ?? "?"} · ${item.data?.event_key ?? "?"} Q${item.data?.match_number ?? "?"}</div>
+        <div style="font-size:0.75rem;color:var(--surface-500)">${new Date(item.createdAt).toLocaleString()}</div>
+      </div>
+      <span class="cs-pill ${item.syncStatus === 'failed' ? 'cs-pill-red' : 'cs-pill-yellow'}">${item.syncStatus}</span>
+    </div>
+  `).join("");
+}
+
+function filterSubs() {
+  const q     = document.getElementById("searchInput").value.toLowerCase();
+  const event = document.getElementById("eventFilter").value;
+  let filtered = _allSubs;
+  if (event) filtered = filtered.filter(s => s.event_key === event);
+  if (q)     filtered = filtered.filter(s =>
+    String(s.team_number).includes(q) ||
+    (s.event_key || "").toLowerCase().includes(q)
+  );
+  renderSubs(filtered);
+}
+
+function renderSubs(subs) {
+  const el = document.getElementById("subsList");
+  if (!subs.length) { el.innerHTML = '<div class="cs-empty">No submissions found.</div>'; return; }
+
+  el.innerHTML = subs.map(s => {
+    const autoFuel   = s.answers?.auto_fuel_scored   ?? "—";
+    const teleopFuel = s.answers?.teleop_fuel_scored ?? "—";
+    const climb      = window.CS.ui.climbLabel(s.answers?.endgame_climb_level);
+    const allianceCls = s.alliance_color === "red" ? "cs-alliance-red" : s.alliance_color === "blue" ? "cs-alliance-blue" : "";
+    const label = s.match_type === "playoff" ? `P${s.match_number}` : `Q${s.match_number}`;
+    return `
+      <div class="cs-card cs-card-sm" style="margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="cs-team-chip" style="font-size:0.85rem">${s.team_number}</span>
+            <span style="font-weight:600;font-size:0.875rem">${s.event_key || "?"} ${label}</span>
+            ${s.alliance_color ? `<span class="${allianceCls}" style="font-size:0.72rem;font-weight:700">${s.alliance_color.toUpperCase()}</span>` : ""}
+          </div>
+          <span style="font-size:0.72rem;color:var(--surface-400)">${new Date(s.created_at).toLocaleDateString()}</span>
+        </div>
+        <div style="display:flex;gap:12px;font-size:0.8rem;color:var(--surface-600);flex-wrap:wrap">
+          <span><strong style="color:var(--primary-400)">${autoFuel}</strong> auto</span>
+          <span><strong style="color:var(--primary-400)">${teleopFuel}</strong> teleop</span>
+          <span>climb: <strong>${climb}</strong></span>
+          ${s.answers?.post_robot_died ? `<span style="color:#f87171">⚠ died</span>` : ""}
+        </div>
+        ${s.answers?.post_notes ? `<div style="font-size:0.78rem;color:var(--surface-400);margin-top:4px;font-style:italic">"${s.answers.post_notes}"</div>` : ""}
+      </div>
+    `;
+  }).join("");
+}
+</script>
+</body>
+</html>
