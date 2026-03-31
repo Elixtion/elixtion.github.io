@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Match — CrowdScout</title>
+  <meta name="theme-color" content="#111312"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;600;700;900&display=swap"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="lib/supabase-client.js"></script>
+  <script src="lib/tba.js"></script>
+  <script src="lib/statbotics.js"></script>
+  <script src="lib/reliability.js"></script>
+  <script src="lib/schema2026.js"></script>
+  <script src="lib/ui.js"></script>
+
+  <style>
+    .alliance-panel {
+      flex:1;min-width:0;border-radius:12px;padding:14px;
+    }
+    .alliance-panel.red  { background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25) }
+    .alliance-panel.blue { background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.25) }
+    .alliance-score { font-size:2.2rem;font-weight:900 }
+    .alliance-score.red  { color:#f87171 }
+    .alliance-score.blue { color:#60a5fa }
+    .team-link { display:inline-block;padding:3px 8px;border-radius:5px;font-weight:700;font-size:0.9rem;text-decoration:none;transition:opacity .15s }
+    .team-link:hover { opacity:.75 }
+    .team-link.red  { background:rgba(239,68,68,.15);color:#f87171 }
+    .team-link.blue { background:rgba(96,165,250,.15);color:#60a5fa }
+    .robot-card-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:12px }
+    .stat-row { display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--surface-100);font-size:0.82rem }
+    .stat-row:last-child { border-bottom:none }
+    .raw-table { width:100%;border-collapse:collapse;font-size:0.78rem }
+    .raw-table th { background:var(--surface-100);padding:6px 10px;text-align:left;font-weight:600;color:var(--surface-500);white-space:nowrap }
+    .raw-table td { padding:6px 10px;border-bottom:1px solid var(--surface-100);color:var(--surface-700) }
+    .raw-table tr:last-child td { border-bottom:none }
+    .raw-table tr:hover td { background:var(--surface-50) }
+  </style>
+</head>
+<body>
+
+<header class="cs-header">
+  <a href="javascript:history.back()" class="cs-header-brand">
+    <span class="material-symbols-outlined" style="color:var(--surface-500);font-size:20px">arrow_back</span>
+    <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
+    <span id="headerTitle">Match</span>
+  </a>
+  <nav class="cs-nav">
+    <a href="scout.html">Scout</a>
+    <a href="events.html">Events</a>
+  </nav>
+</header>
+
+<main class="cs-page" style="padding-top:16px">
+
+  <!-- Loading -->
+  <div id="loadingState" style="text-align:center;padding:60px 0;color:var(--surface-400)">
+    <span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px">hourglass_top</span>
+    Loading match data…
+  </div>
+
+  <!-- Error -->
+  <div id="errorState" class="cs-empty" style="display:none">
+    <span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px">error_outline</span>
+    Could not load match data.
+  </div>
+
+  <!-- Content -->
+  <div id="matchContent" style="display:none">
+
+    <!-- Match header + score -->
+    <div class="cs-card" style="margin-bottom:16px;padding:20px">
+      <div style="text-align:center;margin-bottom:16px">
+        <div id="matchLabel" style="font-size:1.1rem;font-weight:800;color:var(--surface-700);margin-bottom:4px"></div>
+        <div id="matchEvent" style="font-size:0.8rem;color:var(--surface-500)"></div>
+        <div id="matchTime" style="font-size:0.78rem;color:var(--surface-400);margin-top:2px"></div>
+      </div>
+
+      <!-- Alliance score display -->
+      <div style="display:flex;gap:12px;margin-bottom:16px">
+        <div class="alliance-panel red">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#f87171;margin-bottom:8px">Red Alliance</div>
+          <div id="redTeams" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+          <div class="alliance-score red" id="redScore">—</div>
+          <div id="redBreakdown" style="margin-top:8px;font-size:0.78rem;color:var(--surface-500)"></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;font-weight:800;color:var(--surface-300)">vs</div>
+        <div class="alliance-panel blue">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#60a5fa;margin-bottom:8px">Blue Alliance</div>
+          <div id="blueTeams" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+          <div class="alliance-score blue" id="blueScore">—</div>
+          <div id="blueBreakdown" style="margin-top:8px;font-size:0.78rem;color:var(--surface-500)"></div>
+        </div>
+      </div>
+
+      <!-- Video link -->
+      <div id="videoSection" style="display:none;text-align:center">
+        <a id="videoLink" href="#" target="_blank" rel="noopener" class="cs-btn cs-btn-ghost cs-btn-sm" style="display:inline-flex;gap:6px">
+          <span class="material-symbols-outlined" style="font-size:16px;color:#f87171">play_circle</span> Watch on YouTube
+        </a>
+      </div>
+    </div>
+
+    <!-- Per-robot scout averages -->
+    <h3 class="cs-section-title">Scout Data — Per Robot</h3>
+    <div id="robotCards" class="robot-card-grid"></div>
+
+    <!-- Raw submissions -->
+    <div style="margin-top:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <h3 class="cs-section-title" style="margin:0">All Submissions</h3>
+        <button class="cs-btn cs-btn-ghost cs-btn-sm" onclick="exportRaw()">
+          <span class="material-symbols-outlined" style="font-size:15px">download</span> Export CSV
+        </button>
+      </div>
+      <div id="rawTable" style="overflow-x:auto;border:1px solid var(--surface-100);border-radius:10px"></div>
+    </div>
+
+  </div>
+
+</main>
+
+<nav class="cs-mobile-nav">
+  <a href="home.html"><span class="material-symbols-outlined">home</span>Home</a>
+  <a href="scout.html"><span class="material-symbols-outlined">edit_note</span>Scout</a>
+  <a href="events.html"><span class="material-symbols-outlined">event</span>Events</a>
+  <a href="teams.html"><span class="material-symbols-outlined">groups</span>Teams</a>
+  <a href="profile.html"><span class="material-symbols-outlined">person</span>Profile</a>
+</nav>
+
+<div id="cs-toast-container"></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const MATCH_KEY = params.get("key") || "";
+
+if (!MATCH_KEY) window.location.href = "events.html";
+
+let _allSubs = [];
+let _matchData = null;
+
+(async function init() {
+  if (!MATCH_KEY) return;
+  // Parse event_key + match info from match key (e.g. 2026txhou_qm12)
+  // Format: {event_key}_{comp_level}{match_number} or {event_key}_{comp_level}{set_number}m{match_number}
+  const parts = MATCH_KEY.split("_");
+  const eventKey = parts.slice(0, -1).join("_");
+  const matchPart = parts[parts.length - 1];
+
+  // Determine label
+  let matchLabel = MATCH_KEY;
+  if (matchPart.startsWith("qm")) {
+    matchLabel = `Qualification ${matchPart.replace("qm","")}`;
+  } else if (matchPart.startsWith("sf")) {
+    const [set, num] = matchPart.replace("sf","").split("m");
+    matchLabel = `Semifinal ${set} – Match ${num}`;
+  } else if (matchPart.startsWith("f")) {
+    const num = matchPart.replace("f1m","");
+    matchLabel = `Final – Match ${num}`;
+  }
+
+  document.getElementById("headerTitle").textContent = matchLabel;
+  document.title = `${matchLabel} — CrowdScout`;
+
+  // Parallel fetch
+  const [tbaMatch, subs] = await Promise.all([
+    window.CS.tba.getMatch(MATCH_KEY),
+    loadSubmissions(eventKey, matchPart),
+  ]);
+
+  document.getElementById("loadingState").style.display = "none";
+
+  if (!tbaMatch && (!subs || !subs.length)) {
+    document.getElementById("errorState").style.display = "";
+    return;
+  }
+
+  document.getElementById("matchContent").style.display = "";
+  _matchData = tbaMatch;
+  _allSubs = subs || [];
+
+  renderMatchHeader(tbaMatch, matchLabel, eventKey);
+  renderRobotCards(_allSubs, tbaMatch);
+  renderRawTable(_allSubs);
+})();
+
+async function loadSubmissions(eventKey, matchPart) {
+  if (!eventKey) return [];
+  // Parse match_number and match_type
+  let matchNumber = null;
+  let matchType = "qualification";
+  if (matchPart.startsWith("qm")) {
+    matchNumber = parseInt(matchPart.replace("qm",""));
+    matchType = "qualification";
+  } else if (matchPart.startsWith("sf") || matchPart.startsWith("f")) {
+    matchType = "playoff";
+    // Use set/match number from the key — not a simple match number
+    const mIdx = matchPart.indexOf("m");
+    if (mIdx !== -1) matchNumber = parseInt(matchPart.slice(mIdx + 1));
+    else matchNumber = 1;
+  }
+
+  const db = window.CS.db;
+  if (!db) return [];
+
+  let query = db.from("scout_submissions")
+    .select("id,team_number,alliance_color,driver_station,answers,reliability_score,created_at,profiles(username)")
+    .eq("event_key", eventKey)
+    .eq("match_type", matchType);
+
+  if (matchNumber !== null) query = query.eq("match_number", matchNumber);
+
+  const { data } = await query;
+  return data || [];
+}
+
+function renderMatchHeader(m, matchLabel, eventKey) {
+  document.getElementById("matchLabel").textContent = matchLabel;
+  document.getElementById("matchEvent").textContent = eventKey;
+
+  if (m) {
+    const t = m.actual_time || m.predicted_time || m.time;
+    if (t) {
+      document.getElementById("matchTime").textContent = new Date(t * 1000).toLocaleString(undefined, {
+        weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit"
+      });
+    }
+
+    const red  = (m.alliances?.red?.team_keys  || []).map(k => k.replace("frc",""));
+    const blue = (m.alliances?.blue?.team_keys || []).map(k => k.replace("frc",""));
+    const rs = m.alliances?.red?.score;
+    const bs = m.alliances?.blue?.score;
+
+    document.getElementById("redTeams").innerHTML  = red.map(n => `<a href="team.html?number=${n}" class="team-link red">${n}</a>`).join("");
+    document.getElementById("blueTeams").innerHTML = blue.map(n => `<a href="team.html?number=${n}" class="team-link blue">${n}</a>`).join("");
+    document.getElementById("redScore").textContent  = (rs != null && rs !== -1) ? rs : "—";
+    document.getElementById("blueScore").textContent = (bs != null && bs !== -1) ? bs : "—";
+
+    // Score breakdown if available
+    const sb = m.score_breakdown;
+    if (sb) {
+      const rp = (k) => sb.red?.[k] ?? "";
+      const bp = (k) => sb.blue?.[k] ?? "";
+      const parts = [];
+      if (sb.red?.autoPoints != null) parts.push(`Auto ${sb.red.autoPoints}–${sb.blue.autoPoints}`);
+      if (sb.red?.teleopPoints != null) parts.push(`Teleop ${sb.red.teleopPoints}–${sb.blue.teleopPoints}`);
+      if (sb.red?.endgamePoints != null) parts.push(`Endgame ${sb.red.endgamePoints}–${sb.blue.endgamePoints}`);
+      if (parts.length) {
+        document.getElementById("redBreakdown").textContent  = parts.join(" · ");
+        document.getElementById("blueBreakdown").style.display = "none";
+      }
+    }
+
+    // Video
+    const vid = m.videos?.find(v => v.type === "youtube");
+    if (vid) {
+      document.getElementById("videoSection").style.display = "";
+      document.getElementById("videoLink").href = `https://youtu.be/${vid.key}`;
+    }
+  } else {
+    // No TBA data, populate from subs
+    const redTeams  = [...new Set(_allSubs.filter(s => s.alliance_color === "red").map(s => s.team_number))];
+    const blueTeams = [...new Set(_allSubs.filter(s => s.alliance_color === "blue").map(s => s.team_number))];
+    document.getElementById("redTeams").innerHTML  = redTeams.map(n => `<a href="team.html?number=${n}" class="team-link red">${n}</a>`).join("");
+    document.getElementById("blueTeams").innerHTML = blueTeams.map(n => `<a href="team.html?number=${n}" class="team-link blue">${n}</a>`).join("");
+  }
+}
+
+function renderRobotCards(subs, tbaMatch) {
+  const el = document.getElementById("robotCards");
+  if (!subs.length) {
+    el.innerHTML = '<div class="cs-empty">No scout submissions for this match.</div>';
+    return;
+  }
+
+  // Group by team
+  const byTeam = {};
+  for (const s of subs) {
+    const k = String(s.team_number);
+    if (!byTeam[k]) byTeam[k] = [];
+    byTeam[k].push(s);
+  }
+
+  const schema = window.CS.schema2026;
+  const numFields = schema.sections.flatMap(s => s.fields).filter(f => ["number","tally","range"].includes(f.type));
+
+  // Order: red alliance first, then blue
+  const allTeams = Object.keys(byTeam).sort((a, b) => {
+    const aColor = byTeam[a][0]?.alliance_color || "z";
+    const bColor = byTeam[b][0]?.alliance_color || "z";
+    if (aColor !== bColor) return aColor.localeCompare(bColor); // red < blue alphabetically
+    return parseInt(a) - parseInt(b);
+  });
+
+  el.innerHTML = allTeams.map(teamNum => {
+    const teamSubs = byTeam[teamNum];
+    const alliance = teamSubs[0]?.alliance_color || "unknown";
+    const allianceBorder = alliance === "red" ? "rgba(239,68,68,.3)" : alliance === "blue" ? "rgba(96,165,250,.3)" : "var(--surface-200)";
+    const allianceLabel = alliance === "red" ? "🔴 Red" : alliance === "blue" ? "🔵 Blue" : "";
+
+    const agg = window.CS.reliability.aggregateTeamStats(teamSubs, numFields);
+    const autoFuel   = agg.auto_fuel_scored?.mean;
+    const teleopFuel = agg.teleop_fuel_scored?.mean;
+    const climb      = agg.endgame_climb_level?.mean;
+    const total = ((autoFuel || 0) + (teleopFuel || 0)).toFixed(1);
+
+    const fmtV = (v, d = 1) => v != null ? Number(v).toFixed(d) : "—";
+    const conf = agg.auto_fuel_scored?.confidence;
+
+    return `
+      <div class="cs-card" style="border-color:${allianceBorder}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <a href="team.html?number=${teamNum}" style="text-decoration:none;display:flex;align-items:center;gap:8px">
+            <span class="cs-team-chip">${teamNum}</span>
+            <span style="font-weight:700;color:var(--surface-700)">${allianceLabel}</span>
+          </a>
+          <span style="font-size:0.72rem;color:var(--surface-400)">${teamSubs.length} scout${teamSubs.length !== 1 ? "s" : ""}</span>
+        </div>
+        <div class="stat-row">
+          <span style="color:var(--surface-500)">Auto FUEL</span>
+          <strong style="color:#60a5fa">${fmtV(autoFuel)}</strong>
+        </div>
+        <div class="stat-row">
+          <span style="color:var(--surface-500)">Teleop FUEL</span>
+          <strong style="color:#c084fc">${fmtV(teleopFuel)}</strong>
+        </div>
+        <div class="stat-row">
+          <span style="color:var(--surface-500)">Total FUEL avg</span>
+          <strong style="color:var(--primary-500)">${total}</strong>
+        </div>
+        <div class="stat-row">
+          <span style="color:var(--surface-500)">Climb</span>
+          <strong>${window.CS.ui.climbLabel(Math.round(climb ?? 0))}</strong>
+        </div>
+        ${teamSubs.some(s => s.answers?.post_robot_died) ? `
+        <div class="stat-row">
+          <span style="color:#f87171">⚠ Robot died</span>
+          <span style="font-size:0.75rem;color:var(--surface-400)">${teamSubs.filter(s => s.answers?.post_robot_died).length}/${teamSubs.length} scouts</span>
+        </div>` : ""}
+        ${conf != null ? `<div class="cs-reliability-bar" style="margin-top:8px"><div class="cs-reliability-fill" style="width:${Math.round(conf*100)}%"></div></div>` : ""}
+        ${teamSubs.some(s => s.answers?.post_notes) ? `
+        <div style="margin-top:8px;font-size:0.75rem;color:var(--surface-400);font-style:italic;border-top:1px solid var(--surface-100);padding-top:8px">
+          "${teamSubs.find(s => s.answers?.post_notes)?.answers.post_notes}"
+        </div>` : ""}
+      </div>
+    `;
+  }).join("");
+}
+
+function renderRawTable(subs) {
+  const el = document.getElementById("rawTable");
+  if (!subs.length) {
+    el.innerHTML = '<div class="cs-empty">No submissions for this match.</div>';
+    return;
+  }
+
+  el.innerHTML = `
+    <table class="raw-table">
+      <thead>
+        <tr>
+          <th>Team</th>
+          <th>Alliance</th>
+          <th>Auto FUEL</th>
+          <th>Teleop FUEL</th>
+          <th>Climb</th>
+          <th>Died</th>
+          <th>Defense</th>
+          <th>Notes</th>
+          <th>Scout</th>
+          <th>Reliability</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${subs.map(s => {
+          const a = s.answers || {};
+          const r = s.reliability_score != null ? (parseFloat(s.reliability_score) * 100).toFixed(0) + "%" : "—";
+          return `
+            <tr>
+              <td><a href="team.html?number=${s.team_number}" class="team-link ${s.alliance_color || 'red'}" style="font-size:0.78rem">${s.team_number}</a></td>
+              <td style="text-transform:capitalize;color:${s.alliance_color === 'red' ? '#f87171' : '#60a5fa'}">${s.alliance_color || "—"}</td>
+              <td>${a.auto_fuel_scored ?? "—"}</td>
+              <td>${a.teleop_fuel_scored ?? "—"}</td>
+              <td>${window.CS.ui.climbLabel(a.endgame_climb_level)}</td>
+              <td>${a.post_robot_died ? "Yes" : "No"}</td>
+              <td>${a.teleop_played_defense ? "Yes" : "No"}</td>
+              <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.post_notes || ""}</td>
+              <td style="color:var(--surface-400)">${s.profiles?.username || "—"}</td>
+              <td>${r}</td>
+            </tr>
+          `;
+        }).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function exportRaw() {
+  if (!_allSubs.length) { window.CS.ui.toast("No data to export.", "warning"); return; }
+  const headers = ["team_number","alliance_color","auto_fuel_scored","teleop_fuel_scored","endgame_climb_level","post_robot_died","teleop_played_defense","post_notes","scout","reliability_score","submitted_at"];
+  const escape = v => {
+    const s = String(v ?? "");
+    return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g,'""')}"` : s;
+  };
+  const rows = _allSubs.map(s => [
+    s.team_number,
+    s.alliance_color,
+    s.answers?.auto_fuel_scored ?? "",
+    s.answers?.teleop_fuel_scored ?? "",
+    s.answers?.endgame_climb_level ?? "",
+    s.answers?.post_robot_died ? "true" : "false",
+    s.answers?.teleop_played_defense ? "true" : "false",
+    s.answers?.post_notes ?? "",
+    s.profiles?.username || "",
+    s.reliability_score ?? "",
+    s.created_at,
+  ].map(escape).join(",")).join("\n");
+
+  const csv = headers.join(",") + "\n" + rows;
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${MATCH_KEY}_submissions.csv`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  window.CS.ui.toast("CSV exported.", "success");
+}
+</script>
+</body>
+</html>

@@ -8,12 +8,36 @@
   <link rel="manifest" href="manifest.json"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="lib/supabase-client.js"></script>
   <script src="lib/offline.js"></script>
   <script src="lib/ui.js"></script>
+
+  <style>
+    /* Edit modal */
+    .cs-modal-bg {
+      position:fixed;inset:0;z-index:200;
+      background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
+      display:flex;align-items:center;justify-content:center;padding:16px;
+    }
+    .cs-modal-box {
+      background:var(--surface-50);border:1px solid var(--surface-200);
+      border-radius:16px;padding:24px;width:100%;max-width:420px;
+      max-height:90vh;overflow-y:auto;position:relative;
+    }
+    /* Confirm dialog */
+    .cs-confirm-bg {
+      position:fixed;inset:0;z-index:300;
+      background:rgba(0,0,0,.75);backdrop-filter:blur(4px);
+      display:flex;align-items:center;justify-content:center;padding:16px;
+    }
+    .cs-confirm-box {
+      background:var(--surface-50);border:1px solid var(--surface-200);
+      border-radius:14px;padding:24px;width:100%;max-width:340px;text-align:center;
+    }
+  </style>
 </head>
 <body>
 
@@ -53,6 +77,37 @@
 
 </main>
 
+<!-- ── Edit Modal ──────────────────────────────────────────────── -->
+<div id="editModal" class="cs-modal-bg" style="display:none">
+  <div class="cs-modal-box">
+    <button onclick="closeEditModal()" style="position:absolute;right:12px;top:12px;background:transparent;border:none;cursor:pointer;color:var(--surface-400)">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <h2 style="font-size:1.1rem;font-weight:800;margin:0 0 4px">Edit Submission</h2>
+    <p id="editSubLabel" style="font-size:0.8rem;color:var(--surface-500);margin:0 0 16px"></p>
+
+    <div id="editFields"></div>
+
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="cs-btn cs-btn-secondary" style="flex:1" onclick="closeEditModal()">Cancel</button>
+      <button class="cs-btn cs-btn-primary" style="flex:1" id="editSaveBtn" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Confirm ─────────────────────────────────────────── -->
+<div id="confirmModal" class="cs-confirm-bg" style="display:none">
+  <div class="cs-confirm-box">
+    <span class="material-symbols-outlined" style="font-size:40px;color:#f87171;display:block;margin-bottom:12px">delete_forever</span>
+    <h3 style="font-size:1rem;font-weight:700;margin:0 0 8px">Delete this submission?</h3>
+    <p id="confirmLabel" style="font-size:0.85rem;color:var(--surface-500);margin:0 0 20px"></p>
+    <div style="display:flex;gap:8px">
+      <button class="cs-btn cs-btn-ghost" style="flex:1" onclick="closeConfirm()">Cancel</button>
+      <button class="cs-btn" style="flex:1;background:#ef4444;color:#fff;border-color:#ef4444" id="confirmDeleteBtn" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
 <nav class="cs-mobile-nav">
   <a href="home.html"><span class="material-symbols-outlined">home</span>Home</a>
   <a href="scout.html"><span class="material-symbols-outlined">edit_note</span>Scout</a>
@@ -66,6 +121,8 @@
 <script>
 let _allSubs = [];
 let _session = null;
+let _editId = null;    // submission UUID being edited
+let _deleteId = null;  // submission UUID pending delete
 
 (async function init() {
   _session = await window.CS.auth.requireAuth("landing.html");
@@ -142,14 +199,24 @@ function renderSubs(subs) {
     const allianceCls = s.alliance_color === "red" ? "cs-alliance-red" : s.alliance_color === "blue" ? "cs-alliance-blue" : "";
     const label = s.match_type === "playoff" ? `P${s.match_number}` : `Q${s.match_number}`;
     return `
-      <div class="cs-card cs-card-sm" style="margin-bottom:8px">
+      <div class="cs-card cs-card-sm" style="margin-bottom:8px" id="sub-${s.id}">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
-          <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span class="cs-team-chip" style="font-size:0.85rem">${s.team_number}</span>
             <span style="font-weight:600;font-size:0.875rem">${s.event_key || "?"} ${label}</span>
             ${s.alliance_color ? `<span class="${allianceCls}" style="font-size:0.72rem;font-weight:700">${s.alliance_color.toUpperCase()}</span>` : ""}
           </div>
-          <span style="font-size:0.72rem;color:var(--surface-400)">${new Date(s.created_at).toLocaleDateString()}</span>
+          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+            <span style="font-size:0.72rem;color:var(--surface-400)">${new Date(s.created_at).toLocaleDateString()}</span>
+            <button class="cs-btn cs-btn-ghost cs-btn-sm" style="padding:4px 8px;min-height:0;gap:4px"
+                    onclick="openEditModal('${s.id}')" title="Edit submission">
+              <span class="material-symbols-outlined" style="font-size:14px">edit</span>
+            </button>
+            <button class="cs-btn cs-btn-sm" style="padding:4px 8px;min-height:0;gap:4px;background:transparent;border-color:#ef4444;color:#ef4444"
+                    onclick="openDeleteConfirm('${s.id}')" title="Delete submission">
+              <span class="material-symbols-outlined" style="font-size:14px">delete</span>
+            </button>
+          </div>
         </div>
         <div style="display:flex;gap:12px;font-size:0.8rem;color:var(--surface-600);flex-wrap:wrap">
           <span><strong style="color:var(--primary-400)">${autoFuel}</strong> auto</span>
@@ -161,6 +228,151 @@ function renderSubs(subs) {
       </div>
     `;
   }).join("");
+}
+
+// ── Edit ───────────────────────────────────────────────────────────
+function openEditModal(id) {
+  const sub = _allSubs.find(s => s.id === id);
+  if (!sub) return;
+  _editId = id;
+  const label = `${sub.event_key || "?"} ${sub.match_type === "playoff" ? "P" : "Q"}${sub.match_number} — Team ${sub.team_number}`;
+  document.getElementById("editSubLabel").textContent = label;
+
+  const a = sub.answers || {};
+  document.getElementById("editFields").innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="cs-field" style="margin:0">
+        <label class="cs-label">Auto FUEL scored</label>
+        <input id="ef_auto_fuel" type="number" min="0" class="cs-input" value="${a.auto_fuel_scored ?? 0}"/>
+      </div>
+      <div class="cs-field" style="margin:0">
+        <label class="cs-label">Teleop FUEL scored</label>
+        <input id="ef_teleop_fuel" type="number" min="0" class="cs-input" value="${a.teleop_fuel_scored ?? 0}"/>
+      </div>
+      <div class="cs-field" style="margin:0">
+        <label class="cs-label">Climb Level</label>
+        <select id="ef_climb" class="cs-select">
+          <option value="0" ${(a.endgame_climb_level ?? 0) == 0 ? "selected" : ""}>None</option>
+          <option value="1" ${(a.endgame_climb_level ?? 0) == 1 ? "selected" : ""}>L1 – Low</option>
+          <option value="2" ${(a.endgame_climb_level ?? 0) == 2 ? "selected" : ""}>L2 – Mid</option>
+          <option value="3" ${(a.endgame_climb_level ?? 0) == 3 ? "selected" : ""}>L3 – Top</option>
+        </select>
+      </div>
+      <div class="cs-field" style="margin:0">
+        <label class="cs-label">Robot Died?</label>
+        <select id="ef_died" class="cs-select">
+          <option value="false" ${!a.post_robot_died ? "selected" : ""}>No</option>
+          <option value="true" ${a.post_robot_died ? "selected" : ""}>Yes</option>
+        </select>
+      </div>
+    </div>
+    <div class="cs-field" style="margin-top:10px">
+      <label class="cs-label">Notes</label>
+      <textarea id="ef_notes" class="cs-textarea" rows="3" placeholder="Match notes…">${a.post_notes ?? ""}</textarea>
+    </div>
+  `;
+  document.getElementById("editModal").style.display = "flex";
+}
+
+function closeEditModal() {
+  document.getElementById("editModal").style.display = "none";
+  _editId = null;
+}
+
+async function saveEdit() {
+  if (!_editId) return;
+  const sub = _allSubs.find(s => s.id === _editId);
+  if (!sub) return;
+
+  const btn = document.getElementById("editSaveBtn");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+
+  const updatedAnswers = {
+    ...sub.answers,
+    auto_fuel_scored:   parseInt(document.getElementById("ef_auto_fuel").value)  || 0,
+    teleop_fuel_scored: parseInt(document.getElementById("ef_teleop_fuel").value) || 0,
+    endgame_climb_level: parseInt(document.getElementById("ef_climb").value)      || 0,
+    post_robot_died:    document.getElementById("ef_died").value === "true",
+    post_notes:         document.getElementById("ef_notes").value.trim(),
+  };
+
+  const { error } = await window.CS.db
+    .from("scout_submissions")
+    .update({ answers: updatedAnswers })
+    .eq("id", _editId)
+    .eq("owner_id", _session.user.id);
+
+  btn.disabled = false;
+  btn.textContent = "Save Changes";
+
+  if (error) {
+    window.CS.ui.toast("Failed to save: " + error.message, "error");
+    return;
+  }
+
+  // Update local cache
+  const idx = _allSubs.findIndex(s => s.id === _editId);
+  if (idx !== -1) _allSubs[idx].answers = updatedAnswers;
+
+  closeEditModal();
+  filterSubs();
+  window.CS.ui.toast("Submission updated.", "success");
+}
+
+// ── Delete ─────────────────────────────────────────────────────────
+function openDeleteConfirm(id) {
+  const sub = _allSubs.find(s => s.id === id);
+  if (!sub) return;
+  _deleteId = id;
+  const label = `${sub.event_key || "?"} ${sub.match_type === "playoff" ? "P" : "Q"}${sub.match_number} — Team ${sub.team_number}`;
+  document.getElementById("confirmLabel").textContent = `"${label}" will be permanently deleted and cannot be recovered.`;
+  document.getElementById("confirmModal").style.display = "flex";
+}
+
+function closeConfirm() {
+  document.getElementById("confirmModal").style.display = "none";
+  _deleteId = null;
+}
+
+async function confirmDelete() {
+  if (!_deleteId) return;
+  const btn = document.getElementById("confirmDeleteBtn");
+  btn.disabled = true;
+  btn.textContent = "Deleting…";
+
+  const { error } = await window.CS.db
+    .from("scout_submissions")
+    .delete()
+    .eq("id", _deleteId)
+    .eq("owner_id", _session.user.id);
+
+  btn.disabled = false;
+  btn.textContent = "Delete";
+
+  if (error) {
+    window.CS.ui.toast("Failed to delete: " + error.message, "error");
+    closeConfirm();
+    return;
+  }
+
+  // Remove from local array
+  _allSubs = _allSubs.filter(s => s.id !== _deleteId);
+  closeConfirm();
+  filterSubs();
+
+  // Update summary
+  const events = [...new Set(_allSubs.map(s => s.event_key).filter(Boolean))].sort();
+  document.getElementById("summaryRow").innerHTML = `
+    <span class="cs-pill cs-pill-green" style="font-size:0.85rem;padding:6px 12px">
+      <span class="material-symbols-outlined" style="font-size:14px">check_circle</span>
+      ${_allSubs.length} submitted
+    </span>
+    <span class="cs-pill cs-pill-gray" style="font-size:0.85rem;padding:6px 12px">
+      ${events.length} event${events.length !== 1 ? "s" : ""}
+    </span>
+  `;
+  window.CS.ui.toast("Submission deleted.", "success");
 }
 </script>
 </body>

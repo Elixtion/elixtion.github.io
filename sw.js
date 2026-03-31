@@ -6,7 +6,7 @@
  *   - Everything else: NetworkFirst
  */
 
-const CACHE_VERSION = "cs-v2";
+const CACHE_VERSION = "cs-v3";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 
@@ -21,14 +21,14 @@ const STATIC_ASSETS = [
   "/scout-history.html",
   "/teams.html",
   "/team.html",
+  "/match.html",
   "/profile.html",
   "/profile-setup.html",
   "/export.html",
   "/styles.css",
-  "/auth.css",
-  "/auth.js",
   "/lib/supabase-client.js",
   "/lib/tba.js",
+  "/lib/statbotics.js",
   "/lib/offline.js",
   "/lib/reliability.js",
   "/lib/schema2026.js",

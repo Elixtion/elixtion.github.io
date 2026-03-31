@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#111312"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="lib/supabase-client.js"></script>
@@ -133,13 +133,38 @@ async function handleEmail() {
   btn.disabled = false;
   btn.textContent = _mode === "login" ? "Sign In with Email" : "Create Account";
 
-  if (result.error) { showErr(result.error.message); return; }
+  if (result.error) { showErr(friendlyAuthError(result.error.message)); return; }
 
   if (_mode === "signup" && !result.data?.session) {
-    showErr("Check your email for a confirmation link, then sign in.", "info");
+    showErr("Check your inbox for a confirmation link, then sign in here.", "info");
     return;
   }
   window.location.href = "home.html";
+}
+
+function friendlyAuthError(msg) {
+  const m = (msg || "").toLowerCase();
+  if (m.includes("invalid login credentials") || m.includes("invalid credentials") || m.includes("email or password"))
+    return "Incorrect email or password. Please try again.";
+  if (m.includes("email not confirmed"))
+    return "Please verify your email before signing in. Check your inbox.";
+  if (m.includes("user already registered") || m.includes("already registered") || m.includes("already exists"))
+    return "An account with this email already exists. Try signing in instead.";
+  if (m.includes("password should be at least") || m.includes("password must be"))
+    return "Password must be at least 6 characters long.";
+  if (m.includes("for security purposes") || m.includes("after 60 seconds"))
+    return "Too many attempts. Please wait 60 seconds before trying again.";
+  if (m.includes("rate limit") || m.includes("too many requests"))
+    return "Too many requests. Please wait a moment and try again.";
+  if (m.includes("network") || m.includes("failed to fetch"))
+    return "Network error. Check your connection and try again.";
+  if (m.includes("email") && (m.includes("invalid") || m.includes("format")))
+    return "Please enter a valid email address.";
+  if (m.includes("signup") && m.includes("disabled"))
+    return "New sign-ups are temporarily disabled. Try again later.";
+  if (m.includes("database") || m.includes("unexpected"))
+    return "Something went wrong on our end. Please try again.";
+  return msg || "Something went wrong. Please try again.";
 }
 
 function showErr(msg, type = "error") {

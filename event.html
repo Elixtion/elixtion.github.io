@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.json"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;600;700;900&display=swap"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="lib/supabase-client.js"></script>
@@ -213,14 +213,20 @@ function renderMatches(matches) {
     const redScore  = m.alliances?.red?.score  ?? "?";
     const blueScore = m.alliances?.blue?.score ?? "?";
     const label = m.comp_level === "qm" ? `Q${m.match_number}` : `${m.comp_level?.toUpperCase()} ${m.set_number}-${m.match_number}`;
+    const hasVideo = m.videos?.some(v => v.type === "youtube");
+    const vidUrl = hasVideo ? `https://youtu.be/${m.videos.find(v => v.type === "youtube").key}` : null;
     return `
       <div class="cs-card cs-card-sm" style="margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <span style="font-weight:700;font-size:0.9rem;min-width:44px">${label}</span>
+          <div style="display:flex;align-items:center;gap:6px;min-width:60px">
+            ${vidUrl ? `<a href="${vidUrl}" target="_blank" rel="noopener" title="Watch" style="color:#f87171;display:inline-flex;align-items:center">
+              <span class="material-symbols-outlined" style="font-size:16px">play_circle</span></a>` : ""}
+            <a href="match.html?key=${encodeURIComponent(m.key)}" style="font-weight:700;font-size:0.9rem;text-decoration:none;color:var(--surface-700)">${label}</a>
+          </div>
           <div style="display:flex;flex:1;gap:6px;align-items:center;font-size:0.8rem">
-            <div style="flex:1;text-align:right;color:#f87171">${red.join(" · ")}</div>
+            <div style="flex:1;text-align:right;color:#f87171">${red.map(n => `<a href="team.html?number=${n}" style="color:#f87171;font-weight:600">${n}</a>`).join(" ")}</div>
             <div style="font-weight:800;color:var(--surface-500);font-size:0.75rem;white-space:nowrap">${redScore} – ${blueScore}</div>
-            <div style="flex:1;text-align:left;color:#60a5fa">${blue.join(" · ")}</div>
+            <div style="flex:1;text-align:left;color:#60a5fa">${blue.map(n => `<a href="team.html?number=${n}" style="color:#60a5fa;font-weight:600">${n}</a>`).join(" ")}</div>
           </div>
           <a href="scout-match.html?event=${EVENT_KEY}&match=${m.match_number}&type=${m.comp_level === 'qm' ? 'qualification' : 'playoff'}" class="cs-btn cs-btn-sm cs-btn-primary" style="flex-shrink:0">Scout</a>
         </div>

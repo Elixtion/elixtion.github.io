@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.json"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;600;700;900&display=swap"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="lib/supabase-client.js"></script>
@@ -85,25 +85,49 @@ async function doSearch() {
 
   setLoading(true);
 
-  // If it's a pure number, fetch that team directly
+  // Pure number → direct TBA team lookup
   if (/^\d+$/.test(q)) {
     const team = await window.CS.tba.getTeam(parseInt(q));
     setLoading(false);
-    if (team) renderTeams([team]);
-    else renderTeams([]);
+    if (team) {
+      await window.CS.offline.cache.putTeam(team);
+      renderTeams([team]);
+    } else {
+      renderTeams([], `Team ${q} not found on TBA. Check the team number.`);
+    }
     return;
   }
 
-  // Try offline cache
+  // Partial number (e.g. "254" typed as text will hit above; "frc254" or "2" as prefix)
+  // Strip "frc" prefix if present
+  const stripped = q.replace(/^frc/i, "");
+  if (/^\d+$/.test(stripped)) {
+    const team = await window.CS.tba.getTeam(parseInt(stripped));
+    setLoading(false);
+    if (team) { await window.CS.offline.cache.putTeam(team); renderTeams([team]); }
+    else renderTeams([], `Team ${stripped} not found.`);
+    return;
+  }
+
+  // Name/text search — check offline cache first
   const cached = await window.CS.offline.cache.getAllTeams();
-  const filtered = cached.filter(t =>
-    (t.nickname || "").toLowerCase().includes(q.toLowerCase()) ||
-    (t.name || "").toLowerCase().includes(q.toLowerCase()) ||
+  const qLow = q.toLowerCase();
+  const fromCache = cached.filter(t =>
+    (t.nickname || "").toLowerCase().includes(qLow) ||
+    (t.name || "").toLowerCase().includes(qLow) ||
+    (t.city || "").toLowerCase().includes(qLow) ||
+    (t.state_prov || "").toLowerCase().includes(qLow) ||
     String(t.team_number).includes(q)
   );
+
   setLoading(false);
-  if (filtered.length) renderTeams(filtered);
-  else renderTeams([], "No teams found. Try a team number for a direct lookup.");
+
+  if (fromCache.length) {
+    renderTeams(fromCache.sort((a, b) => a.team_number - b.team_number),
+      `${fromCache.length} result${fromCache.length !== 1 ? "s" : ""} from cached events`);
+  } else {
+    renderTeams([], `No cached results for "${q}". Load an event first, or enter a team number for direct TBA lookup.`);
+  }
 }
 
 async function loadEventTeams() {
@@ -130,10 +154,13 @@ function setLoading(on) {
 function renderTeams(teams, emptyMsg) {
   const el = document.getElementById("teamsList");
   if (!teams.length) {
-    el.innerHTML = `<div class="cs-empty">${emptyMsg || "No teams found."}</div>`;
+    el.innerHTML = `<div class="cs-empty" style="padding-top:40px">${emptyMsg || "No teams found."}</div>`;
+    document.getElementById("resultsLabel").textContent = "";
     return;
   }
-  document.getElementById("resultsLabel").textContent = `${teams.length} team${teams.length !== 1 ? "s" : ""}`;
+  document.getElementById("resultsLabel").textContent = typeof emptyMsg === "string" && emptyMsg.includes("result")
+    ? emptyMsg
+    : `${teams.length} team${teams.length !== 1 ? "s" : ""}`;
   el.innerHTML = `
     <div style="display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
       ${teams.map(t => {

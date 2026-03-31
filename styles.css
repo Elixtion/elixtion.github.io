@@ -151,17 +151,35 @@ input, select, textarea, button { font-family: inherit; }
 .cs-btn-sm { min-height: 36px; }
 
 /* ── Form inputs ──────────────────────────────────────────────────────────────── */
+/* !important guards against Tailwind CDN base resets overriding our dark theme */
 .cs-input, .cs-select, .cs-textarea {
-  width: 100%; background: var(--surface-100); border: 1px solid var(--surface-200);
-  border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; color: var(--surface-950);
-  outline: none; transition: border-color 0.15s;
+  width: 100% !important;
+  background-color: var(--surface-100) !important;
+  border: 1px solid var(--surface-200) !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  font-size: 0.9rem !important;
+  color: var(--surface-950) !important;
+  outline: none !important;
+  box-shadow: none;
+  font-family: inherit !important;
 }
-.cs-input::placeholder, .cs-textarea::placeholder { color: var(--surface-400); }
+.cs-input::placeholder, .cs-textarea::placeholder { color: var(--surface-400) !important; }
 .cs-input:focus, .cs-select:focus, .cs-textarea:focus {
-  border-color: var(--primary-500); box-shadow: 0 0 0 2px rgba(153,229,80,.15);
+  border-color: var(--primary-500) !important;
+  box-shadow: 0 0 0 2px rgba(153,229,80,.15) !important;
 }
 .cs-select { appearance: none; cursor: pointer; }
 .cs-textarea { resize: vertical; min-height: 80px; }
+
+/* Bare input/select/textarea inside cs-card also get dark treatment */
+.cs-card input:not([type=checkbox]):not([type=radio]),
+.cs-card select,
+.cs-card textarea {
+  background-color: var(--surface-100) !important;
+  color: var(--surface-950) !important;
+  border: 1px solid var(--surface-200) !important;
+}
 .cs-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--surface-500); margin-bottom: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
 .cs-field { margin-bottom: 16px; }
 

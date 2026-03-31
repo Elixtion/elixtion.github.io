@@ -10,7 +10,7 @@
   <link crossorigin href="https://fonts.gstatic.com/" rel="preconnect"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;600;700;900&display=swap"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="lib/supabase-client.js"></script>
@@ -212,36 +212,46 @@
       Continue with Google
     </button>
 
-    <div style="display:flex;align-items:center;gap:10px;margin:16px 0">
+    <div id="authDivider" style="display:flex;align-items:center;gap:10px;margin:16px 0">
       <div style="flex:1;height:1px;background:var(--surface-200)"></div>
       <span style="font-size:0.75rem;color:var(--surface-400)">or</span>
       <div style="flex:1;height:1px;background:var(--surface-200)"></div>
     </div>
 
-    <!-- Email/password -->
-    <div id="emailForm">
-      <div class="cs-field">
-        <label class="cs-label">Email</label>
-        <input id="authEmail" type="email" class="cs-input" placeholder="you@example.com" autocomplete="email"/>
-      </div>
-      <div class="cs-field">
-        <label class="cs-label">Password</label>
-        <input id="authPassword" type="password" class="cs-input" placeholder="••••••••" autocomplete="current-password"/>
-      </div>
-      <div id="authError" style="font-size:0.8rem;color:#f87171;margin-bottom:8px;display:none"></div>
-      <button class="cs-btn cs-btn-secondary" style="width:100%" id="emailSubmitBtn" onclick="handleEmailAuth()">
-        <span id="emailBtnLabel">Sign In with Email</span>
-      </button>
+    <!-- Success pane (hidden by default — shown after signup email sent) -->
+    <div id="authSuccessPane" style="display:none;text-align:center;padding:20px 0">
+      <span class="material-symbols-outlined" style="font-size:48px;color:var(--primary-500);display:block;margin-bottom:12px">check_circle</span>
+      <h3 id="authSuccessTitle" style="font-size:1.1rem;font-weight:700;margin:0 0 8px">You're set!</h3>
+      <p id="authSuccessMsg" style="color:var(--surface-500);font-size:0.875rem;margin:0 0 20px"></p>
+      <button class="cs-btn cs-btn-secondary" onclick="closeAuth()">Close</button>
     </div>
 
-    <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--surface-500)" id="authToggle">
-      Don't have an account?
-      <button onclick="toggleAuthMode()" style="background:none;border:none;color:var(--primary-500);cursor:pointer;font-weight:600;padding:0">Sign Up</button>
-    </div>
+    <!-- Email/password form content -->
+    <div id="authFormContent">
+      <div id="emailForm">
+        <div class="cs-field">
+          <label class="cs-label">Email</label>
+          <input id="authEmail" type="email" class="cs-input" placeholder="you@example.com" autocomplete="email"/>
+        </div>
+        <div class="cs-field">
+          <label class="cs-label">Password</label>
+          <input id="authPassword" type="password" class="cs-input" placeholder="••••••••" autocomplete="current-password"/>
+        </div>
+        <div id="authError" style="font-size:0.8rem;color:#f87171;margin-bottom:8px;display:none"></div>
+        <button class="cs-btn cs-btn-secondary" style="width:100%" id="emailSubmitBtn" onclick="handleEmailAuth()">
+          <span id="emailBtnLabel">Sign In with Email</span>
+        </button>
+      </div>
 
-    <p style="font-size:0.72rem;color:var(--surface-400);text-align:center;margin:12px 0 0">
-      By continuing, you agree to our Terms. Data is public; submissions require an account.
-    </p>
+      <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--surface-500)" id="authToggle">
+        Don't have an account?
+        <button onclick="toggleAuthMode()" style="background:none;border:none;color:var(--primary-500);cursor:pointer;font-weight:600;padding:0">Sign Up</button>
+      </div>
+
+      <p style="font-size:0.72rem;color:var(--surface-400);text-align:center;margin:12px 0 0">
+        By continuing, you agree to our Terms. Data is public; submissions require an account.
+      </p>
+    </div>
   </div>
 </div>
 
@@ -265,6 +275,11 @@ let _authMode = "login"; // 'login' | 'signup'
 // ── Auth modal ───────────────────────────────────────────────────
 function openAuth(mode = "login") {
   _authMode = mode;
+  // Always reset: hide success pane, show form content
+  document.getElementById("authSuccessPane").style.display = "none";
+  document.getElementById("authFormContent").style.display = "";
+  document.getElementById("googleBtn").style.display = "";
+  document.getElementById("authDivider").style.display = "flex";
   document.getElementById("authModal").style.display = "flex";
   updateAuthUI();
 }
@@ -280,6 +295,34 @@ function updateAuthUI() {
     ? `Don't have an account? <button onclick="toggleAuthMode()" style="background:none;border:none;color:var(--primary-500);cursor:pointer;font-weight:600;padding:0">Sign Up</button>`
     : `Already have an account? <button onclick="toggleAuthMode()" style="background:none;border:none;color:var(--primary-500);cursor:pointer;font-weight:600;padding:0">Sign In</button>`;
   document.getElementById("authError").style.display = "none";
+  document.getElementById("authEmail").value = "";
+  document.getElementById("authPassword").value = "";
+}
+
+// Translate raw Supabase error strings into user-friendly messages
+function friendlyAuthError(msg) {
+  const m = (msg || "").toLowerCase();
+  if (m.includes("invalid login credentials") || m.includes("invalid credentials") || m.includes("email or password"))
+    return "Incorrect email or password. Please try again.";
+  if (m.includes("email not confirmed"))
+    return "Please verify your email before signing in. Check your inbox.";
+  if (m.includes("user already registered") || m.includes("already registered") || m.includes("already exists"))
+    return "An account with this email already exists. Try signing in instead.";
+  if (m.includes("password should be at least") || m.includes("password must be"))
+    return "Password must be at least 6 characters long.";
+  if (m.includes("for security purposes") || m.includes("after 60 seconds"))
+    return "Too many attempts. Please wait 60 seconds before trying again.";
+  if (m.includes("rate limit") || m.includes("too many requests"))
+    return "Too many requests. Please wait a moment and try again.";
+  if (m.includes("network") || m.includes("failed to fetch"))
+    return "Network error. Check your connection and try again.";
+  if (m.includes("email") && (m.includes("invalid") || m.includes("format")))
+    return "Please enter a valid email address.";
+  if (m.includes("signup") && m.includes("disabled"))
+    return "New sign-ups are temporarily disabled. Try again later.";
+  if (m.includes("database") || m.includes("unexpected"))
+    return "Something went wrong on our end. Please try again.";
+  return msg || "Something went wrong. Please try again.";
 }
 
 function toggleAuthMode() {
@@ -320,13 +363,13 @@ async function handleEmailAuth() {
   document.getElementById("emailBtnLabel").textContent = _authMode === "login" ? "Sign In with Email" : "Create Account";
 
   if (result.error) {
-    showAuthError(result.error.message);
+    showAuthError(friendlyAuthError(result.error.message));
     return;
   }
 
   if (_authMode === "signup" && !result.data?.session) {
-    // Email confirmation required
-    showSuccess("Check your email to confirm your account, then sign in.");
+    // Email confirmation required — show success pane
+    showSuccess("Check your inbox to confirm your account, then sign in here.");
     return;
   }
 
@@ -341,15 +384,12 @@ function showAuthError(msg) {
 }
 
 function showSuccess(msg) {
-  const inner = document.getElementById("authModalInner");
-  inner.innerHTML = `
-    <div style="text-align:center;padding:20px 0">
-      <span class="material-symbols-outlined" style="font-size:48px;color:var(--primary-500);display:block;margin-bottom:12px">check_circle</span>
-      <h3 style="font-size:1.1rem;font-weight:700;margin:0 0 8px">You're set!</h3>
-      <p style="color:var(--surface-500);font-size:0.875rem;margin:0 0 20px">${msg}</p>
-      <button class="cs-btn cs-btn-secondary" onclick="closeAuth()">Close</button>
-    </div>
-  `;
+  // Hide form content + google btn + divider, show success pane only
+  document.getElementById("authFormContent").style.display = "none";
+  document.getElementById("googleBtn").style.display = "none";
+  document.getElementById("authDivider").style.display = "none";
+  document.getElementById("authSuccessMsg").textContent = msg;
+  document.getElementById("authSuccessPane").style.display = "";
 }
 
 // Handle OAuth callback (hash fragment from Supabase redirect)
