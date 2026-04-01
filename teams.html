@@ -16,6 +16,30 @@
   <script src="lib/tba.js"></script>
   <script src="lib/offline.js"></script>
   <script src="lib/ui.js"></script>
+  <style>
+    /* Event autocomplete */
+    .ac-container { position:relative; }
+    .ac-dropdown {
+      position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:50;
+      background:var(--surface-50);border:1px solid var(--surface-200);
+      border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);
+      max-height:260px;overflow-y:auto;
+    }
+    .ac-item {
+      padding:10px 14px;cursor:pointer;font-size:0.85rem;
+      display:flex;align-items:baseline;gap:8px;
+      border-bottom:1px solid var(--surface-100);
+    }
+    .ac-item:last-child { border-bottom:none; }
+    .ac-item:hover { background:var(--surface-100); }
+    .ac-key { font-weight:700;color:var(--primary-500);flex-shrink:0;font-size:0.8rem; }
+    .ac-name { color:var(--surface-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .ac-loc { color:var(--surface-400);font-size:0.75rem;flex-shrink:0; }
+
+    /* Index loading bar */
+    #indexBar { height:2px;background:var(--primary-950);border-radius:1px;overflow:hidden;margin-bottom:10px;display:none }
+    #indexFill { height:100%;background:var(--primary-500);width:0%;transition:width .3s; }
+  </style>
 </head>
 <body>
 
@@ -33,27 +57,48 @@
 
 <main class="cs-page-wide" style="padding-top:16px">
 
-  <!-- Search -->
-  <div style="display:flex;gap:10px;margin-bottom:16px;align-items:flex-end;flex-wrap:wrap">
+  <!-- Offline notice -->
+  <div id="offlineBanner" style="display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.85rem;color:#f87171;display:flex;align-items:center;gap:8px">
+    <span class="material-symbols-outlined" style="font-size:18px">wifi_off</span>
+    You're offline. Searches use cached data only.
+  </div>
+
+  <!-- Team index loading indicator -->
+  <div id="indexBar"><div id="indexFill"></div></div>
+  <div id="indexStatus" style="font-size:0.75rem;color:var(--surface-400);margin-bottom:10px;display:none"></div>
+
+  <!-- Search row -->
+  <div style="display:flex;gap:10px;margin-bottom:16px;align-items:flex-start;flex-wrap:wrap">
+    <!-- Team search -->
     <div class="cs-search" style="flex:1;min-width:220px">
       <span class="material-symbols-outlined">search</span>
-      <input id="teamSearch" class="cs-input" placeholder="Team number or name…"
+      <input id="teamSearch" class="cs-input" placeholder="Team number, name, city, state…"
              oninput="onSearch()" onkeydown="if(event.key==='Enter')doSearch()"/>
     </div>
-    <div class="cs-field" style="margin:0;min-width:180px">
+
+    <!-- Event autocomplete -->
+    <div class="cs-field" style="margin:0;min-width:220px;flex:1">
       <label class="cs-label">Find teams at event</label>
-      <div style="display:flex;gap:6px">
-        <input id="eventKeyInput" class="cs-input" placeholder="2026txhou" autocapitalize="none" style="flex:1"/>
-        <button class="cs-btn cs-btn-primary cs-btn-sm" onclick="loadEventTeams()">Go</button>
+      <div class="ac-container" id="eventAC">
+        <div class="cs-search">
+          <span class="material-symbols-outlined">event</span>
+          <input id="eventKeyInput" class="cs-input" placeholder="Key or search name (e.g. orlando)…"
+                 autocapitalize="none" oninput="onEventSearch()" onkeydown="onEventKeydown(event)"
+                 onblur="setTimeout(closeEventAC, 200)" onfocus="onEventSearch()"/>
+        </div>
+        <div id="eventACDropdown" class="ac-dropdown" style="display:none"></div>
       </div>
     </div>
   </div>
 
   <div id="resultsLabel" style="font-size:0.8rem;color:var(--surface-400);margin-bottom:10px"></div>
-  <div id="teamsList"><div class="cs-empty" style="padding-top:60px">
-    <span class="material-symbols-outlined" style="font-size:48px;display:block;margin-bottom:8px;color:var(--surface-300)">groups</span>
-    Enter a team number or search by name.<br/>Or enter an event key to see all teams.
-  </div></div>
+
+  <div id="teamsList">
+    <div class="cs-empty" style="padding-top:60px">
+      <span class="material-symbols-outlined" style="font-size:48px;display:block;margin-bottom:8px;color:var(--surface-300)">groups</span>
+      Building team index… Search will be ready shortly.
+    </div>
+  </div>
 
   <div id="loadingState" style="display:none;text-align:center;padding:40px;color:var(--surface-400)">
     <span class="material-symbols-outlined" style="font-size:36px;display:block;margin-bottom:8px">hourglass_top</span>
@@ -73,95 +118,245 @@
 <div id="cs-toast-container"></div>
 
 <script>
-let searchTimeout = null;
+const YEAR = 2026;
+const INDEX_LS_KEY = "cs_teams_index_ts";
+const INDEX_MAX_AGE = 12 * 60 * 60 * 1000; // 12 hours
 
-function onSearch() {
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(doSearch, 350);
-}
+let _teamsIndex  = []; // all teams sorted by team_number
+let _eventsIndex = []; // all 2026 events for autocomplete
+let _searchTimeout = null;
+let _indexReady = false;
 
-async function doSearch() {
-  const q = document.getElementById("teamSearch").value.trim();
-  if (!q) return;
+// ── Init ──────────────────────────────────────────────────────────────
+(async function init() {
+  if (!navigator.onLine) {
+    document.getElementById("offlineBanner").style.display = "flex";
+  }
+  // Load events for autocomplete (fast, single call)
+  loadEventsIndex();
+  // Build team index in background
+  await buildTeamsIndex();
+})();
 
-  setLoading(true);
+// ── Teams Index ───────────────────────────────────────────────────────
+async function buildTeamsIndex() {
+  // Load from IndexedDB first — instant
+  const cached = await window.CS.offline.cache.getAllTeams();
+  _teamsIndex = cached.sort((a, b) => a.team_number - b.team_number);
 
-  // Pure number → direct TBA team lookup
-  if (/^\d+$/.test(q)) {
-    const team = await window.CS.tba.getTeam(parseInt(q));
-    setLoading(false);
-    if (team) {
-      await window.CS.offline.cache.putTeam(team);
-      renderTeams([team]);
-    } else {
-      renderTeams([], `Team ${q} not found on TBA. Check the team number.`);
+  if (_teamsIndex.length > 0) {
+    _indexReady = true;
+    showReady();
+  }
+
+  // Check if we need to refresh from TBA
+  const lastTs = parseInt(localStorage.getItem(INDEX_LS_KEY) || "0");
+  const needRefresh = Date.now() - lastTs > INDEX_MAX_AGE;
+
+  if (!navigator.onLine) {
+    if (_teamsIndex.length === 0) {
+      document.getElementById("teamsList").innerHTML = '<div class="cs-empty">No cached teams. Connect to the internet to build the team index.</div>';
     }
     return;
   }
 
-  // Partial number (e.g. "254" typed as text will hit above; "frc254" or "2" as prefix)
-  // Strip "frc" prefix if present
-  const stripped = q.replace(/^frc/i, "");
-  if (/^\d+$/.test(stripped)) {
-    const team = await window.CS.tba.getTeam(parseInt(stripped));
-    setLoading(false);
-    if (team) { await window.CS.offline.cache.putTeam(team); renderTeams([team]); }
-    else renderTeams([], `Team ${stripped} not found.`);
-    return;
+  if (!needRefresh && _teamsIndex.length > 100) {
+    return; // recent enough
   }
 
-  // Name/text search — check offline cache first
-  const cached = await window.CS.offline.cache.getAllTeams();
-  const qLow = q.toLowerCase();
-  const fromCache = cached.filter(t =>
-    (t.nickname || "").toLowerCase().includes(qLow) ||
-    (t.name || "").toLowerCase().includes(qLow) ||
-    (t.city || "").toLowerCase().includes(qLow) ||
-    (t.state_prov || "").toLowerCase().includes(qLow) ||
-    String(t.team_number).includes(q)
-  );
+  // Fetch all team pages from TBA in the background
+  document.getElementById("indexBar").style.display = "";
+  document.getElementById("indexStatus").style.display = "";
 
-  setLoading(false);
+  const allFetched = [];
+  let page = 0;
+  const MAX_PAGES = 25; // up to 12,500 teams
 
-  if (fromCache.length) {
-    renderTeams(fromCache.sort((a, b) => a.team_number - b.team_number),
-      `${fromCache.length} result${fromCache.length !== 1 ? "s" : ""} from cached events`);
-  } else {
-    renderTeams([], `No cached results for "${q}". Load an event first, or enter a team number for direct TBA lookup.`);
+  while (page < MAX_PAGES) {
+    document.getElementById("indexStatus").textContent = `Building team index… page ${page + 1}`;
+    document.getElementById("indexFill").style.width = `${Math.min(95, (page / MAX_PAGES) * 100)}%`;
+
+    const teams = await window.CS.tba.getTeamsPage(YEAR, page);
+    if (!teams || teams.length === 0) break;
+
+    allFetched.push(...teams);
+    // Cache each team immediately
+    for (const t of teams) await window.CS.offline.cache.putTeam(t);
+    page++;
+  }
+
+  if (allFetched.length) {
+    // Merge with existing cache (in case some were added from events)
+    const byNum = {};
+    [..._teamsIndex, ...allFetched].forEach(t => { byNum[t.team_number] = t; });
+    _teamsIndex = Object.values(byNum).sort((a, b) => a.team_number - b.team_number);
+    localStorage.setItem(INDEX_LS_KEY, String(Date.now()));
+  }
+
+  document.getElementById("indexBar").style.display = "none";
+  document.getElementById("indexStatus").style.display = "none";
+  document.getElementById("indexFill").style.width = "100%";
+  _indexReady = true;
+  showReady();
+
+  // Re-run any active search
+  const q = document.getElementById("teamSearch").value.trim();
+  if (q) doSearch();
+}
+
+function showReady() {
+  if (!document.getElementById("teamSearch").value.trim()) {
+    document.getElementById("teamsList").innerHTML = `
+      <div class="cs-empty" style="padding-top:40px">
+        <span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px;color:var(--surface-300)">groups</span>
+        ${_teamsIndex.length > 0 ? `${_teamsIndex.length.toLocaleString()} teams indexed. Start typing to search.` : "Type a team number or name to search."}
+      </div>`;
   }
 }
 
-async function loadEventTeams() {
-  const key = document.getElementById("eventKeyInput").value.trim();
+// ── Events Index (for autocomplete) ───────────────────────────────────
+async function loadEventsIndex() {
+  // Try cache first
+  const cachedEvents = await window.CS.offline.cache.getAllEvents();
+  if (cachedEvents.length) {
+    _eventsIndex = cachedEvents.sort((a, b) => (a.start_date || "").localeCompare(b.start_date || ""));
+  }
+  if (!navigator.onLine) return;
+  const events = await window.CS.tba.getSeasonEvents(YEAR);
+  if (events) {
+    for (const e of events) await window.CS.offline.cache.putEvent({ ...e, event_key: e.key });
+    _eventsIndex = events.sort((a, b) => (a.start_date || "").localeCompare(b.start_date || ""));
+  }
+}
+
+// ── Team search ───────────────────────────────────────────────────────
+function onSearch() {
+  clearTimeout(_searchTimeout);
+  _searchTimeout = setTimeout(doSearch, 120); // fast debounce
+}
+
+function doSearch() {
+  const raw = document.getElementById("teamSearch").value;
+  const q = raw.trim();
+
+  if (!q) { showReady(); document.getElementById("resultsLabel").textContent = ""; return; }
+  const qLow = q.toLowerCase();
+  const stripped = q.replace(/^frc/i, "");
+
+  let results = [];
+
+  if (/^\d+$/.test(stripped)) {
+    // Number prefix — match team numbers that CONTAIN the digits
+    results = _teamsIndex.filter(t => String(t.team_number).includes(stripped));
+    // If exact match exists, put it first
+    results.sort((a, b) => {
+      const aEx = String(a.team_number) === stripped ? 0 : 1;
+      const bEx = String(b.team_number) === stripped ? 0 : 1;
+      return aEx - bEx || a.team_number - b.team_number;
+    });
+  } else {
+    // Name / city / state search
+    results = _teamsIndex.filter(t =>
+      (t.nickname || "").toLowerCase().includes(qLow) ||
+      (t.name || "").toLowerCase().includes(qLow) ||
+      (t.city || "").toLowerCase().includes(qLow) ||
+      (t.state_prov || "").toLowerCase().includes(qLow) ||
+      (t.country || "").toLowerCase().includes(qLow)
+    );
+  }
+
+  renderTeams(results.slice(0, 80));
+  document.getElementById("resultsLabel").textContent = results.length
+    ? `${results.length} result${results.length !== 1 ? "s" : ""}${results.length > 80 ? " (showing first 80)" : ""}`
+    : "";
+}
+
+// ── Event autocomplete ─────────────────────────────────────────────────
+function onEventSearch() {
+  const q = document.getElementById("eventKeyInput").value.trim().toLowerCase();
+  const dd = document.getElementById("eventACDropdown");
+  if (!q || !_eventsIndex.length) { dd.style.display = "none"; return; }
+
+  const matches = _eventsIndex.filter(e =>
+    (e.name || "").toLowerCase().includes(q) ||
+    (e.short_name || "").toLowerCase().includes(q) ||
+    (e.key || e.event_key || "").toLowerCase().includes(q) ||
+    (e.city || "").toLowerCase().includes(q) ||
+    (e.state_prov || "").toLowerCase().includes(q)
+  ).slice(0, 12);
+
+  if (!matches.length) { dd.style.display = "none"; return; }
+
+  dd.innerHTML = matches.map(e => {
+    const key = e.key || e.event_key || "";
+    const loc  = [e.city, e.state_prov].filter(Boolean).join(", ");
+    return `<div class="ac-item" onclick="selectEvent('${key}','${(e.short_name||e.name||key).replace(/'/g,"\\'")}')">
+      <span class="ac-key">${key}</span>
+      <span class="ac-name">${e.short_name || e.name || key}</span>
+      ${loc ? `<span class="ac-loc">${loc}</span>` : ""}
+    </div>`;
+  }).join("");
+  dd.style.display = "";
+}
+
+function onEventKeydown(e) {
+  if (e.key === "Enter") {
+    const key = document.getElementById("eventKeyInput").value.trim();
+    if (key) { closeEventAC(); loadEventTeams(key); }
+  }
+  if (e.key === "Escape") closeEventAC();
+}
+
+function closeEventAC() {
+  document.getElementById("eventACDropdown").style.display = "none";
+}
+
+function selectEvent(key, name) {
+  document.getElementById("eventKeyInput").value = key;
+  closeEventAC();
+  loadEventTeams(key);
+}
+
+async function loadEventTeams(key) {
+  if (!key) { key = document.getElementById("eventKeyInput").value.trim(); }
   if (!key) { window.CS.ui.toast("Enter an event key first.", "error"); return; }
-  setLoading(true);
-  const teams = await window.CS.tba.getEventTeams(key);
-  setLoading(false);
-  if (!teams || !teams.length) {
-    renderTeams([], "No teams found for that event key.");
+
+  if (!navigator.onLine) {
+    window.CS.ui.toast("You're offline — cannot fetch event teams.", "error");
     return;
   }
-  // Cache them
-  for (const t of teams) await window.CS.offline.cache.putTeam(t);
+
+  document.getElementById("loadingState").style.display = "";
+  document.getElementById("teamsList").innerHTML = "";
+
+  const teams = await window.CS.tba.getEventTeams(key);
+  document.getElementById("loadingState").style.display = "none";
+
+  if (!teams || !teams.length) {
+    renderTeams([], "No teams found for that event key. Check the event key and try again.");
+    return;
+  }
+  // Cache all teams in background and add to index
+  for (const t of teams) {
+    await window.CS.offline.cache.putTeam(t);
+    if (!_teamsIndex.find(x => x.team_number === t.team_number)) _teamsIndex.push(t);
+  }
+  _teamsIndex.sort((a, b) => a.team_number - b.team_number);
+
   renderTeams(teams.sort((a, b) => a.team_number - b.team_number));
   document.getElementById("resultsLabel").textContent = `${teams.length} teams at ${key}`;
 }
 
-function setLoading(on) {
-  document.getElementById("loadingState").style.display = on ? "" : "none";
-  if (on) document.getElementById("teamsList").innerHTML = "";
-}
-
+// ── Render ─────────────────────────────────────────────────────────────
 function renderTeams(teams, emptyMsg) {
   const el = document.getElementById("teamsList");
   if (!teams.length) {
-    el.innerHTML = `<div class="cs-empty" style="padding-top:40px">${emptyMsg || "No teams found."}</div>`;
-    document.getElementById("resultsLabel").textContent = "";
+    el.innerHTML = `<div class="cs-empty" style="padding-top:40px">
+      <span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px;color:var(--surface-300)">search_off</span>
+      ${emptyMsg || "No teams found."}
+    </div>`;
     return;
   }
-  document.getElementById("resultsLabel").textContent = typeof emptyMsg === "string" && emptyMsg.includes("result")
-    ? emptyMsg
-    : `${teams.length} team${teams.length !== 1 ? "s" : ""}`;
   el.innerHTML = `
     <div style="display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
       ${teams.map(t => {
@@ -169,13 +364,13 @@ function renderTeams(teams, emptyMsg) {
         return `
           <a href="team.html?number=${t.team_number}" style="text-decoration:none">
             <div class="cs-card" style="cursor:pointer;display:flex;align-items:center;gap:12px">
-              <span class="cs-team-chip" style="font-size:1rem;min-width:56px;justify-content:center">${t.team_number}</span>
-              <div style="min-width:0">
+              <span class="cs-team-chip" style="font-size:1rem;min-width:60px;justify-content:center;flex-shrink:0">${t.team_number}</span>
+              <div style="min-width:0;flex:1">
                 <div style="font-weight:700;color:var(--surface-950);font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.nickname || t.name || "Team " + t.team_number}</div>
-                ${loc ? `<div style="font-size:0.75rem;color:var(--surface-500)">${loc}</div>` : ""}
+                ${loc ? `<div style="font-size:0.75rem;color:var(--surface-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${loc}</div>` : ""}
                 ${t.rookie_year ? `<div style="font-size:0.7rem;color:var(--surface-400)">Since ${t.rookie_year}</div>` : ""}
               </div>
-              <span class="material-symbols-outlined" style="margin-left:auto;color:var(--surface-300);font-size:18px">chevron_right</span>
+              <span class="material-symbols-outlined" style="margin-left:auto;color:var(--surface-300);font-size:18px;flex-shrink:0">chevron_right</span>
             </div>
           </a>
         `;

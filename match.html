@@ -58,6 +58,12 @@
 
 <main class="cs-page" style="padding-top:16px">
 
+  <!-- Offline banner -->
+  <div id="offlineBanner" style="display:none;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.85rem;color:#f87171;align-items:center;gap:8px">
+    <span class="material-symbols-outlined" style="font-size:18px">wifi_off</span>
+    You're offline. Match data from The Blue Alliance is unavailable — showing local scout submissions only.
+  </div>
+
   <!-- Loading -->
   <div id="loadingState" style="text-align:center;padding:60px 0;color:var(--surface-400)">
     <span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px">hourglass_top</span>
@@ -167,6 +173,10 @@ let _matchData = null;
   document.getElementById("headerTitle").textContent = matchLabel;
   document.title = `${matchLabel} — CrowdScout`;
 
+  if (!navigator.onLine) {
+    document.getElementById("offlineBanner").style.display = "flex";
+  }
+
   // Parallel fetch
   const [tbaMatch, subs] = await Promise.all([
     window.CS.tba.getMatch(MATCH_KEY),
@@ -177,6 +187,9 @@ let _matchData = null;
 
   if (!tbaMatch && (!subs || !subs.length)) {
     document.getElementById("errorState").style.display = "";
+    document.getElementById("errorState").innerHTML = !navigator.onLine
+      ? '<span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px">wifi_off</span>You\'re offline and no cached data is available for this match.'
+      : '<span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px">error_outline</span>Could not load match data.';
     return;
   }
 

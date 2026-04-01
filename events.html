@@ -51,6 +51,12 @@
     </select>
   </div>
 
+  <!-- Offline banner -->
+  <div id="offlineBanner" style="display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.85rem;color:#f87171;display:flex;align-items:center;gap:8px">
+    <span class="material-symbols-outlined" style="font-size:18px">wifi_off</span>
+    You're offline. Showing cached events — some data may be outdated.
+  </div>
+
   <div id="loadingState" style="padding:40px 0;text-align:center;color:var(--surface-400)">
     <span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px">hourglass_top</span>
     Loading 2026 events…
@@ -108,7 +114,9 @@ async function loadEvents() {
 
   if (!events && cachedEvents.length) {
     events = cachedEvents.map(e => ({ ...e, key: e.event_key }));
-    window.CS.ui.toast("Showing cached events (offline)", "warning");
+    document.getElementById("offlineBanner").style.display = "flex";
+  } else if (!navigator.onLine) {
+    document.getElementById("offlineBanner").style.display = "flex";
   }
 
   document.getElementById("loadingState").style.display = "none";
@@ -135,9 +143,12 @@ function filterEvents() {
     (e.state_prov || "").toLowerCase().includes(q)
   );
   if (week === "CMP") {
-    filtered = filtered.filter(e => (e.event_type_string || "").includes("Championship"));
+    // event_type 3=championship division, 4=championship finals, 6=festival of champions
+    filtered = filtered.filter(e => [3,4,6].includes(e.event_type) || (e.event_type_string || "").toLowerCase().includes("championship"));
   } else if (week) {
-    filtered = filtered.filter(e => String(e.week) === week || String(e.week + 1) === week);
+    // TBA week is 0-indexed: week 0 = "Week 1", week 1 = "Week 2", etc.
+    const weekNum = parseInt(week) - 1;
+    filtered = filtered.filter(e => e.week === weekNum);
   }
   renderEvents(filtered);
 }

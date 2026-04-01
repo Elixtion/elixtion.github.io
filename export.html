@@ -32,16 +32,44 @@
     Export raw or aggregated scouting data for an event. All data is public — no sign-in required to export.
   </p>
 
+  <style>
+    .fmt-btn {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 16px; border-radius: 8px; font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; border: 2px solid transparent; transition: all .15s;
+    }
+    .fmt-btn.selected {
+      background: var(--primary-500); color: #fff; border-color: var(--primary-500);
+    }
+    .fmt-btn.unselected {
+      background: transparent; color: var(--surface-500);
+      border-color: var(--surface-200);
+    }
+    .fmt-btn.unselected:hover { border-color: var(--primary-400); color: var(--primary-400); }
+  </style>
+
   <!-- Options -->
   <div class="cs-card" style="margin-bottom:16px">
     <h3 class="cs-section-title" style="margin-top:0">Export Options</h3>
 
+    <!-- Filters row -->
     <div class="cs-field">
       <label class="cs-label">Event Key *</label>
       <input id="eventKey" class="cs-input" placeholder="e.g. 2026txhou" autocapitalize="none"/>
     </div>
 
-    <div class="cs-field">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="cs-field" style="margin-bottom:0">
+        <label class="cs-label">Team Number</label>
+        <input id="teamFilter" class="cs-input" placeholder="e.g. 1234" type="number" min="1"/>
+      </div>
+      <div class="cs-field" style="margin-bottom:0">
+        <label class="cs-label">Scout Username</label>
+        <input id="scoutFilter" class="cs-input" placeholder="e.g. john_doe" autocapitalize="none"/>
+      </div>
+    </div>
+
+    <div class="cs-field" style="margin-top:12px">
       <label class="cs-label">Data Type</label>
       <select id="dataType" class="cs-select" onchange="updateFieldOptions()">
         <option value="raw">Raw submissions (one row per scout)</option>
@@ -49,14 +77,15 @@
       </select>
     </div>
 
+    <!-- Format toggle — clearly shows which is selected -->
     <div class="cs-field">
       <label class="cs-label">Format</label>
       <div style="display:flex;gap:8px">
-        <button id="fmt-csv" class="cs-btn cs-btn-secondary cs-btn-sm" style="flex:1" onclick="setFormat('csv')">
-          <span class="material-symbols-outlined" style="font-size:16px">table_chart</span> CSV
+        <button id="fmt-csv" class="fmt-btn selected" onclick="setFormat('csv')">
+          <span class="material-symbols-outlined" style="font-size:18px">table_chart</span> CSV
         </button>
-        <button id="fmt-json" class="cs-btn cs-btn-ghost cs-btn-sm" style="flex:1" onclick="setFormat('json')">
-          <span class="material-symbols-outlined" style="font-size:16px">data_object</span> JSON
+        <button id="fmt-json" class="fmt-btn unselected" onclick="setFormat('json')">
+          <span class="material-symbols-outlined" style="font-size:18px">data_object</span> JSON
         </button>
       </div>
     </div>
@@ -112,8 +141,8 @@ let _exportFilename = "";
 
 function setFormat(fmt) {
   _format = fmt;
-  document.getElementById("fmt-csv").className  = "cs-btn cs-btn-sm " + (fmt === "csv"  ? "cs-btn-secondary" : "cs-btn-ghost");
-  document.getElementById("fmt-json").className = "cs-btn cs-btn-sm " + (fmt === "json" ? "cs-btn-secondary" : "cs-btn-ghost");
+  document.getElementById("fmt-csv").className  = "fmt-btn " + (fmt === "csv"  ? "selected" : "unselected");
+  document.getElementById("fmt-json").className = "fmt-btn " + (fmt === "json" ? "selected" : "unselected");
 }
 
 function setMeta(v) {
@@ -125,7 +154,13 @@ function setMeta(v) {
 function updateFieldOptions() {}
 
 async function previewExport() {
-  const eventKey = document.getElementById("eventKey").value.trim();
+  if (!navigator.onLine) {
+    window.CS.ui.toast("You're offline. Export requires an internet connection.", "error");
+    return;
+  }
+  const eventKey   = document.getElementById("eventKey").value.trim();
+  const teamFilter = document.getElementById("teamFilter").value.trim();
+  const scoutFilter = document.getElementById("scoutFilter").value.trim().toLowerCase();
   if (!eventKey) { window.CS.ui.toast("Enter an event key.", "error"); return; }
 
   const btn = document.getElementById("previewBtn");
@@ -133,26 +168,38 @@ async function previewExport() {
   btn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span> Loading…';
 
   const db = window.CS.db;
-  const { data: subs, error } = await db
+  let query = db
     .from("scout_submissions")
     .select("event_key,match_number,match_type,team_number,alliance_color,answers,reliability_score,created_at,owner_id")
     .eq("event_key", eventKey)
     .order("match_number");
 
+  // Apply team number filter directly in query
+  if (teamFilter) query = query.eq("team_number", parseInt(teamFilter));
+
+  const { data: rawSubs, error } = await query;
+
   btn.disabled = false;
   btn.innerHTML = '<span class="material-symbols-outlined">preview</span> Preview & Export';
 
-  if (error || !subs) { window.CS.ui.toast("Failed to load data: " + (error?.message || "unknown"), "error"); return; }
-  if (!subs.length)   { window.CS.ui.toast("No data found for " + eventKey, "warning"); return; }
+  if (error || !rawSubs) { window.CS.ui.toast("Failed to load data: " + (error?.message || "unknown"), "error"); return; }
+  if (!rawSubs.length)   { window.CS.ui.toast("No data found for those filters.", "warning"); return; }
 
   // Fetch usernames for all scouts (two-step — no FK join needed)
-  const ownerIds = [...new Set(subs.map(s => s.owner_id).filter(Boolean))];
+  const ownerIds = [...new Set(rawSubs.map(s => s.owner_id).filter(Boolean))];
   const usernameMap = {};
   if (ownerIds.length) {
     const { data: profiles } = await db.from("profiles").select("id,username").in("id", ownerIds);
     if (profiles) profiles.forEach(p => { usernameMap[p.id] = p.username; });
   }
-  subs.forEach(s => { s._username = usernameMap[s.owner_id] || "scout"; });
+  rawSubs.forEach(s => { s._username = usernameMap[s.owner_id] || "scout"; });
+
+  // Apply scout username filter in JS (after username lookup)
+  const subs = scoutFilter
+    ? rawSubs.filter(s => (s._username || "").toLowerCase().includes(scoutFilter))
+    : rawSubs;
+
+  if (!subs.length) { window.CS.ui.toast(`No submissions from scout "${scoutFilter}".`, "warning"); return; }
 
   const dataType = document.getElementById("dataType").value;
   let output, preview;

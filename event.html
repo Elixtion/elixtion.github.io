@@ -48,9 +48,40 @@
     white-space: nowrap;
   }
   .cs-tab.active { color: var(--primary-500); border-bottom-color: var(--primary-500); }
+
+  /* Match row — fixed-width columns so team numbers never shift layout */
+  .match-row-ev {
+    display: grid;
+    grid-template-columns: 22px 120px 156px 72px 156px 72px;
+    align-items: center;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--surface-100);
+    gap: 4px;
+    font-size: 0.82rem;
+  }
+  .match-row-ev:last-child { border-bottom: none; }
+  .match-row-ev:not(.match-row-hdr):hover { background: var(--surface-100); }
+  .mr-video { display:flex;align-items:center;justify-content:center; }
+  .mr-label { }
+  .mr-red  { display:flex;align-items:center;justify-content:flex-end;gap:2px; }
+  .mr-score{ text-align:center;font-weight:700;font-size:0.88rem;white-space:nowrap; }
+  .mr-blue { display:flex;align-items:center;justify-content:flex-start;gap:2px; }
+  .mr-scout{ display:flex;align-items:center;justify-content:flex-end; }
+  .ev-vid-btn { color:var(--surface-400);text-decoration:none;display:inline-flex;align-items:center;transition:color .15s; }
+  .ev-vid-btn:hover { color:var(--primary-500); }
+  .match-lbl-link { font-weight:700;color:var(--surface-700);text-decoration:underline;text-decoration-color:var(--surface-300); font-size:0.85rem; }
+  .match-lbl-link:hover { color:var(--primary-500); }
+  .ev-section-hdr { background:var(--surface-100);padding:8px 12px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--surface-500);display:flex;align-items:center;gap:6px; }
+  .match-row-hdr { padding: 5px 12px; }
 </style>
 
 <main class="cs-page-wide" style="padding-top:16px">
+
+  <!-- Offline banner -->
+  <div id="offlineBanner" style="display:none;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.85rem;color:#f87171;display:flex;align-items:center;gap:8px">
+    <span class="material-symbols-outlined" style="font-size:18px">wifi_off</span>
+    You're offline. Live event data is unavailable — some sections may be empty or outdated.
+  </div>
 
   <!-- Event header card -->
   <div class="cs-card" style="margin-bottom:16px" id="eventHeader">
@@ -108,6 +139,9 @@ let allMatches = [];
 
 (async function init() {
   if (!EVENT_KEY) { window.location.href = "events.html"; return; }
+  if (!navigator.onLine) {
+    document.getElementById("offlineBanner").style.display = "flex";
+  }
   await Promise.all([loadEventInfo(), loadTeams(), loadMatches()]);
   loadStats();
   loadRankings();
@@ -155,7 +189,12 @@ async function loadEventInfo() {
 async function loadTeams() {
   const teams = await window.CS.tba.getEventTeams(EVENT_KEY);
   const el = document.getElementById("teamsList");
-  if (!teams || !teams.length) { el.innerHTML = '<div class="cs-empty">No teams found.</div>'; return; }
+  if (!teams || !teams.length) {
+    el.innerHTML = !navigator.onLine
+      ? '<div class="cs-empty"><span class="material-symbols-outlined" style="display:block;font-size:32px;margin-bottom:6px">wifi_off</span>You\'re offline. Team list unavailable.</div>'
+      : '<div class="cs-empty">No teams found.</div>';
+    return;
+  }
   allTeams = teams.sort((a, b) => a.team_number - b.team_number);
   renderTeams(allTeams);
 }
@@ -189,51 +228,141 @@ function renderTeams(teams) {
 }
 
 // ── Schedule ───────────────────────────────────────────────────────
+// Double elimination bracket: map set_number → round label
+function deRound(setNum) {
+  if (setNum <= 4)  return "Round 1";
+  if (setNum <= 8)  return "Round 2";
+  if (setNum <= 10) return "Round 3";
+  if (setNum <= 12) return "Round 4";
+  return "Round 5";
+}
+
+function sortMatches(matches) {
+  return [...matches].sort((a, b) => {
+    const levelOrder = { qm: 0, sf: 1, f: 2 };
+    const la = levelOrder[a.comp_level] ?? 3;
+    const lb = levelOrder[b.comp_level] ?? 3;
+    if (la !== lb) return la - lb;
+    if (a.set_number !== b.set_number) return (a.set_number || 0) - (b.set_number || 0);
+    return (a.match_number || 0) - (b.match_number || 0);
+  });
+}
+
+function matchLabel(m) {
+  if (m.comp_level === "qm") return `Qual ${m.match_number}`;
+  if (m.comp_level === "f") {
+    const mnames = ["Match 1","Match 2","Match 3"];
+    return `Final – ${mnames[m.match_number - 1] || "Match " + m.match_number}`;
+  }
+  return `${deRound(m.set_number)} – Match ${m.match_number}`;
+}
+
 async function loadMatches() {
   const matches = await window.CS.tba.getEventMatches(EVENT_KEY);
   const el = document.getElementById("matchList");
-  if (!matches || !matches.length) { el.innerHTML = '<div class="cs-empty">No matches found.</div>'; return; }
-  allMatches = matches.sort((a, b) => (a.match_number || 0) - (b.match_number || 0));
+  if (!matches || !matches.length) {
+    if (!navigator.onLine) el.innerHTML = '<div class="cs-empty"><span class="material-symbols-outlined" style="display:block;font-size:32px;margin-bottom:6px">wifi_off</span>You\'re offline. No cached match data.</div>';
+    else el.innerHTML = '<div class="cs-empty">No matches found yet.</div>';
+    return;
+  }
+  allMatches = sortMatches(matches);
   renderMatches(allMatches);
 }
 
+let _activeFilter = "all";
 function filterMatches(type) {
+  _activeFilter = type;
   ["all","qual","playoff"].forEach(t => {
     document.getElementById("mf-" + t).className = "cs-btn cs-btn-sm " + (t === type ? "cs-btn-secondary" : "cs-btn-ghost");
   });
-  const filtered = type === "all" ? allMatches : allMatches.filter(m => m.comp_level === (type === "qual" ? "qm" : "sf") || m.comp_level === "f");
+  const filtered = type === "all" ? allMatches
+    : type === "qual" ? allMatches.filter(m => m.comp_level === "qm")
+    : allMatches.filter(m => m.comp_level !== "qm");
   renderMatches(filtered);
+}
+
+// Render one match row — fixed column widths for team number alignment
+function renderMatchRow(m) {
+  const red  = (m.alliances?.red?.team_keys  || []).map(k => k.replace("frc",""));
+  const blue = (m.alliances?.blue?.team_keys || []).map(k => k.replace("frc",""));
+  const rs = m.alliances?.red?.score  ?? -1;
+  const bs = m.alliances?.blue?.score ?? -1;
+  const played = rs !== -1 && rs !== null && bs !== -1 && bs !== null;
+  const vidKey = m.videos?.find(v => v.type === "youtube");
+  const vidUrl = vidKey ? `https://youtu.be/${vidKey.key}` : null;
+  const label  = matchLabel(m);
+  // Fixed-width team number cells: always 52px, right/left aligned per alliance
+  const teamCell = (n, color) =>
+    `<a href="team.html?number=${n}" style="display:inline-block;width:52px;text-align:center;padding:2px 4px;border-radius:4px;font-weight:700;font-size:0.8rem;text-decoration:none;color:${color==='red'?'#f87171':'#60a5fa'};background:${color==='red'?'rgba(239,68,68,.12)':'rgba(96,165,250,.12)'}">${n}</a>`;
+  const pad = `<span style="display:inline-block;width:52px"></span>`;
+  const redCells  = [...Array(3)].map((_,i) => red[i]  ? teamCell(red[i], "red")  : pad).join("");
+  const blueCells = [...Array(3)].map((_,i) => blue[i] ? teamCell(blue[i],"blue") : pad).join("");
+  const score = played ? `<strong>${rs}</strong><span style="color:var(--surface-400);font-size:0.75rem">–</span><strong>${bs}</strong>` : `<span style="color:var(--surface-400)">vs</span>`;
+  return `
+    <div class="match-row-ev">
+      <div class="mr-video">${vidUrl ? `<a href="${vidUrl}" target="_blank" rel="noopener" class="ev-vid-btn" title="Watch on YouTube"><span class="material-symbols-outlined" style="font-size:16px">play_circle</span></a>` : ""}</div>
+      <div class="mr-label">
+        <a href="match.html?key=${encodeURIComponent(m.key)}" class="match-lbl-link">${label}</a>
+      </div>
+      <div class="mr-red">${redCells}</div>
+      <div class="mr-score">${score}</div>
+      <div class="mr-blue">${blueCells}</div>
+      <div class="mr-scout">
+        <a href="scout-match.html?event=${EVENT_KEY}&match=${m.match_number}&type=${m.comp_level==='qm'?'qualification':'playoff'}" class="cs-btn cs-btn-sm cs-btn-primary" style="padding:4px 10px;font-size:0.75rem">Scout</a>
+      </div>
+    </div>
+  `;
 }
 
 function renderMatches(matches) {
   const el = document.getElementById("matchList");
   if (!matches.length) { el.innerHTML = '<div class="cs-empty">No matches.</div>'; return; }
-  el.innerHTML = matches.map(m => {
-    const red  = (m.alliances?.red?.team_keys  || []).map(k => k.replace("frc",""));
-    const blue = (m.alliances?.blue?.team_keys || []).map(k => k.replace("frc",""));
-    const redScore  = m.alliances?.red?.score  ?? "?";
-    const blueScore = m.alliances?.blue?.score ?? "?";
-    const label = m.comp_level === "qm" ? `Q${m.match_number}` : `${m.comp_level?.toUpperCase()} ${m.set_number}-${m.match_number}`;
-    const hasVideo = m.videos?.some(v => v.type === "youtube");
-    const vidUrl = hasVideo ? `https://youtu.be/${m.videos.find(v => v.type === "youtube").key}` : null;
-    return `
-      <div class="cs-card cs-card-sm" style="margin-bottom:8px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <div style="display:flex;align-items:center;gap:6px;min-width:60px">
-            ${vidUrl ? `<a href="${vidUrl}" target="_blank" rel="noopener" title="Watch" style="color:#f87171;display:inline-flex;align-items:center">
-              <span class="material-symbols-outlined" style="font-size:16px">play_circle</span></a>` : ""}
-            <a href="match.html?key=${encodeURIComponent(m.key)}" style="font-weight:700;font-size:0.9rem;text-decoration:none;color:var(--surface-700)">${label}</a>
-          </div>
-          <div style="display:flex;flex:1;gap:6px;align-items:center;font-size:0.8rem">
-            <div style="flex:1;text-align:right;color:#f87171">${red.map(n => `<a href="team.html?number=${n}" style="color:#f87171;font-weight:600">${n}</a>`).join(" ")}</div>
-            <div style="font-weight:800;color:var(--surface-500);font-size:0.75rem;white-space:nowrap">${redScore} – ${blueScore}</div>
-            <div style="flex:1;text-align:left;color:#60a5fa">${blue.map(n => `<a href="team.html?number=${n}" style="color:#60a5fa;font-weight:600">${n}</a>`).join(" ")}</div>
-          </div>
-          <a href="scout-match.html?event=${EVENT_KEY}&match=${m.match_number}&type=${m.comp_level === 'qm' ? 'qualification' : 'playoff'}" class="cs-btn cs-btn-sm cs-btn-primary" style="flex-shrink:0">Scout</a>
-        </div>
-      </div>
-    `;
-  }).join("");
+
+  const quals    = matches.filter(m => m.comp_level === "qm");
+  const playoffs = matches.filter(m => m.comp_level !== "qm");
+
+  let html = "";
+
+  // Column header
+  const hdr = `<div class="match-row-ev match-row-hdr">
+    <div class="mr-video"></div>
+    <div class="mr-label" style="color:var(--surface-400);font-size:0.72rem;text-transform:uppercase;letter-spacing:.05em">Match</div>
+    <div class="mr-red" style="color:#f87171;font-size:0.72rem;text-align:right">Red Alliance</div>
+    <div class="mr-score"></div>
+    <div class="mr-blue" style="color:#60a5fa;font-size:0.72rem">Blue Alliance</div>
+    <div class="mr-scout"></div>
+  </div>`;
+
+  if (quals.length) {
+    html += `<div class="cs-card" style="padding:0;overflow:hidden;margin-bottom:12px">
+      <div class="ev-section-hdr"><span class="material-symbols-outlined" style="font-size:14px">format_list_numbered</span>Qualifications <span style="font-weight:400;color:var(--surface-400)">${quals.length} matches</span></div>
+      ${hdr}
+      ${quals.map(renderMatchRow).join("")}
+    </div>`;
+  }
+
+  if (playoffs.length) {
+    // Group by round, inserting dividers
+    let lastRound = null;
+    let playoffHtml = hdr;
+    for (const m of playoffs) {
+      const round = m.comp_level === "f" ? "Finals" : deRound(m.set_number);
+      if (round !== lastRound) {
+        if (lastRound !== null) {
+          playoffHtml += `<div style="height:1px;background:var(--surface-200);margin:4px 0"></div>`;
+        }
+        playoffHtml += `<div style="padding:6px 12px;font-size:0.72rem;font-weight:700;color:var(--primary-400);text-transform:uppercase;letter-spacing:.05em;background:var(--primary-950)">${round}</div>`;
+        lastRound = round;
+      }
+      playoffHtml += renderMatchRow(m);
+    }
+    html += `<div class="cs-card" style="padding:0;overflow:hidden;margin-bottom:12px">
+      <div class="ev-section-hdr"><span class="material-symbols-outlined" style="font-size:14px">emoji_events</span>Playoffs</div>
+      ${playoffHtml}
+    </div>`;
+  }
+
+  el.innerHTML = html;
 }
 
 // ── Stats ──────────────────────────────────────────────────────────
@@ -245,7 +374,12 @@ async function loadStats() {
     .eq("event_key", EVENT_KEY);
 
   const el = document.getElementById("statsList");
-  if (!subs || !subs.length) { el.innerHTML = '<div class="cs-empty">No scouting data yet for this event.</div>'; return; }
+  if (!subs || !subs.length) {
+    el.innerHTML = !navigator.onLine
+      ? '<div class="cs-empty"><span class="material-symbols-outlined" style="display:block;font-size:32px;margin-bottom:6px">wifi_off</span>You\'re offline. Scouting stats unavailable.</div>'
+      : '<div class="cs-empty">No scouting data yet for this event.</div>';
+    return;
+  }
 
   // Group by team
   const byTeam = {};
@@ -303,7 +437,9 @@ async function loadRankings() {
   const data = await window.CS.tba.getEventRankings(EVENT_KEY);
   const el = document.getElementById("rankingsList");
   if (!data || !data.rankings || !data.rankings.length) {
-    el.innerHTML = '<div class="cs-empty">Rankings not yet available.</div>';
+    el.innerHTML = !navigator.onLine
+      ? '<div class="cs-empty"><span class="material-symbols-outlined" style="display:block;font-size:32px;margin-bottom:6px">wifi_off</span>You\'re offline. Rankings unavailable.</div>'
+      : '<div class="cs-empty">Rankings not yet available.</div>';
     return;
   }
   const extra = data.extra_stats_info || [];
