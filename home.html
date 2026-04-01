@@ -15,6 +15,7 @@
   <script src="lib/tba.js"></script>
   <script src="lib/offline.js"></script>
   <script src="lib/reliability.js"></script>
+  <script src="lib/reliability-compute.js"></script>
   <script src="lib/ui.js"></script>
 </head>
 <body>
@@ -146,6 +147,8 @@
   updateConnUI();
   window.addEventListener("cs-connectivity", updateConnUI);
   await Promise.all([loadMyStats(session), loadRecentSubs(session), renderPending()]);
+  // Background reliability recompute after stats are shown
+  if (navigator.onLine) window.CS.reliabilityCompute.recompute(session.user.id);
 
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(console.error);
 })();

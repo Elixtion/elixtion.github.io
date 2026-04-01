@@ -397,9 +397,13 @@ function renderScoutStats(subs) {
     { label:"Avg Teleop FUEL",  val:fmt1(tele),                     color:"#c084fc", conf:agg.teleop_fuel_scored?.confidence },
     { label:"Avg Total FUEL",   val:total!=null?total.toFixed(1):"—",color:"var(--primary-500)", bold:true },
     { label:"Climb",            val:window.CS.ui.climbLabel(Math.round(agg.endgame_climb_level?.mean??0)), color:"#fbbf24" },
+    { label:"Climb Speed",      val:agg.endgame_climb_time?.mode ?? "—", color:"#fbbf24" },
     { label:"Left Zone",        val:agg.auto_left_zone?.mean!=null ? Math.round(agg.auto_left_zone.mean*100)+"%" : "—", color:"var(--surface-700)" },
     { label:"Defense",          val:agg.teleop_played_defense?.mean!=null ? Math.round(agg.teleop_played_defense.mean*100)+"%" : "—", color:"var(--surface-700)" },
+    { label:"Penalties",        val:agg.teleop_penalties?.mean!=null ? Number(agg.teleop_penalties.mean).toFixed(1) : "—", color:"#fb923c" },
+    { label:"Was Defended",     val:agg.teleop_was_defended?.mean!=null ? Math.round(agg.teleop_was_defended.mean*100)+"%" : "—", color:"var(--surface-700)" },
     { label:"Robot Died",       val:agg.post_robot_died?.mean!=null ? Math.round(agg.post_robot_died.mean*100)+"%" : "—", color:"#f87171" },
+    { label:"Disconnected",     val:agg.post_robot_disconnected?.mean!=null ? Math.round(agg.post_robot_disconnected.mean*100)+"%" : "—", color:"#f87171" },
   ];
 
   document.getElementById("csStatsGrid").innerHTML = `
