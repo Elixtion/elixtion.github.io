@@ -20,6 +20,9 @@
   <script src="lib/reliability-compute.js"></script>
   <script src="lib/ui.js"></script>
   <style>
+    /* Prevent double-tap zoom on the scout page (cross-browser) */
+    * { touch-action: manipulation; }
+
     /* No animation on scouting forms for speed */
     *, *::before, *::after { transition: none !important; animation: none !important; }
     .cs-phase-chevron { transition: transform 0.15s !important; }
@@ -56,6 +59,7 @@
     .scout-footer {
       position: sticky; bottom: 60px; z-index: 20;
       padding: 10px 0; pointer-events: none;
+      background: var(--surface-950);
     }
     .scout-footer-inner {
       display: flex; gap: 8px;
@@ -101,6 +105,10 @@
               onclick="cacheSchedule()">
         <span class="material-symbols-outlined" style="font-size:16px">download_for_offline</span> Cache
       </button>
+      <button id="clearCacheBtn" class="cs-btn cs-btn-ghost cs-btn-sm" style="flex-shrink:0;height:42px;display:none"
+              onclick="clearCachedSchedule()" title="Clear cached schedule">
+        <span class="material-symbols-outlined" style="font-size:16px">delete_outline</span>
+      </button>
     </div>
     <div id="scheduleStatus" style="font-size:0.78rem;min-height:18px;margin-bottom:12px"></div>
 
@@ -121,9 +129,9 @@
                oninput="onSmartInput('match')"/>
       </div>
       <div class="cs-field" style="margin-bottom:0">
-        <label class="cs-label" id="lbl-team">Team #</label>
-        <input id="setupTeam" class="cs-input" type="number" min="1" placeholder="254"
-               oninput="onSmartInput('team')"/>
+        <label class="cs-label" id="lbl-team">Team # <span class="lbl-lock"><span class="material-symbols-outlined" style="font-size:12px">lock</span>Auto</span></label>
+        <input id="setupTeam" class="cs-input" type="number" min="1" placeholder="—"
+               disabled/>
       </div>
       <div class="cs-field" style="margin-bottom:0">
         <label class="cs-label" id="lbl-station">Station</label>
@@ -198,8 +206,7 @@ const formState = {
   answers: {}, history: [],
 };
 
-let _schedule = null;    // array of match objects cached for the current event
-let _lockedField = null; // 'match' | 'team' | 'station' — whichever was auto-filled
+let _schedule = null;   // array of match objects cached for the current event
 let _session = null;
 
 // ── Init ───────────────────────────────────────────────────────────────
@@ -216,7 +223,6 @@ let _session = null;
   const urlEvent = p.get("event") || p.get("key");
   const urlMatch = parseInt(p.get("match"));
   const urlType  = p.get("type");
-  const urlTeam  = parseInt(p.get("team"));
   const urlStation = parseInt(p.get("station"));
 
   const eventKey = urlEvent || localStorage.getItem("cs_last_event") || "";
@@ -227,11 +233,10 @@ let _session = null;
 
   if (!isNaN(urlMatch) && urlMatch > 0) document.getElementById("setupMatch").value = urlMatch;
   if (urlType) setMatchType(urlType === "qualification" || urlType === "qual" ? "qualification" : "playoff");
-  if (!isNaN(urlTeam) && urlTeam > 0) document.getElementById("setupTeam").value = urlTeam;
   if (!isNaN(urlStation) && urlStation >= 1 && urlStation <= 6) document.getElementById("setupStation").value = urlStation;
 
-  // Try auto-fill if any params were provided
-  if (urlMatch || urlTeam || urlStation) tryAutoFill();
+  // Try auto-fill from match + station (team is always derived, never set from URL)
+  if (urlMatch || urlStation) tryAutoFill();
   checkStartReady();
 })();
 
@@ -271,6 +276,7 @@ async function loadCachedSchedule(eventKey) {
       const st = document.getElementById("scheduleStatus");
       const qualCount = _schedule.filter(m => m.comp_level === "qm").length;
       st.innerHTML = `<span style="color:var(--primary-400)">✓</span> ${_schedule.length} matches cached (${qualCount} quals${age > 0 ? `, ${age}m ago` : ""}).`;
+      document.getElementById("clearCacheBtn").style.display = "";
     }
   } catch (_) {}
 }
@@ -279,8 +285,22 @@ function onEventKeyChange() {
   // When user changes event key, clear the old cached schedule info
   _schedule = null;
   document.getElementById("scheduleStatus").textContent = "";
-  if (_lockedField) unlockField(true);
+  document.getElementById("clearCacheBtn").style.display = "none";
+  document.getElementById("setupTeam").value = "";
   checkStartReady();
+}
+
+async function clearCachedSchedule() {
+  const eventKey = document.getElementById("setupEvent").value.trim().toLowerCase();
+  if (eventKey) {
+    try { await window.CS.offline.cache.deleteMatch(scheduleKey(eventKey)); } catch (_) {}
+  }
+  _schedule = null;
+  document.getElementById("scheduleStatus").textContent = "";
+  document.getElementById("clearCacheBtn").style.display = "none";
+  document.getElementById("setupTeam").value = "";
+  checkStartReady();
+  window.CS.ui.toast("Schedule cache cleared.", "success");
 }
 
 async function cacheSchedule() {
@@ -335,6 +355,7 @@ async function cacheSchedule() {
     const qualCount = light.filter(m => m.comp_level === "qm").length;
     st.innerHTML = `<span style="color:var(--primary-400)">✓</span> Cached — ${light.length} matches (${qualCount} quals). You can now scout offline.`;
     window.CS.ui.toast(`Schedule cached — ${light.length} matches.`, "success");
+    document.getElementById("clearCacheBtn").style.display = "";
     tryAutoFill();
     checkStartReady();
   } catch (err) {
@@ -350,90 +371,50 @@ function setMatchType(type) {
   formState.matchType = type;
   document.getElementById("type-qual").className    = "cs-toggle-btn" + (type === "qualification" ? " active-yes" : "");
   document.getElementById("type-playoff").className = "cs-toggle-btn" + (type === "playoff"       ? " active-yes" : "");
-  if (_lockedField) unlockField(false); // auto-fill may not apply to new type
+  document.getElementById("setupTeam").value = ""; // team auto-fill only works for quals
+  tryAutoFill();
   checkStartReady();
 }
 
 // ── Smart auto-fill logic ───────────────────────────────────────────────
-function onSmartInput(changedField) {
-  // If the user is manually editing a locked field, unlock it
-  if (_lockedField === changedField) unlockField(false);
+// Team is ALWAYS read-only. Only match + station → team derivation is supported.
+function onSmartInput() {
   tryAutoFill();
   checkStartReady();
 }
 
 function tryAutoFill() {
-  if (_lockedField) return;           // already have a lock — don't re-fill
   if (!_schedule?.length) return;     // no schedule cached
   if (formState.matchType !== "qualification") return; // only auto-fill quals
 
   const matchNum   = parseInt(document.getElementById("setupMatch").value);
-  const teamNum    = parseInt(document.getElementById("setupTeam").value);
   const stationVal = parseInt(document.getElementById("setupStation").value);
 
   const hasMatch   = !isNaN(matchNum)   && matchNum   >= 1;
-  const hasTeam    = !isNaN(teamNum)    && teamNum    >= 1;
   const hasStation = !isNaN(stationVal) && stationVal >= 1 && stationVal <= 6;
 
-  if (hasMatch && hasStation && !hasTeam) {
+  if (hasMatch && hasStation) {
     // Derive team from match + station
     const match = _schedule.find(m => m.comp_level === "qm" && m.match_number === matchNum);
-    if (!match) return;
+    if (!match) { document.getElementById("setupTeam").value = ""; checkStartReady(); return; }
     const alliance = stationVal <= 3 ? "red" : "blue";
     const pos = (stationVal - 1) % 3;
     const teamKey = match.alliances[alliance]?.team_keys?.[pos];
-    if (!teamKey) return;
-    const tn = parseInt(teamKey.replace("frc", ""));
-    if (!isNaN(tn) && tn > 0) {
-      document.getElementById("setupTeam").value = tn;
-      lockField("team");
+    if (teamKey) {
+      const tn = parseInt(teamKey.replace("frc", ""));
+      if (!isNaN(tn) && tn > 0) document.getElementById("setupTeam").value = tn;
+      else document.getElementById("setupTeam").value = "";
+    } else {
+      document.getElementById("setupTeam").value = "";
     }
-  } else if (hasMatch && hasTeam && !hasStation) {
-    // Derive station from match + team
-    const match = _schedule.find(m => m.comp_level === "qm" && m.match_number === matchNum);
-    if (!match) return;
-    const redIdx  = match.alliances.red?.team_keys?.indexOf(`frc${teamNum}`);
-    const blueIdx = match.alliances.blue?.team_keys?.indexOf(`frc${teamNum}`);
-    let station = null;
-    if (redIdx  !== undefined && redIdx  !== -1) station = redIdx + 1;
-    else if (blueIdx !== undefined && blueIdx !== -1) station = blueIdx + 4;
-    if (station) {
-      document.getElementById("setupStation").value = station;
-      lockField("station");
-    }
+  } else {
+    // Not enough info to derive team — clear it
+    document.getElementById("setupTeam").value = "";
   }
-  // Note: team + station alone can't determine match (team plays multiple matches)
-}
-
-function lockField(fieldId) {
-  _lockedField = fieldId;
-  const el = fieldId === "station"
-    ? document.getElementById("setupStation")
-    : document.getElementById(`setup${fieldId[0].toUpperCase()}${fieldId.slice(1)}`);
-  el.disabled = true;
-
-  const lbl = document.getElementById(`lbl-${fieldId}`);
-  const baseText = { match: "Match #", team: "Team #", station: "Station" }[fieldId];
-  lbl.innerHTML = `${baseText} <span class="lbl-lock"><span class="material-symbols-outlined" style="font-size:12px">lock</span>Auto</span>`;
-}
-
-function unlockField(clearValue) {
-  if (!_lockedField) return;
-  const fieldId = _lockedField;
-  _lockedField = null;
-
-  const el = fieldId === "station"
-    ? document.getElementById("setupStation")
-    : document.getElementById(`setup${fieldId[0].toUpperCase()}${fieldId.slice(1)}`);
-  el.disabled = false;
-  if (clearValue) el.value = "";
-
-  const lbl = document.getElementById(`lbl-${fieldId}`);
-  lbl.textContent = { match: "Match #", team: "Team #", station: "Station" }[fieldId];
+  checkStartReady();
 }
 
 function clearMatchFields() {
-  unlockField(true);
   document.getElementById("setupMatch").value   = "";
   document.getElementById("setupTeam").value    = "";
   document.getElementById("setupStation").value = "";
@@ -750,7 +731,6 @@ async function submitForm() {
     // Reset: keep event + match type, increment match #, clear team + station
     const nextMatch = (formState.matchNumber || 0) + 1;
     hideFormSection();
-    if (_lockedField) unlockField(true);
     document.getElementById("setupMatch").value   = nextMatch;
     document.getElementById("setupTeam").value    = "";
     document.getElementById("setupStation").value = "";

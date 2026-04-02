@@ -78,7 +78,6 @@
 
     <!-- Event autocomplete -->
     <div class="cs-field" style="margin:0;min-width:220px;flex:1">
-      <label class="cs-label">Find teams at event</label>
       <div class="ac-container" id="eventAC">
         <div class="cs-search">
           <span class="material-symbols-outlined">event</span>
@@ -122,10 +121,11 @@ const YEAR = 2026;
 const INDEX_LS_KEY = "cs_teams_index_ts";
 const INDEX_MAX_AGE = 12 * 60 * 60 * 1000; // 12 hours
 
-let _teamsIndex  = []; // all teams sorted by team_number
-let _eventsIndex = []; // all 2026 events for autocomplete
-let _searchTimeout = null;
-let _indexReady = false;
+let _teamsIndex       = []; // all teams sorted by team_number
+let _eventsIndex      = []; // all 2026 events for autocomplete
+let _eventFilterKeys  = null; // Set of team_numbers from selected event (null = no event filter)
+let _searchTimeout    = null;
+let _indexReady       = false;
 
 // ── Init ──────────────────────────────────────────────────────────────
 (async function init() {
@@ -238,25 +238,37 @@ function onSearch() {
 function doSearch() {
   const raw = document.getElementById("teamSearch").value;
   const q = raw.trim();
-
-  if (!q) { showReady(); document.getElementById("resultsLabel").textContent = ""; return; }
   const qLow = q.toLowerCase();
   const stripped = q.replace(/^frc/i, "");
 
-  let results = [];
+  // Start from full index, then apply event filter if one is active
+  let pool = _eventFilterKeys
+    ? _teamsIndex.filter(t => _eventFilterKeys.has(t.team_number))
+    : _teamsIndex;
 
+  if (!q) {
+    if (_eventFilterKeys) {
+      // Event filter active but no text — show all event teams
+      renderTeams(pool.slice(0, 80));
+      document.getElementById("resultsLabel").textContent =
+        `${pool.length} team${pool.length !== 1 ? "s" : ""} at event${pool.length > 80 ? " (showing first 80)" : ""}`;
+    } else {
+      showReady();
+      document.getElementById("resultsLabel").textContent = "";
+    }
+    return;
+  }
+
+  let results = [];
   if (/^\d+$/.test(stripped)) {
-    // Number prefix — match team numbers that CONTAIN the digits
-    results = _teamsIndex.filter(t => String(t.team_number).includes(stripped));
-    // If exact match exists, put it first
+    results = pool.filter(t => String(t.team_number).includes(stripped));
     results.sort((a, b) => {
       const aEx = String(a.team_number) === stripped ? 0 : 1;
       const bEx = String(b.team_number) === stripped ? 0 : 1;
       return aEx - bEx || a.team_number - b.team_number;
     });
   } else {
-    // Name / city / state search
-    results = _teamsIndex.filter(t =>
+    results = pool.filter(t =>
       (t.nickname || "").toLowerCase().includes(qLow) ||
       (t.name || "").toLowerCase().includes(qLow) ||
       (t.city || "").toLowerCase().includes(qLow) ||
@@ -272,8 +284,28 @@ function doSearch() {
 }
 
 // ── Event autocomplete ─────────────────────────────────────────────────
+function onEventKeydown(e) {
+  if (e.key === "Enter") {
+    const key = document.getElementById("eventKeyInput").value.trim();
+    if (key) { closeEventAC(); loadEventTeams(key); }
+  }
+  if (e.key === "Escape") closeEventAC();
+}
+
+function closeEventAC() {
+  document.getElementById("eventACDropdown").style.display = "none";
+}
+
+function selectEvent(key, name) {
+  document.getElementById("eventKeyInput").value = key;
+  closeEventAC();
+  loadEventTeams(key);
+}
+
 function onEventSearch() {
   const q = document.getElementById("eventKeyInput").value.trim().toLowerCase();
+  // If input was cleared, remove event filter
+  if (!q) { _eventFilterKeys = null; doSearch(); }
   const dd = document.getElementById("eventACDropdown");
   if (!q || !_eventsIndex.length) { dd.style.display = "none"; return; }
 
@@ -299,24 +331,6 @@ function onEventSearch() {
   dd.style.display = "";
 }
 
-function onEventKeydown(e) {
-  if (e.key === "Enter") {
-    const key = document.getElementById("eventKeyInput").value.trim();
-    if (key) { closeEventAC(); loadEventTeams(key); }
-  }
-  if (e.key === "Escape") closeEventAC();
-}
-
-function closeEventAC() {
-  document.getElementById("eventACDropdown").style.display = "none";
-}
-
-function selectEvent(key, name) {
-  document.getElementById("eventKeyInput").value = key;
-  closeEventAC();
-  loadEventTeams(key);
-}
-
 async function loadEventTeams(key) {
   if (!key) { key = document.getElementById("eventKeyInput").value.trim(); }
   if (!key) { window.CS.ui.toast("Enter an event key first.", "error"); return; }
@@ -327,7 +341,6 @@ async function loadEventTeams(key) {
   }
 
   document.getElementById("loadingState").style.display = "";
-  document.getElementById("teamsList").innerHTML = "";
 
   const teams = await window.CS.tba.getEventTeams(key);
   document.getElementById("loadingState").style.display = "none";
@@ -336,15 +349,16 @@ async function loadEventTeams(key) {
     renderTeams([], "No teams found for that event key. Check the event key and try again.");
     return;
   }
-  // Cache all teams in background and add to index
+  // Cache all teams and add to index
   for (const t of teams) {
     await window.CS.offline.cache.putTeam(t);
     if (!_teamsIndex.find(x => x.team_number === t.team_number)) _teamsIndex.push(t);
   }
   _teamsIndex.sort((a, b) => a.team_number - b.team_number);
 
-  renderTeams(teams.sort((a, b) => a.team_number - b.team_number));
-  document.getElementById("resultsLabel").textContent = `${teams.length} teams at ${key}`;
+  // Set event filter and re-run search (stacks with text filter)
+  _eventFilterKeys = new Set(teams.map(t => t.team_number));
+  doSearch();
 }
 
 // ── Render ─────────────────────────────────────────────────────────────

@@ -56,8 +56,8 @@
     .t-cell:hover { opacity:.75 }
     .t-empty { display:inline-block;width:52px; }
 
-    .event-match-hdr { background:var(--surface-100);padding:8px 12px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--surface-500);display:flex;align-items:center;justify-content:space-between; }
-    .de-round-hdr { padding:5px 12px;font-size:0.72rem;font-weight:700;color:var(--primary-400);text-transform:uppercase;letter-spacing:.05em;background:var(--primary-950); }
+    .event-match-hdr { background:var(--primary-950);padding:8px 12px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--primary-400);display:flex;align-items:center;justify-content:space-between; }
+    .de-round-hdr { padding:5px 12px;font-size:0.72rem;font-weight:700;color:var(--surface-500);text-transform:uppercase;letter-spacing:.05em;background:var(--surface-100); }
 
     /* Submission table */
     .sub-table { width:100%;border-collapse:collapse;font-size:0.8rem; }
@@ -85,6 +85,7 @@
 <div style="background:var(--surface-50);border-bottom:1px solid var(--surface-100);display:flex;overflow-x:auto;position:sticky;top:56px;z-index:10">
   <button class="cs-tab active" onclick="showTab('overview')" id="tab-overview">Overview</button>
   <button class="cs-tab" onclick="showTab('pits')" id="tab-pits">Pits</button>
+  <button class="cs-tab" onclick="showTab('data')" id="tab-data">Data</button>
 </div>
 
 <main class="cs-page" style="padding-top:16px">
@@ -103,7 +104,7 @@
       <div class="cs-skeleton" style="height:120px"></div>
     </div>
 
-    <!-- CrowdScout scouted stats — PRIMARY -->
+    <!-- CrowdScout scouted stats — PRIMARY; Statbotics comparison embedded below -->
     <div id="csStatsSection" style="margin-bottom:16px;display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <h3 class="cs-section-title" style="margin:0;display:flex;align-items:center;gap:6px">
@@ -113,25 +114,19 @@
         <span id="csStatsCount" style="font-size:0.75rem;color:var(--surface-400)"></span>
       </div>
       <div id="csStatsGrid"></div>
+      <!-- Statbotics EPA — comparison (embedded, visually inferior) -->
+      <div id="sbCompareCard" style="display:none;margin-top:12px">
+        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--surface-400);margin-bottom:6px;padding-bottom:6px;border-top:1px solid var(--surface-100);padding-top:10px">
+          Statbotics EPA — for comparison only
+        </div>
+        <div id="sbContent"></div>
+      </div>
     </div>
     <div id="csStatsEmpty" style="display:none;margin-bottom:16px">
       <div class="cs-card" style="text-align:center;padding:20px;color:var(--surface-400)">
         <span class="material-symbols-outlined" style="display:block;font-size:32px;margin-bottom:6px">bar_chart</span>
         No scouting data yet for this team.
         <br/><a href="scout.html" style="color:var(--primary-500);font-size:0.85rem;margin-top:8px;display:inline-block">Be the first to scout them →</a>
-      </div>
-    </div>
-
-    <!-- Statbotics EPA — comparison only (smaller) -->
-    <div id="sbCompareCard" style="margin-bottom:16px;display:none">
-      <div class="cs-card" style="border-color:var(--surface-200)">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--surface-400)">
-            Statbotics EPA Comparison
-          </div>
-          <a id="sbLink" href="#" target="_blank" rel="noopener" style="font-size:0.75rem;color:var(--surface-500)">statbotics.io ↗</a>
-        </div>
-        <div id="sbContent"></div>
       </div>
     </div>
 
@@ -147,19 +142,6 @@
       <div id="matchHistoryList"><div class="cs-skeleton" style="height:80px;border-radius:8px"></div></div>
     </div>
 
-    <!-- All Submissions -->
-    <div id="submissionsSection" style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <h3 class="cs-section-title" style="margin:0">All Submissions</h3>
-        <div style="display:flex;gap:6px;align-items:center">
-          <select id="subEventFilter" class="cs-select" style="width:auto;min-width:100px;font-size:0.8rem" onchange="filterSubmissions()">
-            <option value="">All Events</option>
-          </select>
-          <input id="subSearch" class="cs-input" placeholder="Search…" style="width:120px;font-size:0.8rem" oninput="filterSubmissions()"/>
-        </div>
-      </div>
-      <div id="submissionsList"><div class="cs-empty">No submissions yet.</div></div>
-    </div>
 
   </div>
 
@@ -169,6 +151,54 @@
       <span class="material-symbols-outlined" style="font-size:48px;display:block;margin-bottom:12px">construction</span>
       <div style="font-weight:600;margin-bottom:8px">Pit Scouting — Coming Soon</div>
       <div style="font-size:0.85rem">Pit scouting data will appear here once the feature is released.</div>
+    </div>
+  </div>
+
+  <!-- ── Data ──────────────────────────────────────────────────────── -->
+  <div id="pane-data" style="display:none">
+
+    <!-- Filters -->
+    <div class="cs-card" style="margin-bottom:14px">
+      <h3 class="cs-section-title" style="margin-top:0">Filters &amp; Export</h3>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="cs-field" style="margin-bottom:0">
+          <label class="cs-label">Event</label>
+          <select id="subEventFilter" class="cs-select" style="font-size:0.85rem" onchange="filterSubmissions()">
+            <option value="">All Events</option>
+          </select>
+        </div>
+        <div class="cs-field" style="margin-bottom:0">
+          <label class="cs-label">Scout Username</label>
+          <input id="subScoutFilter" class="cs-input" placeholder="e.g. john_doe"
+                 autocapitalize="none" oninput="filterSubmissions()" style="font-size:0.85rem"/>
+        </div>
+      </div>
+
+      <!-- Format selector — same styling as "Include Metadata" toggle -->
+      <div class="cs-field" style="margin-bottom:12px">
+        <label class="cs-label">Export Format</label>
+        <div class="cs-toggle-group">
+          <button id="data-fmt-csv"  class="cs-toggle-btn active-yes" style="flex:1" onclick="setDataFormat('csv')">
+            <span class="material-symbols-outlined" style="font-size:15px">table_chart</span> CSV
+          </button>
+          <button id="data-fmt-json" class="cs-toggle-btn" style="flex:1" onclick="setDataFormat('json')">
+            <span class="material-symbols-outlined" style="font-size:15px">data_object</span> JSON
+          </button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="dataFilterCount" style="font-size:0.8rem;color:var(--surface-400);flex:1"></span>
+        <button class="cs-btn cs-btn-primary cs-btn-sm" onclick="exportDataTab()">
+          <span class="material-symbols-outlined" style="font-size:16px">download</span> Export
+        </button>
+      </div>
+    </div>
+
+    <!-- Submissions table -->
+    <div id="submissionsSection">
+      <div id="submissionsList"><div class="cs-empty">No submissions yet.</div></div>
     </div>
   </div>
 
@@ -208,7 +238,7 @@ if (!TEAM_NUMBER) window.location.href = "teams.html";
 })();
 
 function showTab(name) {
-  ["overview","pits"].forEach(t => {
+  ["overview","pits","data"].forEach(t => {
     document.getElementById("pane-" + t).style.display = t === name ? "" : "none";
     document.getElementById("tab-" + t).className = "cs-tab" + (t === name ? " active" : "");
   });
@@ -304,7 +334,6 @@ function renderSbCompare(sbYear) {
   if (!sbYear?.epa) return;
   const card = document.getElementById("sbCompareCard");
   card.style.display = "";
-  document.getElementById("sbLink").href = `https://www.statbotics.io/teams/${TEAM_NUMBER}`;
 
   const epa = sbYear.epa;
   const bd = epa.breakdown || {};
@@ -314,17 +343,18 @@ function renderSbCompare(sbYear) {
   const endgV   = bd.endgame_points ?? epa.endgame_points?.mean ?? null;
   const fmt = v => window.CS.statbotics.fmtEPA(v, 1);
 
+  // Statbotics data is visually inferior: smaller numbers, muted colors
   document.getElementById("sbContent").innerHTML = `
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <div style="display:flex;gap:5px;flex-wrap:wrap">
       ${[
-        {label:"Total", val:total, color:"var(--surface-600)"},
-        {label:"Auto",  val:autoV,  color:"#60a5fa"},
-        {label:"Teleop",val:teleopV,color:"#c084fc"},
-        {label:"End",   val:endgV,  color:"#fbbf24"},
+        {label:"Total EPA", val:total},
+        {label:"Auto",      val:autoV},
+        {label:"Teleop",    val:teleopV},
+        {label:"Endgame",   val:endgV},
       ].map(m => `
-        <div style="flex:1;min-width:56px;text-align:center;padding:8px 4px;background:var(--surface-100);border-radius:8px">
-          <div style="font-size:1.1rem;font-weight:700;color:${m.color}">${fmt(m.val)}</div>
-          <div style="font-size:0.65rem;color:var(--surface-400);text-transform:uppercase;letter-spacing:.04em">${m.label}</div>
+        <div style="flex:1;min-width:52px;text-align:center;padding:5px 4px;background:var(--surface-50);border:1px solid var(--surface-100);border-radius:6px">
+          <div style="font-size:0.85rem;font-weight:600;color:var(--surface-500)">${fmt(m.val)}</div>
+          <div style="font-size:0.6rem;color:var(--surface-400);text-transform:uppercase;letter-spacing:.04em;margin-top:1px">${m.label}</div>
         </div>`).join("")}
     </div>
   `;
@@ -421,16 +451,13 @@ function renderScoutStats(subs) {
 // SUBMISSIONS TABLE
 // ──────────────────────────────────────────────────────────────────────
 function filterSubmissions() {
-  const evtFilter = document.getElementById("subEventFilter").value;
-  const q = document.getElementById("subSearch").value.toLowerCase();
+  const evtFilter   = document.getElementById("subEventFilter")?.value || "";
+  const scoutFilter = (document.getElementById("subScoutFilter")?.value || "").trim().toLowerCase();
   let filtered = _allSubs;
-  if (evtFilter) filtered = filtered.filter(s => s.event_key === evtFilter);
-  if (q) filtered = filtered.filter(s =>
-    (s.event_key||"").includes(q) ||
-    String(s.match_number).includes(q) ||
-    (s._username||"").toLowerCase().includes(q) ||
-    (s.answers?.post_notes||"").toLowerCase().includes(q)
-  );
+  if (evtFilter)   filtered = filtered.filter(s => s.event_key === evtFilter);
+  if (scoutFilter) filtered = filtered.filter(s => (s._username || "").toLowerCase().includes(scoutFilter));
+  document.getElementById("dataFilterCount").textContent =
+    filtered.length + " submission" + (filtered.length !== 1 ? "s" : "");
   renderSubmissions(filtered);
 }
 
@@ -622,6 +649,62 @@ function renderMatchBlock(sorted) {
     }
   }
   return html;
+}
+
+// ── Data tab ─────────────────────────────────────────────────────────────
+let _dataFormat = "csv";
+function setDataFormat(fmt) {
+  _dataFormat = fmt;
+  document.getElementById("data-fmt-csv").className  = "cs-toggle-btn" + (fmt === "csv"  ? " active-yes" : "");
+  document.getElementById("data-fmt-json").className = "cs-toggle-btn" + (fmt === "json" ? " active-yes" : "");
+}
+
+function exportDataTab() {
+  const evtFilter   = document.getElementById("subEventFilter")?.value || "";
+  const scoutFilter = (document.getElementById("subScoutFilter")?.value || "").trim().toLowerCase();
+  let subs = _allSubs;
+  if (evtFilter)   subs = subs.filter(s => s.event_key === evtFilter);
+  if (scoutFilter) subs = subs.filter(s => (s._username || "").toLowerCase().includes(scoutFilter));
+
+  if (!subs.length) { window.CS.ui.toast("No data to export.", "warning"); return; }
+
+  const schema = window.CS.schema2026;
+  const fields = schema.sections.flatMap(sec => sec.fields);
+
+  const rows = subs.map(s => {
+    const row = {
+      event_key: s.event_key,
+      match_number: s.match_number,
+      match_type: s.match_type,
+      team_number: TEAM_NUMBER,
+      scout: s._username || "—",
+    };
+    fields.forEach(f => { row[f.id] = s.answers?.[f.id] ?? ""; });
+    row.reliability_score = s.reliability_score ?? 1.0;
+    row.submitted_at = s.created_at;
+    return row;
+  });
+
+  let content, mimeType, ext;
+  if (_dataFormat === "json") {
+    content = JSON.stringify(rows, null, 2);
+    mimeType = "application/json";
+    ext = "json";
+  } else {
+    const headers = Object.keys(rows[0]);
+    const escape = v => { const s = String(v ?? ""); return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g,'""')}"` : s; };
+    content = [headers.join(","), ...rows.map(r => headers.map(h => escape(r[h])).join(","))].join("\n");
+    mimeType = "text/csv";
+    ext = "csv";
+  }
+
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `team${TEAM_NUMBER}_submissions.${ext}`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  window.CS.ui.toast(`Exported ${rows.length} submissions as ${ext.toUpperCase()}.`, "success");
 }
 
 function renderOneMatchRow(m) {
