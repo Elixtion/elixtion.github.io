@@ -6,6 +6,7 @@
   <title>Scout — CrowdScout</title>
   <meta name="theme-color" content="#111312"/>
   <link rel="manifest" href="manifest.json"/>
+  <link crossorigin href="https://fonts.gstatic.com/" rel="preconnect"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;600;700;900&display=swap"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -13,27 +14,69 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="lib/supabase-client.js"></script>
   <script src="lib/offline.js"></script>
+  <script src="lib/schema2026.js"></script>
   <script src="lib/ui.js"></script>
   <script src="lib/config.js"></script>
   <script src="lib/tba.js"></script>
+  <style>
+    /* Prevent double-tap zoom on this page (scouting form) only */
+    html, body { touch-action: manipulation; }
+
+    /* No animations on the scouting form — max speed */
+    #scoutingView *, #scoutingView *::before, #scoutingView *::after {
+      transition: none !important; animation: none !important;
+    }
+    #scoutingView .cs-phase-chevron { transition: transform 0.15s !important; }
+
+    .cs-submit-footer { background: rgba(17,19,18,.98) !important; }
+    main#formRoot { background: var(--surface-0); }
+    #phasesRoot   { background: var(--surface-0); }
+
+    /* Schedule cache status pill */
+    #scheduleCacheStatus {
+      font-size: 0.72rem; padding: 2px 8px; border-radius: 99px;
+      font-weight: 600; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .cache-fresh  { background: var(--primary-950); color: var(--primary-400); }
+    .cache-stale  { background: #2d2200; color: #fbbf24; }
+    .cache-none   { background: var(--surface-100); color: var(--surface-500); }
+  </style>
 </head>
 <body>
 
+<!-- ── HEADER ─────────────────────────────────────────────────────── -->
 <header class="cs-header">
-  <a href="home.html" class="cs-header-brand">
+  <!-- Back arrow shown only while scouting -->
+  <a id="headerBrand" href="home.html" class="cs-header-brand">
+    <span id="headerBack" class="material-symbols-outlined" style="color:var(--surface-500);font-size:20px;display:none">arrow_back</span>
     <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
-    <span>Scout</span>
+    <span id="headerTitle">Scout</span>
   </a>
-  <nav class="cs-nav">
-    <a href="events.html">Events</a>
-    <a href="teams.html">Teams</a>
-    <a href="profile.html">Profile</a>
-  </nav>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div id="connBar" class="cs-pill cs-pill-gray" style="font-size:0.72rem;display:none"></div>
+    <nav class="cs-nav">
+      <a href="events.html">Events</a>
+      <a href="teams.html">Teams</a>
+      <a href="profile.html">Profile</a>
+    </nav>
+  </div>
 </header>
 
+<!-- ── MATCH META BAR (shown while scouting) ──────────────────────── -->
+<div class="cs-match-meta" id="matchMeta" style="display:none">
+  <span class="cs-match-meta-chip" id="metaEvent">—</span>
+  <span class="cs-match-meta-chip" id="metaMatch">—</span>
+  <span class="cs-match-meta-chip" id="metaTeam">—</span>
+  <span class="cs-match-meta-chip" id="metaAlliance">—</span>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SETUP VIEW
+     ════════════════════════════════════════════════════════════════ -->
+<div id="setupView">
 <main class="cs-page">
 
-  <!-- ── Connectivity + sync status ──────────────────────────────── -->
+  <!-- Connectivity + sync -->
   <div id="syncStatus" class="cs-card cs-card-sm" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px">
     <span id="connText" style="font-size:0.85rem;color:var(--surface-500)">Checking connectivity…</span>
     <button class="cs-btn cs-btn-sm cs-btn-secondary" onclick="manualSync()">
@@ -41,22 +84,35 @@
     </button>
   </div>
 
-  <!-- ── Quick Scout ──────────────────────────────────────────────── -->
+  <!-- Scout a Match card -->
   <div class="cs-card" style="margin-bottom:16px">
     <h2 class="cs-section-title" style="margin-top:0">Scout a Match</h2>
-    <p class="cs-section-sub">Select match and station — team number is resolved automatically from TBA.</p>
+    <p class="cs-section-sub">Select match and station — team number resolves automatically from the schedule.</p>
 
-    <!-- Event key + clear button -->
+    <!-- Event key + clear -->
     <div class="cs-field">
-      <label class="cs-label">Event Key</label>
+      <label class="cs-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Event Key</span>
+        <span id="scheduleCacheStatus" class="cache-none">No schedule cached</span>
+      </label>
       <div style="display:flex;gap:8px">
         <input id="quickEvent" class="cs-input" placeholder="e.g. 2026txhou" autocapitalize="none"
                oninput="onEventChange()" style="flex:1"/>
-        <button class="cs-btn cs-btn-secondary cs-btn-sm" onclick="clearCachedEvent()"
-                title="Clear saved event" style="flex-shrink:0">
+        <button class="cs-btn cs-btn-secondary cs-btn-sm" onclick="clearEventAndSchedule()"
+                title="Clear saved event + schedule" style="flex-shrink:0">
           <span class="material-symbols-outlined" style="font-size:16px">clear</span>
         </button>
       </div>
+    </div>
+
+    <!-- Cache / refresh schedule -->
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="cs-btn cs-btn-secondary cs-btn-sm" style="flex:1" onclick="cacheSchedule()">
+        <span class="material-symbols-outlined" style="font-size:15px">download</span> Cache Schedule
+      </button>
+      <button class="cs-btn cs-btn-secondary cs-btn-sm" style="flex:1" onclick="clearScheduleCache()">
+        <span class="material-symbols-outlined" style="font-size:15px">delete_sweep</span> Clear Cache
+      </button>
     </div>
 
     <!-- Match # + Type -->
@@ -88,7 +144,7 @@
       </select>
     </div>
 
-    <!-- Team # — read-only, auto-filled from TBA -->
+    <!-- Team # — read-only -->
     <div class="cs-field">
       <label class="cs-label" style="display:flex;align-items:center;justify-content:space-between;gap:4px">
         <span>Team #</span>
@@ -106,20 +162,40 @@
     </button>
   </div>
 
-  <!-- ── Upcoming matches from schedule ──────────────────────────── -->
-  <div id="scheduleSection" style="display:none">
-    <h2 class="cs-section-title">Upcoming Matches</h2>
+  <!-- Cached schedule preview -->
+  <div id="scheduleSection" style="display:none;margin-bottom:16px">
+    <h2 class="cs-section-title">Cached Schedule</h2>
     <div id="scheduleList"></div>
   </div>
 
-  <!-- ── Offline queue ─────────────────────────────────────────────── -->
-  <div style="margin-top:20px">
+  <!-- Pending submissions -->
+  <div style="margin-top:4px">
     <h2 class="cs-section-title">Pending Submissions</h2>
     <div id="queueList"><div class="cs-empty">No pending submissions.</div></div>
   </div>
 
 </main>
+</div><!-- end #setupView -->
 
+<!-- ════════════════════════════════════════════════════════════════
+     SCOUTING VIEW (form)
+     ════════════════════════════════════════════════════════════════ -->
+<div id="scoutingView" style="display:none">
+<main class="cs-page" id="formRoot">
+  <div id="phasesRoot"></div>
+</main>
+
+<div class="cs-submit-footer" id="submitFooter">
+  <button class="cs-btn cs-btn-secondary" style="flex:0 0 auto" onclick="resetForm()">
+    <span class="material-symbols-outlined">restart_alt</span>
+  </button>
+  <button class="cs-btn cs-btn-primary" style="flex:1" id="submitBtn" onclick="submitForm()">
+    <span class="material-symbols-outlined">upload</span> Submit
+  </button>
+</div>
+</div><!-- end #scoutingView -->
+
+<!-- ── MOBILE NAV ─────────────────────────────────────────────────── -->
 <nav class="cs-mobile-nav">
   <a href="home.html"><span class="material-symbols-outlined">home</span>Home</a>
   <a href="scout.html" class="active"><span class="material-symbols-outlined">edit_note</span>Scout</a>
@@ -131,30 +207,121 @@
 <div id="cs-toast-container"></div>
 
 <script>
-let _resolveTimeout = null;
+// ─────────────────────────────────────────────────────────────────────────────
+// Constants + state
+// ─────────────────────────────────────────────────────────────────────────────
+const SCHED_KEY_PREFIX = "cs_schedule_"; // localStorage key prefix for cached schedules
+const SCHED_MAX_AGE    = 30 * 60 * 1000; // 30 min before showing "stale"
 
+let _resolveTimeout = null;
+let _cachedMatches  = []; // matches loaded from schedule cache or TBA
+
+const formState = {
+  eventKey: null, matchNumber: null, matchType: "qualification",
+  teamNumber: null, driverStation: null, allianceColor: null,
+  answers: {},
+  history: [],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────────────────────────────────────
 (async function init() {
-  const r = await window.CS.ui.requireAuth("landing.html");
+  const r = await window.CS.ui.requireProfileComplete("profile-setup.html");
   if (!r) return;
+
   updateConnUI();
   renderQueue();
   window.addEventListener("cs-connectivity", () => { updateConnUI(); renderQueue(); });
 
-  // Restore last saved event key
+  // Check if we arrived here via a deep link (from event.html Scout button)
+  const params = new URLSearchParams(location.search);
+  const pEvent   = params.get("event");
+  const pMatch   = parseInt(params.get("match")) || null;
+  const pType    = params.get("type") || "qualification";
+  const pTeam    = parseInt(params.get("team")) || null;
+  const pStation = parseInt(params.get("station")) || null;
+
+  if (pEvent && pMatch && pTeam) {
+    // Deep-link: go straight to scouting form
+    formState.eventKey      = pEvent;
+    formState.matchNumber   = pMatch;
+    formState.matchType     = pType;
+    formState.teamNumber    = pTeam;
+    formState.driverStation = pStation;
+    formState.allianceColor = (pStation <= 3) ? "red" : "blue";
+    showScoutingView();
+    renderForm();
+    return;
+  }
+
+  // Normal entry — restore saved event key and schedule
   const saved = localStorage.getItem("cs_last_event");
-  if (saved) document.getElementById("quickEvent").value = saved;
+  if (saved) {
+    document.getElementById("quickEvent").value = saved;
+    loadScheduleCache(saved);
+  }
 })();
 
+// ─────────────────────────────────────────────────────────────────────────────
+// View switching
+// ─────────────────────────────────────────────────────────────────────────────
+function showScoutingView() {
+  document.getElementById("setupView").style.display    = "none";
+  document.getElementById("scoutingView").style.display = "";
+  document.getElementById("matchMeta").style.display    = "";
+  document.getElementById("headerBack").style.display   = "";
+  document.getElementById("headerTitle").textContent    = "Scout Match";
+  document.getElementById("connBar").style.display      = "";
+  document.getElementById("headerBrand").href           = "javascript:showSetupView()";
+  updateConnBar();
+  window.addEventListener("cs-connectivity", updateConnBar);
+}
+
+function showSetupView() {
+  document.getElementById("scoutingView").style.display = "none";
+  document.getElementById("matchMeta").style.display    = "none";
+  document.getElementById("headerBack").style.display   = "none";
+  document.getElementById("headerTitle").textContent    = "Scout";
+  document.getElementById("connBar").style.display      = "none";
+  document.getElementById("headerBrand").href           = "home.html";
+  document.getElementById("setupView").style.display    = "";
+  // Reset form state for a fresh scout
+  formState.eventKey = formState.matchNumber = formState.teamNumber = formState.driverStation = null;
+  formState.allianceColor = null;
+  formState.answers = {};
+  formState.history = [];
+  renderQueue();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Connectivity
+// ─────────────────────────────────────────────────────────────────────────────
 function updateConnUI() {
   const c = window.CS.offline.connectivity;
   const el = document.getElementById("connText");
   if (!c.isOnline) {
     el.innerHTML = `<span style="color:#f87171">⬤</span> Offline — ${c.pendingCount} saved locally`;
   } else if (c.pendingCount > 0) {
-    el.innerHTML = `<span style="color:#fbbf24">⬤</span> Online — syncing ${c.pendingCount} submission${c.pendingCount > 1 ? "s" : ""}…`;
+    el.innerHTML = `<span style="color:#fbbf24">⬤</span> Online — syncing ${c.pendingCount} submission${c.pendingCount > 1?"s":""}…`;
   } else {
     const ts = c.lastSyncTime ? ` · Synced ${new Date(c.lastSyncTime).toLocaleTimeString()}` : "";
     el.innerHTML = `<span style="color:var(--primary-500)">⬤</span> Online — all synced${ts}`;
+  }
+}
+
+function updateConnBar() {
+  const c = window.CS?.offline?.connectivity ?? { isOnline: true, pendingCount: 0 };
+  const el = document.getElementById("connBar");
+  if (!c.isOnline) {
+    el.className = "cs-pill cs-pill-red";
+    el.textContent = "Offline";
+  } else if (c.pendingCount > 0) {
+    el.className = "cs-pill cs-pill-yellow";
+    el.textContent = `Syncing ${c.pendingCount}`;
+  } else {
+    el.className = "cs-pill cs-pill-green";
+    el.textContent = "Online";
   }
 }
 
@@ -168,70 +335,164 @@ async function manualSync() {
   renderQueue();
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Pending submissions queue
+// ─────────────────────────────────────────────────────────────────────────────
 async function renderQueue() {
   const queue = await window.CS.offline.getSyncQueue();
   const el = document.getElementById("queueList");
   if (!queue.length) { el.innerHTML = '<div class="cs-empty">No pending submissions.</div>'; return; }
-
-  el.innerHTML = queue.map((item) => `
+  el.innerHTML = queue.map(item => `
     <div class="cs-card cs-card-sm" style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div>
         <div style="font-weight:600;font-size:0.9rem">
-          Team ${item.data?.team_number ?? "??"} · ${item.data?.event_key ?? "?"} Q${item.data?.match_number ?? "?"}
+          Team ${item.data?.team_number??"??"} · ${item.data?.event_key??"?"} Q${item.data?.match_number??"?"}
         </div>
         <div style="font-size:0.75rem;color:var(--surface-500)">${new Date(item.createdAt).toLocaleString()}</div>
       </div>
-      <span class="cs-pill ${item.syncStatus === 'pending' ? 'cs-pill-yellow' : item.syncStatus === 'failed' ? 'cs-pill-red' : 'cs-pill-green'}">
+      <span class="cs-pill ${item.syncStatus==="pending"?"cs-pill-yellow":item.syncStatus==="failed"?"cs-pill-red":"cs-pill-green'}">
         ${item.syncStatus}
       </span>
-    </div>
-  `).join("");
+    </div>`).join("");
 }
 
-// ── Event key change ───────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Schedule cache
+// ─────────────────────────────────────────────────────────────────────────────
+function schedCacheKey(eventKey) { return SCHED_KEY_PREFIX + eventKey; }
+
+function loadScheduleCache(eventKey) {
+  if (!eventKey) return;
+  try {
+    const raw = localStorage.getItem(schedCacheKey(eventKey));
+    if (!raw) { updateCacheStatus(null); return; }
+    const { ts, matches } = JSON.parse(raw);
+    _cachedMatches = matches || [];
+    updateCacheStatus(ts);
+    renderSchedulePreview(_cachedMatches);
+  } catch { _cachedMatches = []; updateCacheStatus(null); }
+}
+
+function updateCacheStatus(ts) {
+  const el = document.getElementById("scheduleCacheStatus");
+  if (!ts) {
+    el.className = "cache-none"; el.textContent = "No schedule cached";
+    return;
+  }
+  const age = Date.now() - ts;
+  const when = new Date(ts).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+  if (age < SCHED_MAX_AGE) {
+    el.className = "cache-fresh";
+    el.textContent = `✓ Cached ${when}`;
+  } else {
+    el.className = "cache-stale";
+    el.textContent = `⚠ Cached ${when} — stale`;
+  }
+}
+
+async function cacheSchedule() {
+  const eventKey = document.getElementById("quickEvent").value.trim();
+  if (!eventKey) { window.CS.ui.toast("Enter an event key first.", "error"); return; }
+  if (!navigator.onLine) { window.CS.ui.toast("You're offline — cannot fetch schedule.", "error"); return; }
+
+  window.CS.ui.toast("Fetching schedule…", "info", 2000);
+  const matches = await window.CS.tba.getEventMatches(eventKey);
+  if (!matches?.length) {
+    window.CS.ui.toast("No matches found for that event key.", "error"); return;
+  }
+  const payload = { ts: Date.now(), matches };
+  localStorage.setItem(schedCacheKey(eventKey), JSON.stringify(payload));
+  localStorage.setItem("cs_last_event", eventKey);
+  _cachedMatches = matches;
+  updateCacheStatus(payload.ts);
+  renderSchedulePreview(matches);
+  window.CS.ui.toast(`Schedule cached — ${matches.length} matches.`, "success");
+}
+
+function clearScheduleCache() {
+  const eventKey = document.getElementById("quickEvent").value.trim();
+  if (eventKey) localStorage.removeItem(schedCacheKey(eventKey));
+  _cachedMatches = [];
+  updateCacheStatus(null);
+  document.getElementById("scheduleSection").style.display = "none";
+  window.CS.ui.toast("Schedule cache cleared.", "info", 2000);
+}
+
+function clearEventAndSchedule() {
+  const eventKey = document.getElementById("quickEvent").value.trim();
+  if (eventKey) localStorage.removeItem(schedCacheKey(eventKey));
+  localStorage.removeItem("cs_last_event");
+  document.getElementById("quickEvent").value = "";
+  _cachedMatches = [];
+  updateCacheStatus(null);
+  setTeamDisplay(null, "No event saved");
+  document.getElementById("scheduleSection").style.display = "none";
+  window.CS.ui.toast("Event and schedule cache cleared.", "info", 2000);
+}
+
+function renderSchedulePreview(matches) {
+  const quals = matches
+    .filter(m => m.comp_level === "qm")
+    .sort((a, b) => a.match_number - b.match_number)
+    .slice(0, 10);
+  if (!quals.length) { document.getElementById("scheduleSection").style.display = "none"; return; }
+
+  document.getElementById("scheduleSection").style.display = "";
+  document.getElementById("scheduleList").innerHTML = quals.map(m => {
+    const red  = (m.alliances?.red?.team_keys  || []).map(k => k.replace("frc",""));
+    const blue = (m.alliances?.blue?.team_keys || []).map(k => k.replace("frc",""));
+    return `<div class="cs-card cs-card-sm" style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <span style="font-weight:700;font-size:0.9rem;color:var(--surface-700)">Q${m.match_number}</span>
+      <span style="font-size:0.8rem;color:#f87171">${red.join(" · ")}</span>
+      <span style="font-size:0.72rem;color:var(--surface-400)">vs</span>
+      <span style="font-size:0.8rem;color:#60a5fa">${blue.join(" · ")}</span>
+    </div>`;
+  }).join("");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Event key change
+// ─────────────────────────────────────────────────────────────────────────────
 function onEventChange() {
   const ev = document.getElementById("quickEvent").value.trim();
-  if (ev) localStorage.setItem("cs_last_event", ev);
+  if (ev) {
+    localStorage.setItem("cs_last_event", ev);
+    loadScheduleCache(ev);
+  } else {
+    updateCacheStatus(null);
+  }
   resolveTeam();
 }
 
-// ── Clear cached event ─────────────────────────────────────────────────
-function clearCachedEvent() {
-  localStorage.removeItem("cs_last_event");
-  document.getElementById("quickEvent").value = "";
-  setTeamDisplay(null, "No event saved");
-  window.CS.ui.toast("Cached event cleared.", "info", 2000);
-}
-
-// ── Team display helpers ───────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Team resolution from schedule cache (offline-first) or TBA (online fallback)
+// ─────────────────────────────────────────────────────────────────────────────
 function setTeamDisplay(teamNum, statusMsg) {
   const display = document.getElementById("quickTeamDisplay");
   const status  = document.getElementById("teamResolveStatus");
   document.getElementById("quickTeam").value = teamNum ?? "";
-
   if (teamNum) {
-    display.textContent  = teamNum;
-    display.style.color      = "var(--primary-400)";
-    display.style.fontWeight = "700";
-    display.style.fontStyle  = "normal";
-    display.style.fontSize   = "1.1rem";
-    status.textContent   = "✓ Resolved from TBA";
-    status.style.color   = "var(--primary-500)";
+    display.textContent       = teamNum;
+    display.style.color       = "var(--primary-400)";
+    display.style.fontWeight  = "700";
+    display.style.fontStyle   = "normal";
+    display.style.fontSize    = "1.1rem";
+    status.textContent        = "✓ Resolved from schedule";
+    status.style.color        = "var(--primary-500)";
   } else {
-    display.textContent  = "—";
-    display.style.color      = "var(--surface-400)";
-    display.style.fontWeight = "400";
-    display.style.fontStyle  = "italic";
-    display.style.fontSize   = "0.9rem";
-    status.textContent   = statusMsg || "Select match & station above";
-    status.style.color   = "var(--surface-400)";
+    display.textContent       = "—";
+    display.style.color       = "var(--surface-400)";
+    display.style.fontWeight  = "400";
+    display.style.fontStyle   = "italic";
+    display.style.fontSize    = "0.9rem";
+    status.textContent        = statusMsg || "Select match & station above";
+    status.style.color        = "var(--surface-400)";
   }
 }
 
-// ── Debounced team resolution ──────────────────────────────────────────
 function resolveTeam() {
   clearTimeout(_resolveTimeout);
-  _resolveTimeout = setTimeout(doResolveTeam, 350);
+  _resolveTimeout = setTimeout(doResolveTeam, 300);
 }
 
 async function doResolveTeam() {
@@ -245,64 +506,344 @@ async function doResolveTeam() {
     return;
   }
 
-  const status = document.getElementById("teamResolveStatus");
-  status.textContent = "Looking up…";
-  status.style.color = "var(--surface-400)";
+  const statusEl = document.getElementById("teamResolveStatus");
 
-  try {
-    let match = null;
-
-    // For quals, try the direct match key first (one API call vs full event list)
-    if (matchType === "qualification") {
-      match = await window.CS.tba.getMatch(`${eventKey}_qm${matchNum}`);
-    }
-
-    // Fallback: fetch all event matches and find the right one
-    if (!match) {
-      const allMatches = await window.CS.tba.getEventMatches(eventKey);
-      if (allMatches) {
-        match = matchType === "qualification"
-          ? allMatches.find(m => m.comp_level === "qm" && m.match_number === matchNum)
-          : allMatches.find(m => m.comp_level !== "qm" && m.match_number === matchNum);
-      }
-    }
-
-    if (!match) {
-      setTeamDisplay(null, "Match not found — check event key & #");
-      return;
-    }
-
-    // Station 1-3 = red alliance (index 0-2), station 4-6 = blue (index 0-2)
-    const alliance = station <= 3 ? "red" : "blue";
-    const idx      = (station - 1) % 3;
-    const teamKey  = match.alliances?.[alliance]?.team_keys?.[idx] ?? null;
-    const teamNum  = teamKey ? parseInt(teamKey.replace("frc", "")) : null;
-
-    if (!teamNum) {
-      setTeamDisplay(null, "No team at that station");
-      return;
-    }
-
-    setTeamDisplay(teamNum);
-  } catch {
-    setTeamDisplay(null, "TBA lookup failed — check connection");
+  // Try schedule cache first (works offline)
+  let match = null;
+  if (_cachedMatches.length) {
+    match = matchType === "qualification"
+      ? _cachedMatches.find(m => m.comp_level === "qm" && m.match_number === matchNum)
+      : _cachedMatches.find(m => m.comp_level !== "qm" && m.match_number === matchNum);
   }
+
+  // Fall back to TBA live if cache missed
+  if (!match && navigator.onLine) {
+    statusEl.textContent = "Looking up…";
+    try {
+      if (matchType === "qualification") {
+        match = await window.CS.tba.getMatch(`${eventKey}_qm${matchNum}`);
+      }
+      if (!match) {
+        const all = await window.CS.tba.getEventMatches(eventKey);
+        if (all) {
+          match = matchType === "qualification"
+            ? all.find(m => m.comp_level === "qm" && m.match_number === matchNum)
+            : all.find(m => m.comp_level !== "qm" && m.match_number === matchNum);
+        }
+      }
+    } catch { /* handled below */ }
+  }
+
+  if (!match) {
+    const offline = !navigator.onLine && !_cachedMatches.length;
+    setTeamDisplay(null, offline ? "Offline — cache a schedule first" : "Match not found — check event key & #");
+    return;
+  }
+
+  const alliance = station <= 3 ? "red" : "blue";
+  const idx      = (station - 1) % 3;
+  const teamKey  = match.alliances?.[alliance]?.team_keys?.[idx] ?? null;
+  const teamNum  = teamKey ? parseInt(teamKey.replace("frc","")) : null;
+
+  if (!teamNum) { setTeamDisplay(null, "No team at that station"); return; }
+  setTeamDisplay(teamNum);
 }
 
-// ── Start scouting ────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Start scouting — switch to form view
+// ─────────────────────────────────────────────────────────────────────────────
 function startScouting() {
-  const event   = document.getElementById("quickEvent").value.trim();
-  const match   = document.getElementById("quickMatch").value;
-  const type    = document.getElementById("quickType").value;
-  const team    = document.getElementById("quickTeam").value;
-  const station = document.getElementById("quickStation").value;
+  const eventKey = document.getElementById("quickEvent").value.trim();
+  const matchNum = parseInt(document.getElementById("quickMatch").value);
+  const type     = document.getElementById("quickType").value;
+  const team     = parseInt(document.getElementById("quickTeam").value);
+  const station  = parseInt(document.getElementById("quickStation").value);
 
-  if (!event || !match || !team) {
+  if (!eventKey || !matchNum || !team) {
     window.CS.ui.toast("Select event, match, and station to resolve team number.", "error");
     return;
   }
-  localStorage.setItem("cs_last_event", event);
-  window.location.href = `scout-match.html?event=${encodeURIComponent(event)}&match=${match}&type=${type}&team=${team}&station=${station}`;
+
+  formState.eventKey      = eventKey;
+  formState.matchNumber   = matchNum;
+  formState.matchType     = type;
+  formState.teamNumber    = team;
+  formState.driverStation = station;
+  formState.allianceColor = station <= 3 ? "red" : "blue";
+  formState.answers       = {};
+  formState.history       = [];
+
+  localStorage.setItem("cs_last_event", eventKey);
+  showScoutingView();
+  renderForm();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Form rendering
+// ─────────────────────────────────────────────────────────────────────────────
+function renderMeta() {
+  document.getElementById("metaEvent").textContent = formState.eventKey || "—";
+  document.getElementById("metaMatch").textContent =
+    formState.matchNumber ? `${formState.matchType === "qualification" ? "Q" : "P"}${formState.matchNumber}` : "—";
+  document.getElementById("metaTeam").textContent =
+    formState.teamNumber ? `Team ${formState.teamNumber}` : "—";
+  const ac = document.getElementById("metaAlliance");
+  ac.textContent = formState.allianceColor ? formState.allianceColor.toUpperCase() : "—";
+  ac.className = "cs-match-meta-chip " + (formState.allianceColor || "");
+}
+
+function renderForm() {
+  renderMeta();
+  const schema = window.CS.schema2026;
+  const root = document.getElementById("phasesRoot");
+  root.innerHTML = "";
+  schema.sections.forEach((section, idx) => {
+    root.appendChild(buildPhaseSection(section, idx === 0));
+  });
+}
+
+function buildPhaseSection(section, openByDefault) {
+  const phaseDiv = document.createElement("div");
+  phaseDiv.className = "cs-phase" + (openByDefault ? " open" : "");
+  phaseDiv.id = "phase-" + section.id;
+  const badgeCls = { auto:"cs-phase-badge-auto", teleop:"cs-phase-badge-teleop",
+    endgame:"cs-phase-badge-endgame", post_match:"cs-phase-badge-postmatch" }[section.phase] || "";
+  phaseDiv.innerHTML = `
+    <div class="cs-phase-header" onclick="togglePhase('${section.id}')">
+      <span class="cs-phase-title">
+        ${section.title}
+        <span class="cs-phase-badge ${badgeCls}">${section.phase.replace("_"," ").toUpperCase()}</span>
+      </span>
+      <span class="material-symbols-outlined cs-phase-chevron">expand_more</span>
+    </div>
+    <div class="cs-phase-body" id="phasebody-${section.id}"></div>`;
+  const body = phaseDiv.querySelector(".cs-phase-body");
+  section.fields.forEach(field => body.appendChild(buildField(field)));
+  return phaseDiv;
+}
+
+function togglePhase(id) {
+  document.getElementById("phase-" + id).classList.toggle("open");
+}
+
+function buildField(field) {
+  const wrap = document.createElement("div");
+  wrap.className = "cs-field";
+  wrap.id = "field-wrap-" + field.id;
+  const label = document.createElement("label");
+  label.className = "cs-label";
+  label.textContent = field.label + (field.required ? " *" : "");
+  wrap.appendChild(label);
+  switch (field.type) {
+    case "tally":   wrap.appendChild(buildTally(field));   break;
+    case "boolean": wrap.appendChild(buildBoolean(field)); break;
+    case "range":   wrap.appendChild(buildRange(field));   break;
+    case "select":  wrap.appendChild(buildSelect(field));  break;
+    case "number":  wrap.appendChild(buildNumber(field));  break;
+    case "text":    wrap.appendChild(buildText(field));    break;
+  }
+  return wrap;
+}
+
+function buildTally(field) {
+  const increments = field.config?.increments ?? [1, 3, 5, 10, 20];
+  formState.answers[field.id] = 0;
+  const div = document.createElement("div");
+  div.className = "cs-tally";
+  div.innerHTML = `
+    <div class="cs-tally-total-label">${field.label}</div>
+    <div class="cs-tally-total" id="tally-display-${field.id}">0</div>
+    <div class="cs-tally-btns" id="tally-btns-${field.id}"></div>
+    <button class="cs-tally-undo" id="tally-undo-${field.id}" disabled onclick="tallyUndo('${field.id}')">
+      <span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px">undo</span> Undo
+    </button>`;
+  const btnsRow = div.querySelector(`#tally-btns-${field.id}`);
+  increments.forEach(inc => {
+    const btn = document.createElement("button");
+    btn.className = "cs-tally-btn";
+    btn.textContent = `+${inc}`;
+    btn.addEventListener("click", () => { tallyIncrement(field.id, inc); if (navigator.vibrate) navigator.vibrate(30); });
+    btnsRow.appendChild(btn);
+  });
+  return div;
+}
+function tallyIncrement(fieldId, inc) {
+  const prev = formState.answers[fieldId] ?? 0;
+  formState.history.push({ fieldId, prevValue: prev });
+  formState.answers[fieldId] = prev + inc;
+  updateTallyDisplay(fieldId);
+}
+function tallyUndo(fieldId) {
+  for (let i = formState.history.length - 1; i >= 0; i--) {
+    if (formState.history[i].fieldId === fieldId) {
+      formState.answers[fieldId] = formState.history[i].prevValue;
+      formState.history.splice(i, 1);
+      updateTallyDisplay(fieldId);
+      return;
+    }
+  }
+}
+function updateTallyDisplay(fieldId) {
+  const el = document.getElementById(`tally-display-${fieldId}`);
+  if (el) el.textContent = formState.answers[fieldId] ?? 0;
+  const undoBtn = document.getElementById(`tally-undo-${fieldId}`);
+  if (undoBtn) undoBtn.disabled = !formState.history.some(h => h.fieldId === fieldId);
+}
+
+function buildBoolean(field) {
+  formState.answers[field.id] = null;
+  const div = document.createElement("div");
+  div.className = "cs-toggle-group";
+  div.innerHTML = `
+    <button class="cs-toggle-btn" id="bool-yes-${field.id}" onclick="setBoolean('${field.id}', true)">
+      <span class="material-symbols-outlined" style="font-size:18px">check</span> Yes
+    </button>
+    <button class="cs-toggle-btn" id="bool-no-${field.id}" onclick="setBoolean('${field.id}', false)">
+      <span class="material-symbols-outlined" style="font-size:18px">close</span> No
+    </button>`;
+  return div;
+}
+function setBoolean(fieldId, value) {
+  formState.answers[fieldId] = value;
+  document.getElementById(`bool-yes-${fieldId}`).className = "cs-toggle-btn" + (value === true  ? " active-yes" : "");
+  document.getElementById(`bool-no-${fieldId}`).className  = "cs-toggle-btn" + (value === false ? " active-no"  : "");
+}
+
+function buildRange(field) {
+  formState.answers[field.id] = null;
+  const div = document.createElement("div");
+  div.className = "cs-range-group";
+  (field.config?.ranges ?? []).forEach(r => {
+    const btn = document.createElement("button");
+    btn.className = "cs-range-btn";
+    btn.textContent = r.label;
+    btn.id = `range-${field.id}-${r.value}`;
+    btn.addEventListener("click", () => setRange(field.id, r.value));
+    div.appendChild(btn);
+  });
+  return div;
+}
+function setRange(fieldId, value) {
+  formState.answers[fieldId] = value;
+  document.querySelectorAll(`[id^="range-${fieldId}-"]`).forEach(btn => {
+    btn.className = "cs-range-btn" + (btn.id.endsWith("-" + value) ? " active" : "");
+  });
+}
+
+function buildSelect(field) {
+  formState.answers[field.id] = null;
+  const sel = document.createElement("select");
+  sel.className = "cs-select";
+  sel.id = "select-" + field.id;
+  const blank = document.createElement("option");
+  blank.value = ""; blank.textContent = field.required ? "— Select —" : "— (optional) —"; blank.selected = true;
+  sel.appendChild(blank);
+  (field.config?.options ?? []).forEach(opt => {
+    const o = document.createElement("option"); o.value = opt.value; o.textContent = opt.label; sel.appendChild(o);
+  });
+  sel.addEventListener("change", () => { formState.answers[field.id] = sel.value || null; });
+  return sel;
+}
+
+function buildNumber(field) {
+  formState.answers[field.id] = field.config?.min ?? 0;
+  const cfg = field.config || {};
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "display:flex;align-items:center;gap:12px;";
+  const minus = document.createElement("button"); minus.className = "cs-btn cs-btn-secondary cs-btn-sm";
+  minus.innerHTML = '<span class="material-symbols-outlined">remove</span>';
+  const display = document.createElement("span"); display.id = `num-display-${field.id}`;
+  display.style.cssText = "font-size:1.5rem;font-weight:700;min-width:40px;text-align:center;";
+  display.textContent = formState.answers[field.id] ?? 0;
+  const plus = document.createElement("button"); plus.className = "cs-btn cs-btn-primary cs-btn-sm";
+  plus.innerHTML = '<span class="material-symbols-outlined">add</span>';
+  const step = cfg.step ?? 1, min = cfg.min ?? 0, max = cfg.max ?? 999;
+  minus.addEventListener("click", () => { const v = Math.max(min, (formState.answers[field.id]??0)-step); formState.answers[field.id]=v; display.textContent=v; });
+  plus.addEventListener("click",  () => { const v = Math.min(max, (formState.answers[field.id]??0)+step); formState.answers[field.id]=v; display.textContent=v; });
+  wrap.appendChild(minus); wrap.appendChild(display); wrap.appendChild(plus);
+  return wrap;
+}
+
+function buildText(field) {
+  formState.answers[field.id] = "";
+  const ta = document.createElement("textarea");
+  ta.className = "cs-textarea"; ta.placeholder = "Optional notes…"; ta.rows = 3;
+  ta.addEventListener("input", () => { formState.answers[field.id] = ta.value; });
+  return ta;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Validate + Submit
+// ─────────────────────────────────────────────────────────────────────────────
+function validateForm() {
+  const errors = [];
+  for (const section of window.CS.schema2026.sections) {
+    for (const field of section.fields) {
+      if (field.required) {
+        const val = formState.answers[field.id];
+        if (val === null || val === undefined || val === "") {
+          errors.push(`${section.title}: "${field.label}" is required.`);
+          const phase = document.getElementById("phase-" + section.id);
+          if (phase && !phase.classList.contains("open")) phase.classList.add("open");
+        }
+      }
+    }
+  }
+  return errors;
+}
+
+async function submitForm() {
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span> Saving…';
+
+  const errors = validateForm();
+  if (errors.length) {
+    window.CS.ui.toast(errors[0], "error", 4000);
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined">upload</span> Submit';
+    return;
+  }
+
+  const session = await window.CS.auth.getSession();
+  const payload = {
+    season_id:        null,
+    event_key:        formState.eventKey,
+    match_number:     formState.matchNumber,
+    match_type:       formState.matchType,
+    team_number:      formState.teamNumber,
+    driver_station:   formState.driverStation,
+    alliance_color:   formState.allianceColor,
+    answers:          { ...formState.answers },
+    schema_version:   "2026-v1.0",
+    owner_id:         session?.user?.id ?? null,
+    owner_display:    session?.user?.user_metadata?.full_name || session?.user?.email || "Anonymous",
+    created_at:       new Date().toISOString(),
+    reliability_score: 1.0,
+  };
+
+  try {
+    const result = await window.CS.offline.saveSubmission(payload, "match_scout");
+    const synced = result.syncStatus === "synced" || window.CS.offline.connectivity.isOnline;
+    window.CS.ui.toast(
+      synced ? "Submitted! Synced to server." : "Saved offline — will sync when connected.",
+      "success", 4000
+    );
+    setTimeout(() => showSetupView(), 1500);
+  } catch (err) {
+    window.CS.ui.toast("Save failed: " + err.message, "error", 5000);
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined">upload</span> Submit';
+  }
+}
+
+function resetForm() {
+  if (!confirm("Clear all scouting data for this match?")) return;
+  formState.answers = {};
+  formState.history = [];
+  document.getElementById("phasesRoot").innerHTML = "";
+  renderForm();
+  window.CS.ui.toast("Form cleared.", "info", 2000);
 }
 </script>
 </body>

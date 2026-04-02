@@ -132,15 +132,6 @@
       </div>
       <div id="csStatsGrid"></div>
 
-      <!-- Statbotics EPA — secondary comparison, nested below CrowdScout data -->
-      <div id="sbCompareCard" style="display:none;margin-top:10px">
-        <div class="cs-card" style="border-color:var(--surface-100);background:var(--surface-0);padding:10px 12px">
-          <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--surface-300);margin-bottom:6px">
-            Statbotics EPA — for comparison only
-          </div>
-          <div id="sbContent"></div>
-        </div>
-      </div>
     </div>
     <div id="csStatsEmpty" style="display:none;margin-bottom:16px">
       <div class="cs-card" style="text-align:center;padding:20px;color:var(--surface-400)">
@@ -261,6 +252,7 @@ const TEAM_NUMBER = parseInt(params.get("number")) || 0;
 const YEAR = 2026;
 let teamEvents2026 = [];
 let _allSubs = [];
+let _sbYear = null; // stored so renderScoutStats can embed SB values
 
 if (!TEAM_NUMBER) window.location.href = "teams.html";
 
@@ -294,8 +286,9 @@ async function loadTeamInfo() {
     window.CS.tba.getTeamMedia(TEAM_NUMBER, YEAR),
     window.CS.statbotics.getTeamYear(TEAM_NUMBER, YEAR),
   ]);
+  _sbYear = sbYear; // store globally so renderScoutStats can embed SB values
   renderHeroCard(team, media, sbYear);
-  renderSbCompare(sbYear);
+  // SB comparison is now embedded inside CS metric cards — no separate box
   if (team) loadUpcomingMatches();
 }
 
@@ -369,36 +362,37 @@ function renderHeroCard(team, media, sbYear) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// STATBOTICS COMPARISON (small)
+// Helper: get Statbotics EPA breakdown values (null if unavailable)
 // ──────────────────────────────────────────────────────────────────────
-function renderSbCompare(sbYear) {
-  if (!sbYear?.epa) return;
-  const card = document.getElementById("sbCompareCard");
-  card.style.display = "";
-
+function getSbEPA(sbYear) {
+  if (!sbYear?.epa) return { total:null, auto:null, teleop:null, endgame:null };
   const epa = sbYear.epa;
   const bd  = epa.breakdown || {};
-  const total   = bd.total_points   ?? epa.total_points?.mean   ?? null;
-  const autoV   = bd.auto_points    ?? epa.auto_points?.mean    ?? null;
-  const teleopV = bd.teleop_points  ?? epa.teleop_points?.mean  ?? null;
-  const endgV   = bd.endgame_points ?? epa.endgame_points?.mean ?? null;
-  const fmt = v => window.CS.statbotics.fmtEPA(v, 1);
+  return {
+    total:   bd.total_points   ?? epa.total_points?.mean   ?? null,
+    auto:    bd.auto_points    ?? epa.auto_points?.mean    ?? null,
+    teleop:  bd.teleop_points  ?? epa.teleop_points?.mean  ?? null,
+    endgame: bd.endgame_points ?? epa.endgame_points?.mean ?? null,
+  };
+}
 
-  // Smaller, desaturated styling to signal this is secondary/comparison data
-  document.getElementById("sbContent").innerHTML = `
-    <div style="display:flex;gap:5px;flex-wrap:wrap">
-      ${[
-        {label:"Total", val:total, color:"var(--surface-400)"},
-        {label:"Auto",  val:autoV,  color:"var(--surface-400)"},
-        {label:"Teleop",val:teleopV,color:"var(--surface-400)"},
-        {label:"End",   val:endgV,  color:"var(--surface-400)"},
-      ].map(m => `
-        <div style="flex:1;min-width:48px;text-align:center;padding:5px 3px;background:var(--surface-50);border-radius:6px;border:1px solid var(--surface-100)">
-          <div style="font-size:0.82rem;font-weight:600;color:${m.color}">${fmt(m.val)}</div>
-          <div style="font-size:0.6rem;color:var(--surface-300);text-transform:uppercase;letter-spacing:.04em">${m.label}</div>
-        </div>`).join("")}
-    </div>
-  `;
+// ──────────────────────────────────────────────────────────────────────
+// Write per-scout reliability scores to Supabase scout_reliability table
+// ──────────────────────────────────────────────────────────────────────
+async function writeReliabilityScores(db, scoutReliabilities) {
+  for (const [ownerId, { score, outlierCount, totalCount }] of scoutReliabilities) {
+    try {
+      await db.from("scout_reliability").upsert({
+        user_id:           ownerId,
+        reliability_score: Math.round(score * 1000) / 1000,
+        outlier_count:     outlierCount,
+        submissions_count: totalCount,
+        last_computed:     new Date().toISOString(),
+      }, { onConflict: "user_id" });
+    } catch (e) {
+      console.warn("[CS.reliability] Failed to write score for", ownerId, e);
+    }
+  }
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -418,11 +412,23 @@ async function loadScoutData() {
   }
 
   const { data: subs } = await db.from("scout_submissions")
-    .select("event_key,match_number,match_type,answers,reliability_score,created_at,owner_id")
+    .select("id,event_key,match_number,match_type,answers,reliability_score,created_at,owner_id")
     .eq("team_number", TEAM_NUMBER)
     .order("created_at", { ascending: false });
 
   _allSubs = subs || [];
+
+  // ── Outlier detection + reliability scoring ─────────────────────────
+  if (_allSubs.length >= 3) {
+    const { outlierIds, cleanSubs, scoutReliabilities } =
+      window.CS.reliability.computeSubmissionReliabilities(_allSubs);
+
+    // Tag each sub as outlier so the table can show it
+    _allSubs.forEach(s => { s._outlier = outlierIds.has(s.id); });
+
+    // Write per-scout reliability back to Supabase (fire-and-forget, non-blocking)
+    writeReliabilityScores(db, scoutReliabilities);
+  }
 
   // Fetch usernames
   if (_allSubs.length) {
@@ -445,41 +451,54 @@ async function loadScoutData() {
 }
 
 function renderScoutStats(subs) {
-  if (!subs.length) {
+  // Exclude flagged outlier submissions from stat calculations
+  const cleanSubs = subs.filter(s => !s._outlier);
+  const outlierCount = subs.length - cleanSubs.length;
+
+  if (!cleanSubs.length && !subs.length) {
     document.getElementById("csStatsSection").style.display = "none";
     document.getElementById("csStatsEmpty").style.display = "";
     return;
   }
   document.getElementById("csStatsSection").style.display = "";
   document.getElementById("csStatsEmpty").style.display = "none";
-  document.getElementById("csStatsCount").textContent = `${subs.length} submission${subs.length !== 1 ? "s" : ""}`;
+
+  const countText = `${subs.length} submission${subs.length !== 1 ? "s" : ""}` +
+    (outlierCount > 0 ? ` · ${outlierCount} outlier${outlierCount !== 1 ? "s" : ""} excluded` : "");
+  document.getElementById("csStatsCount").textContent = countText;
 
   const schema = window.CS.schema2026;
   const allFields = schema.sections.flatMap(s => s.fields).filter(f => f.type !== "text");
-  const agg = window.CS.reliability.aggregateTeamStats(subs, allFields);
+  const agg = window.CS.reliability.aggregateTeamStats(cleanSubs, allFields);
+
+  // Get SB EPA breakdown for inline comparison
+  const sb = getSbEPA(_sbYear);
+  const fmtSB = v => v != null ? `SB: ${window.CS.statbotics.fmtEPA(v, 1)}` : null;
+  const fmt1  = v => v != null ? Number(v).toFixed(1) : "—";
 
   const auto  = agg.auto_fuel_scored?.mean  ?? null;
   const tele  = agg.teleop_fuel_scored?.mean ?? null;
   const total = auto != null && tele != null ? auto + tele : null;
-  const fmt1  = v => v != null ? Number(v).toFixed(1) : "—";
 
+  // Each metric optionally has sbVal — shown as a small secondary line inside the same card
   const metrics = [
-    { label:"Avg Auto FUEL",    val:fmt1(auto),                     color:"#60a5fa", conf:agg.auto_fuel_scored?.confidence },
-    { label:"Avg Teleop FUEL",  val:fmt1(tele),                     color:"#c084fc", conf:agg.teleop_fuel_scored?.confidence },
-    { label:"Avg Total FUEL",   val:total!=null?total.toFixed(1):"—",color:"var(--primary-500)", bold:true },
-    { label:"Climb",            val:window.CS.ui.climbLabel(Math.round(agg.endgame_climb_level?.mean??0)), color:"#fbbf24" },
-    { label:"Left Zone",        val:agg.auto_left_zone?.mean!=null ? Math.round(agg.auto_left_zone.mean*100)+"%" : "—", color:"var(--surface-700)" },
-    { label:"Defense",          val:agg.teleop_played_defense?.mean!=null ? Math.round(agg.teleop_played_defense.mean*100)+"%" : "—", color:"var(--surface-700)" },
-    { label:"Robot Died",       val:agg.post_robot_died?.mean!=null ? Math.round(agg.post_robot_died.mean*100)+"%" : "—", color:"#f87171" },
+    { label:"Avg Auto FUEL",   val:fmt1(auto),  color:"#60a5fa",             conf:agg.auto_fuel_scored?.confidence,  sbVal:fmtSB(sb.auto) },
+    { label:"Avg Teleop FUEL", val:fmt1(tele),  color:"#c084fc",             conf:agg.teleop_fuel_scored?.confidence, sbVal:fmtSB(sb.teleop) },
+    { label:"Avg Total FUEL",  val:total!=null?total.toFixed(1):"—", color:"var(--primary-500)", bold:true,           sbVal:fmtSB(sb.total) },
+    { label:"Climb",           val:window.CS.ui.climbLabel(Math.round(agg.endgame_climb_level?.mean??0)), color:"#fbbf24", sbVal:fmtSB(sb.endgame) },
+    { label:"Left Zone",       val:agg.auto_left_zone?.mean!=null ? Math.round(agg.auto_left_zone.mean*100)+"%" : "—", color:"var(--surface-700)" },
+    { label:"Defense",         val:agg.teleop_played_defense?.mean!=null ? Math.round(agg.teleop_played_defense.mean*100)+"%" : "—", color:"var(--surface-700)" },
+    { label:"Robot Died",      val:agg.post_robot_died?.mean!=null ? Math.round(agg.post_robot_died.mean*100)+"%" : "—", color:"#f87171" },
   ];
 
   document.getElementById("csStatsGrid").innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
       ${metrics.map(m => `
-        <div class="cs-card" style="text-align:center;padding:12px 8px${m.bold?' ;background:var(--primary-950);border-color:var(--primary-800)':''}">
+        <div class="cs-card" style="text-align:center;padding:12px 8px${m.bold ? ';background:var(--primary-950);border-color:var(--primary-800)' : ''}">
           <div style="font-size:${m.bold?'1.8':'1.3'}rem;font-weight:${m.bold?'900':'700'};color:${m.color}">${m.val}</div>
           <div style="font-size:0.68rem;color:${m.bold?'var(--primary-400)':'var(--surface-400)'};text-transform:uppercase;letter-spacing:.04em;margin-top:2px">${m.label}</div>
           ${m.conf!=null ? `<div class="cs-reliability-bar" style="margin-top:6px"><div class="cs-reliability-fill" style="width:${Math.round(m.conf*100)}%"></div></div>` : ""}
+          ${m.sbVal ? `<div style="font-size:0.62rem;color:var(--surface-300);margin-top:5px;letter-spacing:.02em">${m.sbVal}</div>` : ""}
         </div>`).join("")}
     </div>`;
 }
@@ -556,8 +575,8 @@ function renderSubmissions(subs) {
           return `<tr>
             <td>${s.event_key||"—"}</td>
             <td><a href="match.html?key=${encodeURIComponent((s.event_key||"")+"_"+(s.match_type==="playoff"?"sf":"qm")+s.match_number)}" style="color:var(--primary-500);font-weight:600">${label}</a></td>
-            <td>${a.auto_fuel_scored??0}</td>
-            <td>${a.teleop_fuel_scored??0}</td>
+            <td${s._outlier?' style="color:#f87171"':''}>${a.auto_fuel_scored??0}${s._outlier?'*':''}</td>
+            <td${s._outlier?' style="color:#f87171"':''}>${a.teleop_fuel_scored??0}${s._outlier?'*':''}</td>
             <td>${window.CS.ui.climbLabel(a.endgame_climb_level)}</td>
             <td>${a.post_robot_died?"Yes":"No"}</td>
             <td style="color:var(--surface-400)">${s._username||"—"}</td>
