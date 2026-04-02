@@ -33,19 +33,28 @@
   </p>
 
   <style>
+    /* Format toggle — outline/transparent style, same as Include Metadata toggle.
+       Selected: primary-colored border + tinted background.
+       Unselected: muted border, transparent background. */
     .fmt-btn {
       flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
       padding: 10px 16px; border-radius: 8px; font-size: 0.875rem; font-weight: 600;
-      cursor: pointer; border: 2px solid transparent; transition: all .15s;
+      cursor: pointer; transition: all .12s; min-height: 44px;
     }
     .fmt-btn.selected {
-      background: var(--primary-500); color: #fff; border-color: var(--primary-500);
+      background: var(--primary-950);
+      color: var(--primary-400);
+      border: 2px solid var(--primary-500);
     }
     .fmt-btn.unselected {
-      background: transparent; color: var(--surface-500);
-      border-color: var(--surface-200);
+      background: transparent;
+      color: var(--surface-500);
+      border: 2px solid var(--surface-200);
     }
-    .fmt-btn.unselected:hover { border-color: var(--primary-400); color: var(--primary-400); }
+    .fmt-btn.unselected:hover {
+      border-color: var(--primary-500);
+      color: var(--primary-400);
+    }
   </style>
 
   <!-- Options -->

@@ -3,12 +3,546 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-  <title>Scout — CrowdScout</title>
-  <script>
-    // This page has been merged into scout.html. Forward all URL params.
-    const p = new URLSearchParams(location.search);
-    window.location.replace("scout.html" + (p.toString() ? "?" + p.toString() : ""));
-  </script>
+  <title>Scout Match — CrowdScout</title>
+  <meta name="theme-color" content="#111312"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link crossorigin href="https://fonts.gstatic.com/" rel="preconnect"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;600;700;900&display=swap"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="lib/supabase-client.js"></script>
+  <script src="lib/offline.js"></script>
+  <script src="lib/schema2026.js"></script>
+  <script src="lib/ui.js"></script>
+  <style>
+    /* No animations on scouting forms — max speed */
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+    /* Re-enable only critical state transitions */
+    .cs-phase-chevron { transition: transform 0.15s !important; }
+
+    /* Prevent double-tap zoom on the scouting page across all mainstream mobile browsers:
+       - touch-action: manipulation disables double-tap-to-zoom in Chrome/Edge/Samsung/Firefox Android
+       - The meta viewport already sets user-scalable=no where supported (Safari honors it)
+       We do NOT apply this globally — only here on the scouting form. */
+    html, body {
+      touch-action: manipulation;
+    }
+
+    /* Ensure the submit footer and phase bodies have the correct dark background
+       so they never appear white on mobile. */
+    .cs-submit-footer {
+      background: rgba(17,19,18,.98) !important;
+    }
+    main#formRoot {
+      background: var(--surface-0);
+    }
+    #phasesRoot {
+      background: var(--surface-0);
+    }
+  </style>
 </head>
-<body></body>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────────────────────── -->
+<header class="cs-header">
+  <a href="scout.html" class="cs-header-brand">
+    <span class="material-symbols-outlined" style="color:var(--surface-500);font-size:20px">arrow_back</span>
+    <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
+    <span>Scout Match</span>
+  </a>
+  <div id="connBar" class="cs-pill cs-pill-gray" style="position:static;font-size:0.72rem"></div>
+</header>
+
+<!-- ── MATCH META (pre-filled) ───────────────────────────────────────── -->
+<div class="cs-match-meta" id="matchMeta">
+  <span class="cs-match-meta-chip" id="metaEvent">No Event Selected</span>
+  <span class="cs-match-meta-chip" id="metaMatch">—</span>
+  <span class="cs-match-meta-chip" id="metaTeam">—</span>
+  <span class="cs-match-meta-chip" id="metaAlliance">—</span>
+</div>
+
+<!-- ── FORM ──────────────────────────────────────────────────────────── -->
+<main class="cs-page" id="formRoot">
+
+  <!-- Team / match setup (shown when no params in URL) -->
+  <div id="setupPanel" style="display:none">
+    <div class="cs-card" style="margin-bottom:16px">
+      <h2 class="cs-section-title" style="margin-top:0">Match Setup</h2>
+      <div class="cs-field">
+        <label class="cs-label">Event Key (e.g. 2026txhou)</label>
+        <input id="setupEvent" class="cs-input" placeholder="2026txhou" autocapitalize="none"/>
+      </div>
+      <div class="cs-field">
+        <label class="cs-label">Match Number</label>
+        <input id="setupMatch" class="cs-input" type="number" min="1" placeholder="1"/>
+      </div>
+      <div class="cs-field">
+        <label class="cs-label">Match Type</label>
+        <select id="setupMatchType" class="cs-select">
+          <option value="qualification">Qualification</option>
+          <option value="playoff">Playoff</option>
+        </select>
+      </div>
+      <div class="cs-field">
+        <label class="cs-label">Team Number</label>
+        <input id="setupTeam" class="cs-input" type="number" min="1" placeholder="254"/>
+      </div>
+      <div class="cs-field">
+        <label class="cs-label">Driver Station</label>
+        <select id="setupStation" class="cs-select">
+          <option value="1">Red 1</option>
+          <option value="2">Red 2</option>
+          <option value="3">Red 3</option>
+          <option value="4">Blue 1</option>
+          <option value="5">Blue 2</option>
+          <option value="6">Blue 3</option>
+        </select>
+      </div>
+      <button class="cs-btn cs-btn-primary" style="width:100%" onclick="applySetup()">
+        <span class="material-symbols-outlined">check</span> Start Scouting
+      </button>
+    </div>
+  </div>
+
+  <!-- Scouting phases (rendered from schema) -->
+  <div id="phasesRoot"></div>
+
+</main>
+
+<!-- ── SUBMIT FOOTER ─────────────────────────────────────────────────── -->
+<div class="cs-submit-footer" id="submitFooter" style="display:none">
+  <button class="cs-btn cs-btn-secondary" style="flex:0 0 auto" onclick="resetForm()">
+    <span class="material-symbols-outlined">restart_alt</span>
+  </button>
+  <button class="cs-btn cs-btn-primary" style="flex:1" id="submitBtn" onclick="submitForm()">
+    <span class="material-symbols-outlined">upload</span> Submit
+  </button>
+</div>
+
+<!-- ── MOBILE NAV ────────────────────────────────────────────────────── -->
+<nav class="cs-mobile-nav">
+  <a href="home.html"><span class="material-symbols-outlined">home</span>Home</a>
+  <a href="scout.html" class="active"><span class="material-symbols-outlined">edit_note</span>Scout</a>
+  <a href="events.html"><span class="material-symbols-outlined">event</span>Events</a>
+  <a href="teams.html"><span class="material-symbols-outlined">groups</span>Teams</a>
+  <a href="profile.html"><span class="material-symbols-outlined">person</span>Profile</a>
+</nav>
+
+<div id="cs-toast-container"></div>
+
+<script>
+// ──────────────────────────────────────────────────────────────────────────────
+// State
+// ──────────────────────────────────────────────────────────────────────────────
+const formState = {
+  eventKey: null, matchNumber: null, matchType: "qualification",
+  teamNumber: null, driverStation: null, allianceColor: null,
+  answers: {},
+  history: [], // For undo — array of { fieldId, prevValue }
+};
+
+// ── Connectivity indicator ─────────────────────────────────────────────────
+function updateConnBar() {
+  const c = window.CS?.offline?.connectivity ?? { isOnline: true, pendingCount: 0 };
+  const el = document.getElementById("connBar");
+  if (!c.isOnline) {
+    el.className = "cs-pill cs-pill-red";
+    el.textContent = "Offline";
+  } else if (c.pendingCount > 0) {
+    el.className = "cs-pill cs-pill-yellow";
+    el.textContent = `Syncing ${c.pendingCount}`;
+  } else {
+    el.className = "cs-pill cs-pill-green";
+    el.textContent = "Online";
+  }
+}
+window.addEventListener("cs-connectivity", updateConnBar);
+
+// ── Init ──────────────────────────────────────────────────────────────────
+(async function init() {
+  // Auth guard — must be logged in AND profile complete to scout
+  const r = await window.CS.ui.requireProfileComplete("profile-setup.html");
+  if (!r) return;
+
+  updateConnBar();
+
+  // Parse URL params
+  const params = new URLSearchParams(location.search);
+  formState.eventKey   = params.get("event") || null;
+  formState.matchNumber = parseInt(params.get("match")) || null;
+  formState.matchType  = params.get("type") || "qualification";
+  formState.teamNumber = parseInt(params.get("team")) || null;
+  formState.driverStation = parseInt(params.get("station")) || null;
+
+  const stationNum = formState.driverStation || 1;
+  formState.allianceColor = stationNum <= 3 ? "red" : "blue";
+
+  if (formState.eventKey && formState.matchNumber && formState.teamNumber) {
+    renderForm();
+  } else {
+    document.getElementById("setupPanel").style.display = "";
+  }
+})();
+
+function applySetup() {
+  formState.eventKey    = document.getElementById("setupEvent").value.trim();
+  formState.matchNumber = parseInt(document.getElementById("setupMatch").value) || 1;
+  formState.matchType   = document.getElementById("setupMatchType").value;
+  formState.teamNumber  = parseInt(document.getElementById("setupTeam").value) || null;
+  formState.driverStation = parseInt(document.getElementById("setupStation").value) || 1;
+  formState.allianceColor = formState.driverStation <= 3 ? "red" : "blue";
+
+  if (!formState.eventKey || !formState.teamNumber) {
+    window.CS.ui.toast("Please fill in Event Key and Team Number.", "error");
+    return;
+  }
+  document.getElementById("setupPanel").style.display = "none";
+  renderForm();
+}
+
+// ── Render meta bar ─────────────────────────────────────────────────────
+function renderMeta() {
+  document.getElementById("metaEvent").textContent = formState.eventKey || "—";
+  document.getElementById("metaMatch").textContent =
+    formState.matchNumber ? `${formState.matchType === "qualification" ? "Q" : "P"}${formState.matchNumber}` : "—";
+  document.getElementById("metaTeam").textContent =
+    formState.teamNumber ? `Team ${formState.teamNumber}` : "—";
+  const ac = document.getElementById("metaAlliance");
+  ac.textContent = formState.allianceColor ? formState.allianceColor.toUpperCase() : "—";
+  ac.className = "cs-match-meta-chip " + (formState.allianceColor || "");
+}
+
+// ── Render the full form from schema ───────────────────────────────────
+function renderForm() {
+  renderMeta();
+  document.getElementById("submitFooter").style.display = "";
+
+  const schema = window.CS.schema2026;
+  const root = document.getElementById("phasesRoot");
+  root.innerHTML = "";
+
+  schema.sections.forEach((section, idx) => {
+    root.appendChild(buildPhaseSection(section, idx === 0));
+  });
+}
+
+// ── Phase section (collapsible) ─────────────────────────────────────────
+function buildPhaseSection(section, openByDefault) {
+  const phaseDiv = document.createElement("div");
+  phaseDiv.className = "cs-phase" + (openByDefault ? " open" : "");
+  phaseDiv.id = "phase-" + section.id;
+
+  const badgeCls = {
+    auto: "cs-phase-badge-auto",
+    teleop: "cs-phase-badge-teleop",
+    endgame: "cs-phase-badge-endgame",
+    post_match: "cs-phase-badge-postmatch",
+  }[section.phase] || "";
+
+  phaseDiv.innerHTML = `
+    <div class="cs-phase-header" onclick="togglePhase('${section.id}')">
+      <span class="cs-phase-title">
+        ${section.title}
+        <span class="cs-phase-badge ${badgeCls}">${section.phase.replace("_"," ").toUpperCase()}</span>
+      </span>
+      <span class="material-symbols-outlined cs-phase-chevron">expand_more</span>
+    </div>
+    <div class="cs-phase-body" id="phasebody-${section.id}"></div>
+  `;
+
+  const body = phaseDiv.querySelector(".cs-phase-body");
+  section.fields.forEach((field) => {
+    body.appendChild(buildField(field));
+  });
+
+  return phaseDiv;
+}
+
+function togglePhase(id) {
+  const el = document.getElementById("phase-" + id);
+  el.classList.toggle("open");
+}
+
+// ── Field builder ────────────────────────────────────────────────────────
+function buildField(field) {
+  const wrap = document.createElement("div");
+  wrap.className = "cs-field";
+  wrap.id = "field-wrap-" + field.id;
+
+  const label = document.createElement("label");
+  label.className = "cs-label";
+  label.textContent = field.label + (field.required ? " *" : "");
+  wrap.appendChild(label);
+
+  switch (field.type) {
+    case "tally":   wrap.appendChild(buildTally(field));   break;
+    case "boolean": wrap.appendChild(buildBoolean(field)); break;
+    case "range":   wrap.appendChild(buildRange(field));   break;
+    case "select":  wrap.appendChild(buildSelect(field));  break;
+    case "number":  wrap.appendChild(buildNumber(field));  break;
+    case "text":    wrap.appendChild(buildText(field));    break;
+    default: break;
+  }
+  return wrap;
+}
+
+// ── Tally counter ────────────────────────────────────────────────────────
+function buildTally(field) {
+  const increments = field.config?.increments ?? [1, 3, 5, 10, 20];
+  formState.answers[field.id] = 0;
+
+  const div = document.createElement("div");
+  div.className = "cs-tally";
+  div.innerHTML = `
+    <div class="cs-tally-total-label">${field.label}</div>
+    <div class="cs-tally-total" id="tally-display-${field.id}">0</div>
+    <div class="cs-tally-btns" id="tally-btns-${field.id}"></div>
+    <button class="cs-tally-undo" id="tally-undo-${field.id}" disabled onclick="tallyUndo('${field.id}')">
+      <span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px">undo</span> Undo
+    </button>
+  `;
+
+  const btnsRow = div.querySelector(`#tally-btns-${field.id}`);
+  increments.forEach((inc) => {
+    const btn = document.createElement("button");
+    btn.className = "cs-tally-btn";
+    btn.textContent = `+${inc}`;
+    btn.addEventListener("click", () => tallyIncrement(field.id, inc));
+    btnsRow.appendChild(btn);
+  });
+
+  // Haptic feedback on click
+  div.querySelectorAll(".cs-tally-btn").forEach((b) => {
+    b.addEventListener("click", () => {
+      if (navigator.vibrate) navigator.vibrate(30);
+    });
+  });
+
+  return div;
+}
+
+function tallyIncrement(fieldId, inc) {
+  const prev = formState.answers[fieldId] ?? 0;
+  formState.history.push({ fieldId, prevValue: prev });
+  formState.answers[fieldId] = prev + inc;
+  updateTallyDisplay(fieldId);
+}
+
+function tallyUndo(fieldId) {
+  // Find last history entry for this field
+  for (let i = formState.history.length - 1; i >= 0; i--) {
+    if (formState.history[i].fieldId === fieldId) {
+      formState.answers[fieldId] = formState.history[i].prevValue;
+      formState.history.splice(i, 1);
+      updateTallyDisplay(fieldId);
+      return;
+    }
+  }
+}
+
+function updateTallyDisplay(fieldId) {
+  const el = document.getElementById(`tally-display-${fieldId}`);
+  if (el) el.textContent = formState.answers[fieldId] ?? 0;
+  const undoBtn = document.getElementById(`tally-undo-${fieldId}`);
+  if (undoBtn) undoBtn.disabled = !formState.history.some((h) => h.fieldId === fieldId);
+}
+
+// ── Boolean (Yes/No) ─────────────────────────────────────────────────────
+function buildBoolean(field) {
+  formState.answers[field.id] = null;
+  const div = document.createElement("div");
+  div.className = "cs-toggle-group";
+  div.innerHTML = `
+    <button class="cs-toggle-btn" id="bool-yes-${field.id}" onclick="setBoolean('${field.id}', true)">
+      <span class="material-symbols-outlined" style="font-size:18px">check</span> Yes
+    </button>
+    <button class="cs-toggle-btn" id="bool-no-${field.id}" onclick="setBoolean('${field.id}', false)">
+      <span class="material-symbols-outlined" style="font-size:18px">close</span> No
+    </button>
+  `;
+  return div;
+}
+
+function setBoolean(fieldId, value) {
+  formState.answers[fieldId] = value;
+  const yes = document.getElementById(`bool-yes-${fieldId}`);
+  const no  = document.getElementById(`bool-no-${fieldId}`);
+  yes.className = "cs-toggle-btn" + (value === true  ? " active-yes" : "");
+  no.className  = "cs-toggle-btn" + (value === false ? " active-no"  : "");
+}
+
+// ── Range selector ────────────────────────────────────────────────────────
+function buildRange(field) {
+  formState.answers[field.id] = null;
+  const ranges = field.config?.ranges ?? [];
+  const div = document.createElement("div");
+  div.className = "cs-range-group";
+  ranges.forEach((r) => {
+    const btn = document.createElement("button");
+    btn.className = "cs-range-btn";
+    btn.textContent = r.label;
+    btn.id = `range-${field.id}-${r.value}`;
+    btn.addEventListener("click", () => setRange(field.id, r.value));
+    div.appendChild(btn);
+  });
+  return div;
+}
+
+function setRange(fieldId, value) {
+  formState.answers[fieldId] = value;
+  document.querySelectorAll(`[id^="range-${fieldId}-"]`).forEach((btn) => {
+    btn.className = "cs-range-btn" + (btn.id.endsWith("-" + value) ? " active" : "");
+  });
+}
+
+// ── Select ───────────────────────────────────────────────────────────────
+function buildSelect(field) {
+  formState.answers[field.id] = null;
+  const options = field.config?.options ?? [];
+  const sel = document.createElement("select");
+  sel.className = "cs-select";
+  sel.id = "select-" + field.id;
+  const blank = document.createElement("option");
+  blank.value = "";
+  blank.textContent = field.required ? "— Select —" : "— (optional) —";
+  blank.selected = true;
+  sel.appendChild(blank);
+  options.forEach((opt) => {
+    const o = document.createElement("option");
+    o.value = opt.value;
+    o.textContent = opt.label;
+    sel.appendChild(o);
+  });
+  sel.addEventListener("change", () => {
+    formState.answers[field.id] = sel.value || null;
+  });
+  return sel;
+}
+
+// ── Number ────────────────────────────────────────────────────────────────
+function buildNumber(field) {
+  formState.answers[field.id] = field.config?.min ?? 0;
+  const cfg = field.config || {};
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "display:flex;align-items:center;gap:12px;";
+  const minus = document.createElement("button");
+  minus.className = "cs-btn cs-btn-secondary cs-btn-sm";
+  minus.innerHTML = '<span class="material-symbols-outlined">remove</span>';
+  const display = document.createElement("span");
+  display.id = `num-display-${field.id}`;
+  display.style.cssText = "font-size:1.5rem;font-weight:700;min-width:40px;text-align:center;";
+  display.textContent = formState.answers[field.id] ?? 0;
+  const plus = document.createElement("button");
+  plus.className = "cs-btn cs-btn-primary cs-btn-sm";
+  plus.innerHTML = '<span class="material-symbols-outlined">add</span>';
+  const step = cfg.step ?? 1;
+  const min = cfg.min ?? 0;
+  const max = cfg.max ?? 999;
+  minus.addEventListener("click", () => {
+    const v = Math.max(min, (formState.answers[field.id] ?? 0) - step);
+    formState.answers[field.id] = v;
+    display.textContent = v;
+  });
+  plus.addEventListener("click", () => {
+    const v = Math.min(max, (formState.answers[field.id] ?? 0) + step);
+    formState.answers[field.id] = v;
+    display.textContent = v;
+  });
+  wrap.appendChild(minus);
+  wrap.appendChild(display);
+  wrap.appendChild(plus);
+  return wrap;
+}
+
+// ── Text area ─────────────────────────────────────────────────────────────
+function buildText(field) {
+  formState.answers[field.id] = "";
+  const ta = document.createElement("textarea");
+  ta.className = "cs-textarea";
+  ta.placeholder = "Optional notes…";
+  ta.rows = 3;
+  ta.addEventListener("input", () => { formState.answers[field.id] = ta.value; });
+  return ta;
+}
+
+// ── Validate ──────────────────────────────────────────────────────────────
+function validateForm() {
+  const schema = window.CS.schema2026;
+  const errors = [];
+  for (const section of schema.sections) {
+    for (const field of section.fields) {
+      if (field.required) {
+        const val = formState.answers[field.id];
+        if (val === null || val === undefined || val === "") {
+          errors.push(`${section.title}: "${field.label}" is required.`);
+          // Open the phase that has the error
+          const phase = document.getElementById("phase-" + section.id);
+          if (phase && !phase.classList.contains("open")) phase.classList.add("open");
+        }
+      }
+    }
+  }
+  return errors;
+}
+
+// ── Submit ─────────────────────────────────────────────────────────────────
+async function submitForm() {
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span> Saving…';
+
+  const errors = validateForm();
+  if (errors.length) {
+    window.CS.ui.toast(errors[0], "error", 4000);
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined">upload</span> Submit';
+    return;
+  }
+
+  const session = await window.CS.auth.getSession();
+  const submissionPayload = {
+    season_id: null, // TODO: resolve from year
+    event_key: formState.eventKey,
+    match_number: formState.matchNumber,
+    match_type: formState.matchType,
+    team_number: formState.teamNumber,
+    driver_station: formState.driverStation,
+    alliance_color: formState.allianceColor,
+    answers: { ...formState.answers },
+    schema_version: "2026-v1.0",
+    owner_id: session?.user?.id ?? null,
+    owner_display: session?.user?.user_metadata?.full_name || session?.user?.email || "Anonymous",
+    created_at: new Date().toISOString(),
+    reliability_score: 1.0,
+  };
+
+  try {
+    const result = await window.CS.offline.saveSubmission(submissionPayload, "match_scout");
+    const synced = result.syncStatus === "synced" || window.CS.offline.connectivity.isOnline;
+    window.CS.ui.toast(
+      synced ? "Submitted! Synced to server." : "Saved offline — will sync when connected.",
+      "success",
+      4000
+    );
+    setTimeout(() => window.location.href = "scout.html", 1500);
+  } catch (err) {
+    window.CS.ui.toast("Save failed: " + err.message, "error", 5000);
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined">upload</span> Submit';
+  }
+}
+
+// ── Reset ──────────────────────────────────────────────────────────────────
+function resetForm() {
+  if (!confirm("Clear all scouting data for this match?")) return;
+  formState.answers = {};
+  formState.history = [];
+  document.getElementById("phasesRoot").innerHTML = "";
+  renderForm();
+  window.CS.ui.toast("Form cleared.", "info", 2000);
+}
+</script>
+</body>
 </html>

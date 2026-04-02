@@ -58,7 +58,7 @@
 <main class="cs-page-wide" style="padding-top:16px">
 
   <!-- Offline notice -->
-  <div id="offlineBanner" style="display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.85rem;color:#f87171;align-items:center;gap:8px">
+  <div id="offlineBanner" style="display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.85rem;color:#f87171;display:flex;align-items:center;gap:8px">
     <span class="material-symbols-outlined" style="font-size:18px">wifi_off</span>
     You're offline. Searches use cached data only.
   </div>
@@ -67,7 +67,7 @@
   <div id="indexBar"><div id="indexFill"></div></div>
   <div id="indexStatus" style="font-size:0.75rem;color:var(--surface-400);margin-bottom:10px;display:none"></div>
 
-  <!-- Search row -->
+  <!-- Search row — both filters stack to narrow results further -->
   <div style="display:flex;gap:10px;margin-bottom:16px;align-items:flex-start;flex-wrap:wrap">
     <!-- Team search -->
     <div class="cs-search" style="flex:1;min-width:220px">
@@ -76,18 +76,15 @@
              oninput="onSearch()" onkeydown="if(event.key==='Enter')doSearch()"/>
     </div>
 
-    <!-- Event autocomplete -->
-    <div class="cs-field" style="margin:0;min-width:220px;flex:1">
-      <label class="cs-label">Find teams at event</label>
-      <div class="ac-container" id="eventAC">
-        <div class="cs-search">
-          <span class="material-symbols-outlined">event</span>
-          <input id="eventKeyInput" class="cs-input" placeholder="Key or search name (e.g. orlando)…"
-                 autocapitalize="none" oninput="onEventSearch()" onkeydown="onEventKeydown(event)"
-                 onblur="setTimeout(closeEventAC, 200)" onfocus="onEventSearch()"/>
-        </div>
-        <div id="eventACDropdown" class="ac-dropdown" style="display:none"></div>
+    <!-- Event autocomplete (no label — placeholder gives enough context) -->
+    <div class="ac-container" id="eventAC" style="min-width:220px;flex:1">
+      <div class="cs-search">
+        <span class="material-symbols-outlined">event</span>
+        <input id="eventKeyInput" class="cs-input" placeholder="Filter by event key or name…"
+               autocapitalize="none" oninput="onEventSearch()" onkeydown="onEventKeydown(event)"
+               onblur="setTimeout(closeEventAC, 200)" onfocus="onEventSearch()"/>
       </div>
+      <div id="eventACDropdown" class="ac-dropdown" style="display:none"></div>
     </div>
   </div>
 
@@ -239,35 +236,45 @@ function doSearch() {
   const raw = document.getElementById("teamSearch").value;
   const q = raw.trim();
 
-  if (!q) { showReady(); document.getElementById("resultsLabel").textContent = ""; return; }
-  const qLow = q.toLowerCase();
-  const stripped = q.replace(/^frc/i, "");
+  // Start from event subset if one is loaded, otherwise use full index
+  const pool = _eventTeams !== null ? _eventTeams : _teamsIndex;
+  const eventKey = document.getElementById("eventKeyInput").value.trim();
 
-  let results = [];
-
-  if (/^\d+$/.test(stripped)) {
-    // Number prefix — match team numbers that CONTAIN the digits
-    results = _teamsIndex.filter(t => String(t.team_number).includes(stripped));
-    // If exact match exists, put it first
-    results.sort((a, b) => {
-      const aEx = String(a.team_number) === stripped ? 0 : 1;
-      const bEx = String(b.team_number) === stripped ? 0 : 1;
-      return aEx - bEx || a.team_number - b.team_number;
-    });
-  } else {
-    // Name / city / state search
-    results = _teamsIndex.filter(t =>
-      (t.nickname || "").toLowerCase().includes(qLow) ||
-      (t.name || "").toLowerCase().includes(qLow) ||
-      (t.city || "").toLowerCase().includes(qLow) ||
-      (t.state_prov || "").toLowerCase().includes(qLow) ||
-      (t.country || "").toLowerCase().includes(qLow)
-    );
+  // If no text query and no event filter, just show the ready state
+  if (!q && _eventTeams === null) {
+    showReady();
+    document.getElementById("resultsLabel").textContent = "";
+    return;
   }
 
+  let results = pool;
+
+  if (q) {
+    const qLow    = q.toLowerCase();
+    const stripped = q.replace(/^frc/i, "");
+
+    if (/^\d+$/.test(stripped)) {
+      results = results.filter(t => String(t.team_number).includes(stripped));
+      results.sort((a, b) => {
+        const aEx = String(a.team_number) === stripped ? 0 : 1;
+        const bEx = String(b.team_number) === stripped ? 0 : 1;
+        return aEx - bEx || a.team_number - b.team_number;
+      });
+    } else {
+      results = results.filter(t =>
+        (t.nickname || "").toLowerCase().includes(qLow) ||
+        (t.name || "").toLowerCase().includes(qLow) ||
+        (t.city || "").toLowerCase().includes(qLow) ||
+        (t.state_prov || "").toLowerCase().includes(qLow) ||
+        (t.country || "").toLowerCase().includes(qLow)
+      );
+    }
+  }
+
+  const eventLabel = _eventTeams !== null && eventKey ? ` at ${eventKey}` : "";
   renderTeams(results.slice(0, 80));
   document.getElementById("resultsLabel").textContent = results.length
-    ? `${results.length} result${results.length !== 1 ? "s" : ""}${results.length > 80 ? " (showing first 80)" : ""}`
+    ? `${results.length} result${results.length !== 1 ? "s" : ""}${eventLabel}${results.length > 80 ? " (showing first 80)" : ""}`
     : "";
 }
 
@@ -311,6 +318,9 @@ function closeEventAC() {
   document.getElementById("eventACDropdown").style.display = "none";
 }
 
+// Teams from a selected event — stored so both filters can stack
+let _eventTeams = null; // null = no event filter active; [] = event loaded but empty
+
 function selectEvent(key, name) {
   document.getElementById("eventKeyInput").value = key;
   closeEventAC();
@@ -319,7 +329,12 @@ function selectEvent(key, name) {
 
 async function loadEventTeams(key) {
   if (!key) { key = document.getElementById("eventKeyInput").value.trim(); }
-  if (!key) { window.CS.ui.toast("Enter an event key first.", "error"); return; }
+  if (!key) {
+    // Input cleared — remove event filter and re-run team search
+    _eventTeams = null;
+    doSearch();
+    return;
+  }
 
   if (!navigator.onLine) {
     window.CS.ui.toast("You're offline — cannot fetch event teams.", "error");
@@ -333,19 +348,32 @@ async function loadEventTeams(key) {
   document.getElementById("loadingState").style.display = "none";
 
   if (!teams || !teams.length) {
+    _eventTeams = [];
     renderTeams([], "No teams found for that event key. Check the event key and try again.");
     return;
   }
-  // Cache all teams in background and add to index
+
+  // Cache and merge into index
   for (const t of teams) {
     await window.CS.offline.cache.putTeam(t);
     if (!_teamsIndex.find(x => x.team_number === t.team_number)) _teamsIndex.push(t);
   }
   _teamsIndex.sort((a, b) => a.team_number - b.team_number);
+  _eventTeams = teams.sort((a, b) => a.team_number - b.team_number);
 
-  renderTeams(teams.sort((a, b) => a.team_number - b.team_number));
-  document.getElementById("resultsLabel").textContent = `${teams.length} teams at ${key}`;
+  // Now apply both filters together
+  doSearch();
 }
+
+// Also reload event filter when the event input is cleared manually
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("eventKeyInput").addEventListener("input", () => {
+    if (!document.getElementById("eventKeyInput").value.trim()) {
+      _eventTeams = null;
+      doSearch();
+    }
+  });
+});
 
 // ── Render ─────────────────────────────────────────────────────────────
 function renderTeams(teams, emptyMsg) {

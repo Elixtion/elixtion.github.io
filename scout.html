@@ -12,58 +12,10 @@
   <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="lib/supabase-client.js"></script>
+  <script src="lib/offline.js"></script>
+  <script src="lib/ui.js"></script>
   <script src="lib/config.js"></script>
   <script src="lib/tba.js"></script>
-  <script src="lib/offline.js"></script>
-  <script src="lib/schema2026.js"></script>
-  <script src="lib/reliability.js"></script>
-  <script src="lib/reliability-compute.js"></script>
-  <script src="lib/ui.js"></script>
-  <style>
-    /* No animation on scouting forms for speed */
-    *, *::before, *::after { transition: none !important; animation: none !important; }
-    .cs-phase-chevron { transition: transform 0.15s !important; }
-
-    /* Match context bar */
-    .match-ctx-bar {
-      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-      background: var(--surface-50); border: 1px solid var(--surface-100);
-      border-radius: 8px; padding: 8px 12px; margin-bottom: 14px;
-    }
-    .ctx-chip {
-      display: inline-flex; align-items: center; gap: 3px;
-      padding: 3px 9px; border-radius: 99px; font-weight: 600; font-size: 0.78rem;
-      background: var(--surface-100); color: var(--surface-600);
-    }
-    .ctx-chip.green { background: var(--primary-950); color: var(--primary-400); }
-    .ctx-chip.red   { background: rgba(239,68,68,.12); color: #f87171; }
-    .ctx-chip.blue  { background: rgba(96,165,250,.12); color: #60a5fa; }
-
-    /* Locked (auto-filled) field */
-    .cs-input:disabled, .cs-select:disabled {
-      background: var(--surface-100) !important;
-      color: var(--surface-400) !important;
-      cursor: not-allowed;
-      opacity: 1;
-    }
-    .lbl-lock {
-      display: inline-flex; align-items: center; gap: 3px;
-      font-size: 0.7rem; color: var(--primary-500); font-weight: 600;
-      margin-left: 4px;
-    }
-
-    /* Submit footer */
-    .scout-footer {
-      position: sticky; bottom: 60px; z-index: 20;
-      padding: 10px 0; pointer-events: none;
-    }
-    .scout-footer-inner {
-      display: flex; gap: 8px;
-      background: var(--surface-950); border-radius: 12px;
-      padding: 10px; border: 1px solid var(--surface-100);
-      pointer-events: all;
-    }
-  </style>
 </head>
 <body>
 
@@ -72,106 +24,96 @@
     <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
     <span>Scout</span>
   </a>
-  <div id="connBar" class="cs-pill cs-pill-gray" style="font-size:0.72rem">…</div>
+  <nav class="cs-nav">
+    <a href="events.html">Events</a>
+    <a href="teams.html">Teams</a>
+    <a href="profile.html">Profile</a>
+  </nav>
 </header>
 
 <main class="cs-page">
 
-  <!-- ── Connectivity ──────────────────────────────────────────────── -->
-  <div class="cs-card cs-card-sm" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+  <!-- ── Connectivity + sync status ──────────────────────────────── -->
+  <div id="syncStatus" class="cs-card cs-card-sm" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px">
     <span id="connText" style="font-size:0.85rem;color:var(--surface-500)">Checking connectivity…</span>
     <button class="cs-btn cs-btn-sm cs-btn-secondary" onclick="manualSync()">
       <span class="material-symbols-outlined" style="font-size:16px">sync</span> Sync
     </button>
   </div>
 
-  <!-- ── Match Setup ────────────────────────────────────────────────── -->
-  <div class="cs-card" id="setupCard" style="margin-bottom:16px">
-    <h2 class="cs-section-title" style="margin-top:0">Match Setup</h2>
+  <!-- ── Quick Scout ──────────────────────────────────────────────── -->
+  <div class="cs-card" style="margin-bottom:16px">
+    <h2 class="cs-section-title" style="margin-top:0">Scout a Match</h2>
+    <p class="cs-section-sub">Select match and station — team number is resolved automatically from TBA.</p>
 
-    <!-- Event key + Cache button -->
-    <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:4px">
-      <div class="cs-field" style="flex:1;margin-bottom:0">
-        <label class="cs-label">Event Key</label>
-        <input id="setupEvent" class="cs-input" placeholder="e.g. 2026txhou"
-               autocapitalize="none" autocorrect="off"
-               oninput="onEventKeyChange()"/>
-      </div>
-      <button id="cacheBtn" class="cs-btn cs-btn-secondary cs-btn-sm" style="flex-shrink:0;height:42px"
-              onclick="cacheSchedule()">
-        <span class="material-symbols-outlined" style="font-size:16px">download_for_offline</span> Cache
-      </button>
-    </div>
-    <div id="scheduleStatus" style="font-size:0.78rem;min-height:18px;margin-bottom:12px"></div>
-
-    <!-- Match type -->
+    <!-- Event key + clear button -->
     <div class="cs-field">
-      <label class="cs-label">Match Type</label>
-      <div class="cs-toggle-group">
-        <button id="type-qual"    class="cs-toggle-btn active-yes" onclick="setMatchType('qualification')" style="flex:1">Qualification</button>
-        <button id="type-playoff" class="cs-toggle-btn"            onclick="setMatchType('playoff')"       style="flex:1">Playoff</button>
+      <label class="cs-label">Event Key</label>
+      <div style="display:flex;gap:8px">
+        <input id="quickEvent" class="cs-input" placeholder="e.g. 2026txhou" autocapitalize="none"
+               oninput="onEventChange()" style="flex:1"/>
+        <button class="cs-btn cs-btn-secondary cs-btn-sm" onclick="clearCachedEvent()"
+                title="Clear saved event" style="flex-shrink:0">
+          <span class="material-symbols-outlined" style="font-size:16px">clear</span>
+        </button>
       </div>
     </div>
 
-    <!-- The 3 smart fields -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
-      <div class="cs-field" style="margin-bottom:0">
-        <label class="cs-label" id="lbl-match">Match #</label>
-        <input id="setupMatch" class="cs-input" type="number" min="1" placeholder="1"
-               oninput="onSmartInput('match')"/>
+    <!-- Match # + Type -->
+    <div style="display:flex;gap:10px">
+      <div class="cs-field" style="flex:2">
+        <label class="cs-label">Match #</label>
+        <input id="quickMatch" class="cs-input" type="number" min="1" placeholder="1"
+               oninput="resolveTeam()"/>
       </div>
-      <div class="cs-field" style="margin-bottom:0">
-        <label class="cs-label" id="lbl-team">Team #</label>
-        <input id="setupTeam" class="cs-input" type="number" min="1" placeholder="254"
-               oninput="onSmartInput('team')"/>
-      </div>
-      <div class="cs-field" style="margin-bottom:0">
-        <label class="cs-label" id="lbl-station">Station</label>
-        <select id="setupStation" class="cs-select" onchange="onSmartInput('station')">
-          <option value="">—</option>
-          <option value="1">Red 1</option>
-          <option value="2">Red 2</option>
-          <option value="3">Red 3</option>
-          <option value="4">Blue 1</option>
-          <option value="5">Blue 2</option>
-          <option value="6">Blue 3</option>
+      <div class="cs-field" style="flex:1">
+        <label class="cs-label">Type</label>
+        <select id="quickType" class="cs-select" onchange="resolveTeam()">
+          <option value="qualification">Qual</option>
+          <option value="playoff">Playoff</option>
         </select>
       </div>
     </div>
 
-    <!-- Actions -->
-    <div style="display:flex;gap:8px">
-      <button class="cs-btn cs-btn-ghost cs-btn-sm" style="flex-shrink:0" onclick="clearMatchFields()" title="Clear match, team, station">
-        <span class="material-symbols-outlined" style="font-size:16px">clear_all</span> Clear
-      </button>
-      <button id="startBtn" class="cs-btn cs-btn-primary" style="flex:1" onclick="startScouting()" disabled>
-        <span class="material-symbols-outlined">edit_note</span> Start Scouting
-      </button>
+    <!-- Station -->
+    <div class="cs-field">
+      <label class="cs-label">Station</label>
+      <select id="quickStation" class="cs-select" onchange="resolveTeam()">
+        <option value="1">Red 1</option>
+        <option value="2">Red 2</option>
+        <option value="3">Red 3</option>
+        <option value="4">Blue 1</option>
+        <option value="5">Blue 2</option>
+        <option value="6">Blue 3</option>
+      </select>
     </div>
-  </div>
 
-  <!-- ── Context bar (shown while scouting) ────────────────────────── -->
-  <div id="ctxBar" class="match-ctx-bar" style="display:none"></div>
-
-  <!-- ── Scouting form ──────────────────────────────────────────────── -->
-  <div id="formSection" style="display:none">
-    <div id="phasesRoot"></div>
-  </div>
-
-  <!-- ── Submit footer ─────────────────────────────────────────────── -->
-  <div id="scoutFooter" class="scout-footer" style="display:none">
-    <div class="scout-footer-inner">
-      <button class="cs-btn cs-btn-secondary" style="flex-shrink:0" onclick="resetAnswers()" title="Clear answers only">
-        <span class="material-symbols-outlined">restart_alt</span>
-      </button>
-      <button id="submitBtn" class="cs-btn cs-btn-primary" style="flex:1" onclick="submitForm()">
-        <span class="material-symbols-outlined">upload</span> Submit
-      </button>
+    <!-- Team # — read-only, auto-filled from TBA -->
+    <div class="cs-field">
+      <label class="cs-label" style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+        <span>Team #</span>
+        <span id="teamResolveStatus" style="font-size:0.72rem;font-weight:400;color:var(--surface-400);text-transform:none;letter-spacing:0">Select match &amp; station above</span>
+      </label>
+      <div id="quickTeamDisplay"
+           style="width:100%;background-color:var(--surface-50);border:1px solid var(--surface-200);border-radius:8px;padding:10px 12px;font-size:0.9rem;color:var(--surface-400);font-style:italic;user-select:none;min-height:44px;display:flex;align-items:center">
+        —
+      </div>
+      <input id="quickTeam" type="hidden" value=""/>
     </div>
+
+    <button class="cs-btn cs-btn-primary" style="width:100%;margin-top:4px" onclick="startScouting()">
+      <span class="material-symbols-outlined">edit_note</span> Start Scouting
+    </button>
   </div>
 
-  <!-- ── Pending queue ──────────────────────────────────────────────── -->
-  <div style="margin-top:24px">
+  <!-- ── Upcoming matches from schedule ──────────────────────────── -->
+  <div id="scheduleSection" style="display:none">
+    <h2 class="cs-section-title">Upcoming Matches</h2>
+    <div id="scheduleList"></div>
+  </div>
+
+  <!-- ── Offline queue ─────────────────────────────────────────────── -->
+  <div style="margin-top:20px">
     <h2 class="cs-section-title">Pending Submissions</h2>
     <div id="queueList"><div class="cs-empty">No pending submissions.</div></div>
   </div>
@@ -189,599 +131,53 @@
 <div id="cs-toast-container"></div>
 
 <script>
-// ── State ──────────────────────────────────────────────────────────────
-const STATION_LABELS = ["", "Red 1", "Red 2", "Red 3", "Blue 1", "Blue 2", "Blue 3"];
+let _resolveTimeout = null;
 
-const formState = {
-  eventKey: null, matchNumber: null, matchType: "qualification",
-  teamNumber: null, driverStation: null, allianceColor: null,
-  answers: {}, history: [],
-};
-
-let _schedule = null;    // array of match objects cached for the current event
-let _lockedField = null; // 'match' | 'team' | 'station' — whichever was auto-filled
-let _session = null;
-
-// ── Init ───────────────────────────────────────────────────────────────
 (async function init() {
-  _session = await window.CS.ui.requireProfileComplete("profile-setup.html");
-  if (!_session) return;
-
+  const r = await window.CS.ui.requireAuth("landing.html");
+  if (!r) return;
   updateConnUI();
   renderQueue();
   window.addEventListener("cs-connectivity", () => { updateConnUI(); renderQueue(); });
 
-  // URL params from event.html "Scout" button links
-  const p = new URLSearchParams(location.search);
-  const urlEvent = p.get("event") || p.get("key");
-  const urlMatch = parseInt(p.get("match"));
-  const urlType  = p.get("type");
-  const urlTeam  = parseInt(p.get("team"));
-  const urlStation = parseInt(p.get("station"));
-
-  const eventKey = urlEvent || localStorage.getItem("cs_last_event") || "";
-  if (eventKey) {
-    document.getElementById("setupEvent").value = eventKey;
-    await loadCachedSchedule(eventKey);
-  }
-
-  if (!isNaN(urlMatch) && urlMatch > 0) document.getElementById("setupMatch").value = urlMatch;
-  if (urlType) setMatchType(urlType === "qualification" || urlType === "qual" ? "qualification" : "playoff");
-  if (!isNaN(urlTeam) && urlTeam > 0) document.getElementById("setupTeam").value = urlTeam;
-  if (!isNaN(urlStation) && urlStation >= 1 && urlStation <= 6) document.getElementById("setupStation").value = urlStation;
-
-  // Try auto-fill if any params were provided
-  if (urlMatch || urlTeam || urlStation) tryAutoFill();
-  checkStartReady();
+  // Restore last saved event key
+  const saved = localStorage.getItem("cs_last_event");
+  if (saved) document.getElementById("quickEvent").value = saved;
 })();
 
-// ── Connectivity ───────────────────────────────────────────────────────
 function updateConnUI() {
-  const c = window.CS.offline?.connectivity ?? { isOnline: true, pendingCount: 0 };
-  const bar = document.getElementById("connBar");
-  const txt = document.getElementById("connText");
+  const c = window.CS.offline.connectivity;
+  const el = document.getElementById("connText");
   if (!c.isOnline) {
-    bar.className = "cs-pill cs-pill-red"; bar.textContent = "Offline";
-    txt.innerHTML = `<span style="color:#f87171">⬤</span> Offline — ${c.pendingCount} saved locally`;
+    el.innerHTML = `<span style="color:#f87171">⬤</span> Offline — ${c.pendingCount} saved locally`;
   } else if (c.pendingCount > 0) {
-    bar.className = "cs-pill cs-pill-yellow"; bar.textContent = `Syncing ${c.pendingCount}`;
-    txt.innerHTML = `<span style="color:#fbbf24">⬤</span> Online — syncing ${c.pendingCount}…`;
+    el.innerHTML = `<span style="color:#fbbf24">⬤</span> Online — syncing ${c.pendingCount} submission${c.pendingCount > 1 ? "s" : ""}…`;
   } else {
-    bar.className = "cs-pill cs-pill-green"; bar.textContent = "Online";
-    txt.innerHTML = `<span style="color:var(--primary-500)">⬤</span> Online — all synced`;
+    const ts = c.lastSyncTime ? ` · Synced ${new Date(c.lastSyncTime).toLocaleTimeString()}` : "";
+    el.innerHTML = `<span style="color:var(--primary-500)">⬤</span> Online — all synced${ts}`;
   }
 }
 
 async function manualSync() {
-  const r = await window.CS.offline.syncAll();
-  window.CS.ui.toast(`Synced: ${r.synced} · Failed: ${r.failed}`, r.failed ? "warning" : "success");
-  updateConnUI(); renderQueue();
-}
-
-// ── Schedule caching ────────────────────────────────────────────────────
-function scheduleKey(eventKey) { return `sched_${eventKey}`; }
-
-async function loadCachedSchedule(eventKey) {
-  if (!eventKey) return;
-  try {
-    const cached = await window.CS.offline.cache.getMatch(scheduleKey(eventKey));
-    if (cached?.matches?.length) {
-      _schedule = cached.matches;
-      const age = Math.round((Date.now() - (cached.cachedAt || 0)) / 60000);
-      const st = document.getElementById("scheduleStatus");
-      const qualCount = _schedule.filter(m => m.comp_level === "qm").length;
-      st.innerHTML = `<span style="color:var(--primary-400)">✓</span> ${_schedule.length} matches cached (${qualCount} quals${age > 0 ? `, ${age}m ago` : ""}).`;
-    }
-  } catch (_) {}
-}
-
-function onEventKeyChange() {
-  // When user changes event key, clear the old cached schedule info
-  _schedule = null;
-  document.getElementById("scheduleStatus").textContent = "";
-  if (_lockedField) unlockField(true);
-  checkStartReady();
-}
-
-async function cacheSchedule() {
-  const eventKey = document.getElementById("setupEvent").value.trim().toLowerCase();
-  if (!eventKey) { window.CS.ui.toast("Enter an event key first.", "error"); return; }
-
-  const btn = document.getElementById("cacheBtn");
+  const btn = event.currentTarget;
   btn.disabled = true;
-  btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px">hourglass_top</span>';
-  const st = document.getElementById("scheduleStatus");
-  st.innerHTML = `<span style="color:var(--surface-400)">Loading schedule…</span>`;
-
-  if (!navigator.onLine) {
-    await loadCachedSchedule(eventKey);
-    if (!_schedule) {
-      st.innerHTML = `<span style="color:#f87171">You're offline — no cached schedule for "${eventKey}".</span>`;
-    }
-    btn.disabled = false;
-    btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px">download_for_offline</span> Cache';
-    return;
-  }
-
-  try {
-    document.getElementById("setupEvent").value = eventKey; // normalise to lowercase
-    const matches = await window.CS.tba.getEventMatches(eventKey);
-    if (!matches?.length) {
-      st.innerHTML = `<span style="color:#f87171">No matches found for "${eventKey}".</span>`;
-      btn.disabled = false;
-      btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px">download_for_offline</span> Cache';
-      return;
-    }
-
-    // Store lightweight version — only team assignments, no scores needed
-    const light = matches.map(m => ({
-      match_number: m.match_number,
-      set_number:   m.set_number,
-      comp_level:   m.comp_level,
-      alliances: {
-        red:  { team_keys: m.alliances?.red?.team_keys  || [] },
-        blue: { team_keys: m.alliances?.blue?.team_keys || [] },
-      },
-    }));
-
-    await window.CS.offline.cache.putMatch({
-      id: scheduleKey(eventKey),
-      matches: light,
-      cachedAt: Date.now(),
-    });
-
-    _schedule = light;
-    localStorage.setItem("cs_last_event", eventKey);
-    const qualCount = light.filter(m => m.comp_level === "qm").length;
-    st.innerHTML = `<span style="color:var(--primary-400)">✓</span> Cached — ${light.length} matches (${qualCount} quals). You can now scout offline.`;
-    window.CS.ui.toast(`Schedule cached — ${light.length} matches.`, "success");
-    tryAutoFill();
-    checkStartReady();
-  } catch (err) {
-    st.innerHTML = `<span style="color:#f87171">Failed to load schedule. Check the event key.</span>`;
-  }
-
+  const result = await window.CS.offline.syncAll();
   btn.disabled = false;
-  btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px">download_for_offline</span> Cache';
+  window.CS.ui.toast(`Synced: ${result.synced} · Failed: ${result.failed}`, result.failed > 0 ? "warning" : "success");
+  updateConnUI();
+  renderQueue();
 }
 
-// ── Match type ──────────────────────────────────────────────────────────
-function setMatchType(type) {
-  formState.matchType = type;
-  document.getElementById("type-qual").className    = "cs-toggle-btn" + (type === "qualification" ? " active-yes" : "");
-  document.getElementById("type-playoff").className = "cs-toggle-btn" + (type === "playoff"       ? " active-yes" : "");
-  if (_lockedField) unlockField(false); // auto-fill may not apply to new type
-  checkStartReady();
-}
-
-// ── Smart auto-fill logic ───────────────────────────────────────────────
-function onSmartInput(changedField) {
-  // If the user is manually editing a locked field, unlock it
-  if (_lockedField === changedField) unlockField(false);
-  tryAutoFill();
-  checkStartReady();
-}
-
-function tryAutoFill() {
-  if (_lockedField) return;           // already have a lock — don't re-fill
-  if (!_schedule?.length) return;     // no schedule cached
-  if (formState.matchType !== "qualification") return; // only auto-fill quals
-
-  const matchNum   = parseInt(document.getElementById("setupMatch").value);
-  const teamNum    = parseInt(document.getElementById("setupTeam").value);
-  const stationVal = parseInt(document.getElementById("setupStation").value);
-
-  const hasMatch   = !isNaN(matchNum)   && matchNum   >= 1;
-  const hasTeam    = !isNaN(teamNum)    && teamNum    >= 1;
-  const hasStation = !isNaN(stationVal) && stationVal >= 1 && stationVal <= 6;
-
-  if (hasMatch && hasStation && !hasTeam) {
-    // Derive team from match + station
-    const match = _schedule.find(m => m.comp_level === "qm" && m.match_number === matchNum);
-    if (!match) return;
-    const alliance = stationVal <= 3 ? "red" : "blue";
-    const pos = (stationVal - 1) % 3;
-    const teamKey = match.alliances[alliance]?.team_keys?.[pos];
-    if (!teamKey) return;
-    const tn = parseInt(teamKey.replace("frc", ""));
-    if (!isNaN(tn) && tn > 0) {
-      document.getElementById("setupTeam").value = tn;
-      lockField("team");
-    }
-  } else if (hasMatch && hasTeam && !hasStation) {
-    // Derive station from match + team
-    const match = _schedule.find(m => m.comp_level === "qm" && m.match_number === matchNum);
-    if (!match) return;
-    const redIdx  = match.alliances.red?.team_keys?.indexOf(`frc${teamNum}`);
-    const blueIdx = match.alliances.blue?.team_keys?.indexOf(`frc${teamNum}`);
-    let station = null;
-    if (redIdx  !== undefined && redIdx  !== -1) station = redIdx + 1;
-    else if (blueIdx !== undefined && blueIdx !== -1) station = blueIdx + 4;
-    if (station) {
-      document.getElementById("setupStation").value = station;
-      lockField("station");
-    }
-  }
-  // Note: team + station alone can't determine match (team plays multiple matches)
-}
-
-function lockField(fieldId) {
-  _lockedField = fieldId;
-  const el = fieldId === "station"
-    ? document.getElementById("setupStation")
-    : document.getElementById(`setup${fieldId[0].toUpperCase()}${fieldId.slice(1)}`);
-  el.disabled = true;
-
-  const lbl = document.getElementById(`lbl-${fieldId}`);
-  const baseText = { match: "Match #", team: "Team #", station: "Station" }[fieldId];
-  lbl.innerHTML = `${baseText} <span class="lbl-lock"><span class="material-symbols-outlined" style="font-size:12px">lock</span>Auto</span>`;
-}
-
-function unlockField(clearValue) {
-  if (!_lockedField) return;
-  const fieldId = _lockedField;
-  _lockedField = null;
-
-  const el = fieldId === "station"
-    ? document.getElementById("setupStation")
-    : document.getElementById(`setup${fieldId[0].toUpperCase()}${fieldId.slice(1)}`);
-  el.disabled = false;
-  if (clearValue) el.value = "";
-
-  const lbl = document.getElementById(`lbl-${fieldId}`);
-  lbl.textContent = { match: "Match #", team: "Team #", station: "Station" }[fieldId];
-}
-
-function clearMatchFields() {
-  unlockField(true);
-  document.getElementById("setupMatch").value   = "";
-  document.getElementById("setupTeam").value    = "";
-  document.getElementById("setupStation").value = "";
-  checkStartReady();
-  hideFormSection();
-}
-
-// ── Ready check ─────────────────────────────────────────────────────────
-function checkStartReady() {
-  const matchNum   = parseInt(document.getElementById("setupMatch").value);
-  const teamNum    = parseInt(document.getElementById("setupTeam").value);
-  const stationVal = parseInt(document.getElementById("setupStation").value);
-  const eventKey   = document.getElementById("setupEvent").value.trim();
-  const ready = eventKey && !isNaN(matchNum) && matchNum >= 1
-             && !isNaN(teamNum) && teamNum >= 1
-             && !isNaN(stationVal) && stationVal >= 1 && stationVal <= 6;
-  document.getElementById("startBtn").disabled = !ready;
-}
-
-// ── Start scouting ──────────────────────────────────────────────────────
-function startScouting() {
-  const eventKey   = document.getElementById("setupEvent").value.trim();
-  const matchNum   = parseInt(document.getElementById("setupMatch").value);
-  const teamNum    = parseInt(document.getElementById("setupTeam").value);
-  const stationVal = parseInt(document.getElementById("setupStation").value);
-
-  if (!eventKey) { window.CS.ui.toast("Enter an event key.", "error"); return; }
-
-  formState.eventKey      = eventKey;
-  formState.matchNumber   = matchNum;
-  formState.teamNumber    = teamNum;
-  formState.driverStation = stationVal;
-  formState.allianceColor = stationVal <= 3 ? "red" : "blue";
-
-  localStorage.setItem("cs_last_event", eventKey);
-  showFormSection();
-}
-
-// ── Show / hide form section ─────────────────────────────────────────────
-function showFormSection() {
-  // Render context bar
-  const color = formState.allianceColor;
-  const matchLbl = formState.matchType === "qualification"
-    ? `Qual ${formState.matchNumber}`
-    : `Playoff ${formState.matchNumber}`;
-
-  document.getElementById("ctxBar").style.display = "flex";
-  document.getElementById("ctxBar").innerHTML = `
-    <span class="ctx-chip green">${formState.eventKey}</span>
-    <span class="ctx-chip">${matchLbl}</span>
-    <span class="ctx-chip ${color}">${STATION_LABELS[formState.driverStation]}</span>
-    <span class="ctx-chip">Team <strong>${formState.teamNumber}</strong></span>
-    <button onclick="hideFormSection()" title="Back to setup"
-      style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--surface-400);display:inline-flex;align-items:center">
-      <span class="material-symbols-outlined" style="font-size:18px">edit</span>
-    </button>
-  `;
-
-  document.getElementById("formSection").style.display = "";
-  document.getElementById("scoutFooter").style.display = "";
-  renderForm();
-
-  // Scroll past setup card
-  document.getElementById("ctxBar").scrollIntoView({ behavior: "instant", block: "start" });
-}
-
-function hideFormSection() {
-  document.getElementById("formSection").style.display = "none";
-  document.getElementById("scoutFooter").style.display = "none";
-  document.getElementById("ctxBar").style.display = "none";
-  formState.answers = {};
-  formState.history = [];
-}
-
-// ── Render form from schema ──────────────────────────────────────────────
-function renderForm() {
-  formState.answers = {};
-  formState.history = [];
-  const root = document.getElementById("phasesRoot");
-  root.innerHTML = "";
-  window.CS.schema2026.sections.forEach((section, idx) => {
-    root.appendChild(buildPhaseSection(section, idx === 0));
-  });
-}
-
-function buildPhaseSection(section, open) {
-  const div = document.createElement("div");
-  div.className = "cs-phase" + (open ? " open" : "");
-  div.id = "phase-" + section.id;
-  const badgeCls = { auto:"cs-phase-badge-auto", teleop:"cs-phase-badge-teleop", endgame:"cs-phase-badge-endgame", post_match:"cs-phase-badge-postmatch" }[section.phase] || "";
-  div.innerHTML = `
-    <div class="cs-phase-header" onclick="togglePhase('${section.id}')">
-      <span class="cs-phase-title">
-        ${section.title}
-        <span class="cs-phase-badge ${badgeCls}">${section.phase.replace("_"," ").toUpperCase()}</span>
-      </span>
-      <span class="material-symbols-outlined cs-phase-chevron">expand_more</span>
-    </div>
-    <div class="cs-phase-body" id="phasebody-${section.id}"></div>
-  `;
-  const body = div.querySelector(".cs-phase-body");
-  section.fields.forEach(f => body.appendChild(buildField(f)));
-  return div;
-}
-
-function togglePhase(id) {
-  document.getElementById("phase-" + id).classList.toggle("open");
-}
-
-// ── Field builders ────────────────────────────────────────────────────────
-function buildField(field) {
-  const wrap = document.createElement("div");
-  wrap.className = "cs-field";
-  wrap.id = "field-wrap-" + field.id;
-  const lbl = document.createElement("label");
-  lbl.className = "cs-label";
-  lbl.textContent = field.label + (field.required ? " *" : "");
-  wrap.appendChild(lbl);
-  switch (field.type) {
-    case "tally":   wrap.appendChild(buildTally(field));   break;
-    case "boolean": wrap.appendChild(buildBoolean(field)); break;
-    case "range":   wrap.appendChild(buildRange(field));   break;
-    case "select":  wrap.appendChild(buildSelect(field));  break;
-    case "number":  wrap.appendChild(buildNumber(field));  break;
-    default: break;
-  }
-  return wrap;
-}
-
-function buildTally(field) {
-  const increments = field.config?.increments ?? [1,3,5,10,20];
-  formState.answers[field.id] = 0;
-  const div = document.createElement("div");
-  div.className = "cs-tally";
-  div.innerHTML = `
-    <div class="cs-tally-total-label">${field.label}</div>
-    <div class="cs-tally-total" id="td-${field.id}">0</div>
-    <div class="cs-tally-btns" id="tb-${field.id}"></div>
-    <button class="cs-tally-undo" id="tu-${field.id}" disabled onclick="tallyUndo('${field.id}')">
-      <span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px">undo</span> Undo
-    </button>
-  `;
-  const row = div.querySelector(`#tb-${field.id}`);
-  increments.forEach(inc => {
-    const btn = document.createElement("button");
-    btn.className = "cs-tally-btn";
-    btn.textContent = `+${inc}`;
-    btn.addEventListener("click", () => {
-      tallyInc(field.id, inc);
-      if (navigator.vibrate) navigator.vibrate(25);
-    });
-    row.appendChild(btn);
-  });
-  return div;
-}
-function tallyInc(id, inc) {
-  const prev = formState.answers[id] ?? 0;
-  formState.history.push({ fieldId: id, prevValue: prev });
-  formState.answers[id] = prev + inc;
-  const el = document.getElementById(`td-${id}`);
-  if (el) el.textContent = formState.answers[id];
-  const undo = document.getElementById(`tu-${id}`);
-  if (undo) undo.disabled = false;
-}
-function tallyUndo(id) {
-  for (let i = formState.history.length - 1; i >= 0; i--) {
-    if (formState.history[i].fieldId === id) {
-      formState.answers[id] = formState.history[i].prevValue;
-      formState.history.splice(i, 1);
-      const el = document.getElementById(`td-${id}`);
-      if (el) el.textContent = formState.answers[id];
-      const undo = document.getElementById(`tu-${id}`);
-      if (undo) undo.disabled = !formState.history.some(h => h.fieldId === id);
-      return;
-    }
-  }
-}
-
-function buildBoolean(field) {
-  formState.answers[field.id] = null;
-  const div = document.createElement("div");
-  div.className = "cs-toggle-group";
-  div.innerHTML = `
-    <button class="cs-toggle-btn" id="by-${field.id}" onclick="setBool('${field.id}',true)">
-      <span class="material-symbols-outlined" style="font-size:18px">check</span> Yes
-    </button>
-    <button class="cs-toggle-btn" id="bn-${field.id}" onclick="setBool('${field.id}',false)">
-      <span class="material-symbols-outlined" style="font-size:18px">close</span> No
-    </button>
-  `;
-  return div;
-}
-function setBool(id, val) {
-  formState.answers[id] = val;
-  document.getElementById(`by-${id}`).className = "cs-toggle-btn" + (val === true  ? " active-yes" : "");
-  document.getElementById(`bn-${id}`).className = "cs-toggle-btn" + (val === false ? " active-no"  : "");
-}
-
-function buildRange(field) {
-  formState.answers[field.id] = null;
-  const div = document.createElement("div");
-  div.className = "cs-range-group";
-  (field.config?.ranges ?? []).forEach(r => {
-    const btn = document.createElement("button");
-    btn.className = "cs-range-btn";
-    btn.textContent = r.label;
-    btn.id = `rng-${field.id}-${r.value}`;
-    btn.addEventListener("click", () => {
-      formState.answers[field.id] = r.value;
-      document.querySelectorAll(`[id^="rng-${field.id}-"]`).forEach(b =>
-        b.className = "cs-range-btn" + (b.id === `rng-${field.id}-${r.value}` ? " active" : ""));
-    });
-    div.appendChild(btn);
-  });
-  return div;
-}
-
-function buildSelect(field) {
-  formState.answers[field.id] = null;
-  const sel = document.createElement("select");
-  sel.className = "cs-select";
-  sel.id = "sel-" + field.id;
-  const blank = document.createElement("option");
-  blank.value = ""; blank.textContent = field.required ? "— Select —" : "— (optional) —";
-  blank.selected = true; sel.appendChild(blank);
-  (field.config?.options ?? []).forEach(opt => {
-    const o = document.createElement("option");
-    o.value = opt.value; o.textContent = opt.label; sel.appendChild(o);
-  });
-  sel.addEventListener("change", () => { formState.answers[field.id] = sel.value || null; });
-  return sel;
-}
-
-function buildNumber(field) {
-  formState.answers[field.id] = field.config?.min ?? 0;
-  const cfg = field.config || {};
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "display:flex;align-items:center;gap:12px";
-  const minus = document.createElement("button");
-  minus.className = "cs-btn cs-btn-secondary cs-btn-sm";
-  minus.innerHTML = '<span class="material-symbols-outlined">remove</span>';
-  const disp = document.createElement("span");
-  disp.style.cssText = "font-size:1.5rem;font-weight:700;min-width:40px;text-align:center";
-  disp.textContent = formState.answers[field.id];
-  const plus = document.createElement("button");
-  plus.className = "cs-btn cs-btn-primary cs-btn-sm";
-  plus.innerHTML = '<span class="material-symbols-outlined">add</span>';
-  const step = cfg.step??1, min=cfg.min??0, max=cfg.max??999;
-  minus.addEventListener("click", () => { const v=Math.max(min,(formState.answers[field.id]??0)-step); formState.answers[field.id]=v; disp.textContent=v; });
-  plus.addEventListener("click",  () => { const v=Math.min(max,(formState.answers[field.id]??0)+step); formState.answers[field.id]=v; disp.textContent=v; });
-  wrap.appendChild(minus); wrap.appendChild(disp); wrap.appendChild(plus);
-  return wrap;
-}
-
-// ── Validate ─────────────────────────────────────────────────────────────
-function validateForm() {
-  const errors = [];
-  for (const section of window.CS.schema2026.sections) {
-    for (const field of section.fields) {
-      if (field.required) {
-        const val = formState.answers[field.id];
-        if (val === null || val === undefined || val === "") {
-          errors.push(`${section.title}: "${field.label}" is required.`);
-          const phase = document.getElementById("phase-" + section.id);
-          if (phase && !phase.classList.contains("open")) phase.classList.add("open");
-        }
-      }
-    }
-  }
-  return errors;
-}
-
-// ── Submit ────────────────────────────────────────────────────────────────
-async function submitForm() {
-  const btn = document.getElementById("submitBtn");
-  btn.disabled = true;
-  btn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span> Saving…';
-
-  const errors = validateForm();
-  if (errors.length) {
-    window.CS.ui.toast(errors[0], "error", 4000);
-    btn.disabled = false;
-    btn.innerHTML = '<span class="material-symbols-outlined">upload</span> Submit';
-    return;
-  }
-
-  const payload = {
-    season_id: null,
-    event_key:      formState.eventKey,
-    match_number:   formState.matchNumber,
-    match_type:     formState.matchType,
-    team_number:    formState.teamNumber,
-    driver_station: formState.driverStation,
-    alliance_color: formState.allianceColor,
-    answers: { ...formState.answers },
-    schema_version: "2026-v1.0",
-    owner_id:       _session?.user?.id ?? null,
-    owner_display:  _session?.user?.user_metadata?.full_name || _session?.user?.email || "Anonymous",
-    created_at:     new Date().toISOString(),
-    reliability_score: 1.0,
-  };
-
-  try {
-    await window.CS.offline.saveSubmission(payload, "match_scout");
-    const synced = window.CS.offline.connectivity.isOnline;
-    window.CS.ui.toast(
-      synced ? "Submitted! Ready for next match." : "Saved offline — will sync when connected.",
-      "success", 3000
-    );
-
-    // Background reliability recompute
-    if (_session?.user?.id) window.CS.reliabilityCompute.updateAfterSubmit(_session.user.id);
-
-    // Reset: keep event + match type, increment match #, clear team + station
-    const nextMatch = (formState.matchNumber || 0) + 1;
-    hideFormSection();
-    if (_lockedField) unlockField(true);
-    document.getElementById("setupMatch").value   = nextMatch;
-    document.getElementById("setupTeam").value    = "";
-    document.getElementById("setupStation").value = "";
-    checkStartReady();
-    renderQueue();
-
-    btn.disabled = false;
-    btn.innerHTML = '<span class="material-symbols-outlined">upload</span> Submit';
-  } catch (err) {
-    window.CS.ui.toast("Save failed: " + err.message, "error", 5000);
-    btn.disabled = false;
-    btn.innerHTML = '<span class="material-symbols-outlined">upload</span> Submit';
-  }
-}
-
-function resetAnswers() {
-  if (!confirm("Clear all scouting answers for this match?")) return;
-  renderForm();
-  window.CS.ui.toast("Answers cleared.", "info", 2000);
-}
-
-// ── Pending queue ─────────────────────────────────────────────────────────
 async function renderQueue() {
   const queue = await window.CS.offline.getSyncQueue();
   const el = document.getElementById("queueList");
   if (!queue.length) { el.innerHTML = '<div class="cs-empty">No pending submissions.</div>'; return; }
-  el.innerHTML = queue.map(item => `
+
+  el.innerHTML = queue.map((item) => `
     <div class="cs-card cs-card-sm" style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div>
         <div style="font-weight:600;font-size:0.9rem">
-          Team ${item.data?.team_number ?? "?"} · ${item.data?.event_key ?? "?"} Q${item.data?.match_number ?? "?"}
+          Team ${item.data?.team_number ?? "??"} · ${item.data?.event_key ?? "?"} Q${item.data?.match_number ?? "?"}
         </div>
         <div style="font-size:0.75rem;color:var(--surface-500)">${new Date(item.createdAt).toLocaleString()}</div>
       </div>
@@ -790,6 +186,123 @@ async function renderQueue() {
       </span>
     </div>
   `).join("");
+}
+
+// ── Event key change ───────────────────────────────────────────────────
+function onEventChange() {
+  const ev = document.getElementById("quickEvent").value.trim();
+  if (ev) localStorage.setItem("cs_last_event", ev);
+  resolveTeam();
+}
+
+// ── Clear cached event ─────────────────────────────────────────────────
+function clearCachedEvent() {
+  localStorage.removeItem("cs_last_event");
+  document.getElementById("quickEvent").value = "";
+  setTeamDisplay(null, "No event saved");
+  window.CS.ui.toast("Cached event cleared.", "info", 2000);
+}
+
+// ── Team display helpers ───────────────────────────────────────────────
+function setTeamDisplay(teamNum, statusMsg) {
+  const display = document.getElementById("quickTeamDisplay");
+  const status  = document.getElementById("teamResolveStatus");
+  document.getElementById("quickTeam").value = teamNum ?? "";
+
+  if (teamNum) {
+    display.textContent  = teamNum;
+    display.style.color      = "var(--primary-400)";
+    display.style.fontWeight = "700";
+    display.style.fontStyle  = "normal";
+    display.style.fontSize   = "1.1rem";
+    status.textContent   = "✓ Resolved from TBA";
+    status.style.color   = "var(--primary-500)";
+  } else {
+    display.textContent  = "—";
+    display.style.color      = "var(--surface-400)";
+    display.style.fontWeight = "400";
+    display.style.fontStyle  = "italic";
+    display.style.fontSize   = "0.9rem";
+    status.textContent   = statusMsg || "Select match & station above";
+    status.style.color   = "var(--surface-400)";
+  }
+}
+
+// ── Debounced team resolution ──────────────────────────────────────────
+function resolveTeam() {
+  clearTimeout(_resolveTimeout);
+  _resolveTimeout = setTimeout(doResolveTeam, 350);
+}
+
+async function doResolveTeam() {
+  const eventKey  = document.getElementById("quickEvent").value.trim();
+  const matchNum  = parseInt(document.getElementById("quickMatch").value);
+  const matchType = document.getElementById("quickType").value;
+  const station   = parseInt(document.getElementById("quickStation").value);
+
+  if (!eventKey || !matchNum || !station) {
+    setTeamDisplay(null, "Fill event, match, and station");
+    return;
+  }
+
+  const status = document.getElementById("teamResolveStatus");
+  status.textContent = "Looking up…";
+  status.style.color = "var(--surface-400)";
+
+  try {
+    let match = null;
+
+    // For quals, try the direct match key first (one API call vs full event list)
+    if (matchType === "qualification") {
+      match = await window.CS.tba.getMatch(`${eventKey}_qm${matchNum}`);
+    }
+
+    // Fallback: fetch all event matches and find the right one
+    if (!match) {
+      const allMatches = await window.CS.tba.getEventMatches(eventKey);
+      if (allMatches) {
+        match = matchType === "qualification"
+          ? allMatches.find(m => m.comp_level === "qm" && m.match_number === matchNum)
+          : allMatches.find(m => m.comp_level !== "qm" && m.match_number === matchNum);
+      }
+    }
+
+    if (!match) {
+      setTeamDisplay(null, "Match not found — check event key & #");
+      return;
+    }
+
+    // Station 1-3 = red alliance (index 0-2), station 4-6 = blue (index 0-2)
+    const alliance = station <= 3 ? "red" : "blue";
+    const idx      = (station - 1) % 3;
+    const teamKey  = match.alliances?.[alliance]?.team_keys?.[idx] ?? null;
+    const teamNum  = teamKey ? parseInt(teamKey.replace("frc", "")) : null;
+
+    if (!teamNum) {
+      setTeamDisplay(null, "No team at that station");
+      return;
+    }
+
+    setTeamDisplay(teamNum);
+  } catch {
+    setTeamDisplay(null, "TBA lookup failed — check connection");
+  }
+}
+
+// ── Start scouting ────────────────────────────────────────────────────
+function startScouting() {
+  const event   = document.getElementById("quickEvent").value.trim();
+  const match   = document.getElementById("quickMatch").value;
+  const type    = document.getElementById("quickType").value;
+  const team    = document.getElementById("quickTeam").value;
+  const station = document.getElementById("quickStation").value;
+
+  if (!event || !match || !team) {
+    window.CS.ui.toast("Select event, match, and station to resolve team number.", "error");
+    return;
+  }
+  localStorage.setItem("cs_last_event", event);
+  window.location.href = `scout-match.html?event=${encodeURIComponent(event)}&match=${match}&type=${type}&team=${team}&station=${station}`;
 }
 </script>
 </body>

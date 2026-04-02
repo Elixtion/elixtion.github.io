@@ -78,7 +78,7 @@
 <main class="cs-page-wide" style="padding-top:16px">
 
   <!-- Offline banner -->
-  <div id="offlineBanner" style="display:none;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.85rem;color:#f87171;align-items:center;gap:8px">
+  <div id="offlineBanner" style="display:none;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.85rem;color:#f87171;display:flex;align-items:center;gap:8px">
     <span class="material-symbols-outlined" style="font-size:18px">wifi_off</span>
     You're offline. Live event data is unavailable — some sections may be empty or outdated.
   </div>
@@ -178,7 +178,7 @@ async function loadEventInfo() {
       </div>
     </div>
     <div style="margin-top:12px">
-      <a href="scout.html?event=${EVENT_KEY}" class="cs-btn cs-btn-primary cs-btn-sm">
+      <a href="scout.html" onclick="localStorage.setItem('cs_last_event','${EVENT_KEY}')" class="cs-btn cs-btn-primary cs-btn-sm">
         <span class="material-symbols-outlined" style="font-size:16px">edit_note</span> Scout This Event
       </a>
     </div>
@@ -308,7 +308,7 @@ function renderMatchRow(m) {
       <div class="mr-score">${score}</div>
       <div class="mr-blue">${blueCells}</div>
       <div class="mr-scout">
-        <a href="scout.html?event=${EVENT_KEY}&match=${m.match_number}&type=${m.comp_level==='qm'?'qualification':'playoff'}" class="cs-btn cs-btn-sm cs-btn-primary" style="padding:4px 10px;font-size:0.75rem">Scout</a>
+        <a href="scout-match.html?event=${EVENT_KEY}&match=${m.match_number}&type=${m.comp_level==='qm'?'qualification':'playoff'}" class="cs-btn cs-btn-sm cs-btn-primary" style="padding:4px 10px;font-size:0.75rem">Scout</a>
       </div>
     </div>
   `;
@@ -398,12 +398,8 @@ async function loadStats() {
     const teleopFuel = agg.teleop_fuel_scored?.mean ?? "—";
     const totalFuel  = (parseFloat(autoFuel) || 0) + (parseFloat(teleopFuel) || 0);
     const climb      = agg.endgame_climb_level?.mean ?? "—";
-    const climbSpeed = agg.endgame_climb_time?.mode  ?? "—";
-    const leftZone   = agg.auto_left_zone?.mean != null ? Math.round(agg.auto_left_zone.mean * 100) + "%" : "—";
-    const penalties  = agg.teleop_penalties?.mean != null ? Number(agg.teleop_penalties.mean).toFixed(1) : "—";
-    const died       = agg.post_robot_died?.mean != null ? Math.round(agg.post_robot_died.mean * 100) + "%" : "—";
     const sampleSize = teamSubs.length;
-    return { tn, autoFuel, teleopFuel, totalFuel, climb, climbSpeed, leftZone, penalties, died, sampleSize };
+    return { tn, autoFuel, teleopFuel, totalFuel, climb, sampleSize };
   }).sort((a, b) => b.totalFuel - a.totalFuel);
 
   el.innerHTML = `
@@ -416,10 +412,6 @@ async function loadStats() {
             <th>Teleop FUEL</th>
             <th>Total FUEL</th>
             <th>Climb</th>
-            <th>Climb Speed</th>
-            <th>Left Zone</th>
-            <th>Penalties</th>
-            <th>Died</th>
             <th>Samples</th>
           </tr>
         </thead>
@@ -431,10 +423,6 @@ async function loadStats() {
               <td>${typeof r.teleopFuel === 'number' ? r.teleopFuel.toFixed(1) : r.teleopFuel}</td>
               <td style="font-weight:700;color:var(--primary-400)">${r.totalFuel.toFixed(1)}</td>
               <td>${window.CS.ui.climbLabel(r.climb)}</td>
-              <td>${r.climbSpeed}</td>
-              <td>${r.leftZone}</td>
-              <td>${r.penalties}</td>
-              <td style="color:#f87171">${r.died}</td>
               <td style="color:var(--surface-500)">${r.sampleSize}</td>
             </tr>
           `).join("")}

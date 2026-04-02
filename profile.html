@@ -13,7 +13,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="lib/supabase-client.js"></script>
   <script src="lib/reliability.js"></script>
-  <script src="lib/reliability-compute.js"></script>
   <script src="lib/ui.js"></script>
 </head>
 <body>
@@ -115,8 +114,6 @@ let _profile = null;
   _session = await window.CS.auth.requireAuth("landing.html");
   if (!_session) return;
   await loadProfile();
-  // Recompute reliability score in background based on cross-scout comparison
-  if (navigator.onLine) window.CS.reliabilityCompute.recompute(_session.user.id);
 })();
 
 async function loadProfile() {
@@ -137,11 +134,6 @@ async function loadProfile() {
          style="height:80px;width:80px;border-radius:50%;object-fit:cover;border:3px solid var(--primary-700);margin:0 auto 12px;display:block"/>
     <div style="font-size:1.2rem;font-weight:800;color:var(--surface-950)">${_profile?.display_name || meta.full_name || "Scout"}</div>
     <div style="font-size:0.85rem;color:var(--surface-400);margin-top:2px">@${_profile?.username || "—"}</div>
-    <div style="font-size:0.8rem;color:var(--surface-400);margin-top:6px;display:flex;align-items:center;justify-content:center;gap:4px">
-      <span class="material-symbols-outlined" style="font-size:14px">mail</span>
-      ${_session.user.email}
-      <span style="font-size:0.72rem;color:var(--surface-300);margin-left:2px">(private)</span>
-    </div>
     ${_profile?.team_number ? `<div style="margin-top:8px"><span class="cs-team-chip">Team ${_profile.team_number}</span></div>` : ""}
     ${_profile?.bio ? `<div style="margin-top:10px;font-size:0.85rem;color:var(--surface-600);max-width:320px;margin-inline:auto">${_profile.bio}</div>` : ""}
     ${!window.CS.profile.isComplete(_profile) ? `<div style="margin-top:10px"><a href="profile-setup.html" class="cs-btn cs-btn-primary cs-btn-sm">Complete Profile</a></div>` : ""}

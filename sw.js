@@ -6,7 +6,7 @@
  *   - Everything else: NetworkFirst
  */
 
-const CACHE_VERSION = "cs-v4";
+const CACHE_VERSION = "cs-v3";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 
@@ -32,7 +32,6 @@ const STATIC_ASSETS = [
   "/lib/statbotics.js",
   "/lib/offline.js",
   "/lib/reliability.js",
-  "/lib/reliability-compute.js",
   "/lib/schema2026.js",
   "/lib/ui.js",
   "/images/Untitled design (3).png",
