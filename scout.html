@@ -227,12 +227,17 @@ const formState = {
 // Init
 // ─────────────────────────────────────────────────────────────────────────────
 (async function init() {
-  const r = await window.CS.ui.requireProfileComplete("profile-setup.html");
-  if (!r) return;
-
+  // Show connectivity + pending queue immediately — don't block on the auth network call
   updateConnUI();
   renderQueue();
   window.addEventListener("cs-connectivity", () => { updateConnUI(); renderQueue(); });
+  // Kick off any queued offline submissions as soon as the page loads
+  if (window.CS.offline.connectivity.isOnline) {
+    window.CS.offline.syncAll().catch(console.error);
+  }
+
+  const r = await window.CS.ui.requireProfileComplete("profile-setup.html");
+  if (!r) return;
 
   // Check if we arrived here via a deep link (from event.html Scout button)
   const params = new URLSearchParams(location.search);
@@ -350,7 +355,7 @@ async function renderQueue() {
         </div>
         <div style="font-size:0.75rem;color:var(--surface-500)">${new Date(item.createdAt).toLocaleString()}</div>
       </div>
-      <span class="cs-pill ${item.syncStatus==="pending"?"cs-pill-yellow":item.syncStatus==="failed"?"cs-pill-red":"cs-pill-green'}">
+      <span class="cs-pill ${item.syncStatus==="pending"?"cs-pill-yellow":item.syncStatus==="failed"?"cs-pill-red":"cs-pill-green"}">
         ${item.syncStatus}
       </span>
     </div>`).join("");
@@ -393,12 +398,16 @@ function updateCacheStatus(ts) {
 async function cacheSchedule() {
   const eventKey = document.getElementById("quickEvent").value.trim();
   if (!eventKey) { window.CS.ui.toast("Enter an event key first.", "error"); return; }
-  if (!navigator.onLine) { window.CS.ui.toast("You're offline — cannot fetch schedule.", "error"); return; }
 
-  window.CS.ui.toast("Fetching schedule…", "info", 2000);
-  const matches = await window.CS.tba.getEventMatches(eventKey);
+  window.CS.ui.toast("Fetching schedule…", "info", 3000);
+  let matches;
+  try {
+    matches = await window.CS.tba.getEventMatches(eventKey);
+  } catch (err) {
+    window.CS.ui.toast("Could not reach TBA — check your connection.", "error"); return;
+  }
   if (!matches?.length) {
-    window.CS.ui.toast("No matches found for that event key.", "error"); return;
+    window.CS.ui.toast("No matches found — verify the event key and try again.", "error"); return;
   }
   const payload = { ts: Date.now(), matches };
   localStorage.setItem(schedCacheKey(eventKey), JSON.stringify(payload));
