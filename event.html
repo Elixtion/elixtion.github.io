@@ -11,12 +11,15 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="lib/supabase-client.js"></script>
   <script src="lib/config.js"></script>
   <script src="lib/tba.js"></script>
   <script src="lib/offline.js"></script>
   <script src="lib/reliability.js"></script>
   <script src="lib/schema2026.js"></script>
+  <script src="lib/seasons.js"></script>
+  <script src="lib/analysis.js"></script>
   <script src="lib/ui.js"></script>
 </head>
 <body>
@@ -78,7 +81,7 @@
 <main class="cs-page-wide" style="padding-top:16px">
 
   <!-- Offline banner -->
-  <div id="offlineBanner" style="display:none;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.85rem;color:#f87171;display:flex;align-items:center;gap:8px">
+  <div id="offlineBanner" style="display:none;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.85rem;color:#f87171;align-items:center;gap:8px">
     <span class="material-symbols-outlined" style="font-size:18px">wifi_off</span>
     You're offline. Live event data is unavailable — some sections may be empty or outdated.
   </div>
@@ -110,7 +113,11 @@
 
   <!-- Stats tab -->
   <div id="pane-stats" style="display:none">
-    <p class="cs-section-sub">Weighted averages across all scout submissions for this event.</p>
+    <p class="cs-section-sub">Reliability-weighted expected points from all scout submissions at this event. Click a column to sort.</p>
+    <div class="cs-card" style="padding:14px;margin-bottom:14px;display:none" id="statsChartCard">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--surface-500);margin-bottom:8px">Top Teams — Expected Points per Match</div>
+      <div style="position:relative;height:300px"><canvas id="statsChart"></canvas></div>
+    </div>
     <div id="statsList"><div class="cs-empty">Loading stats…</div></div>
   </div>
 
@@ -134,14 +141,18 @@
 <script>
 const params = new URLSearchParams(location.search);
 const EVENT_KEY = params.get("key") || "";
+const YEAR = window.CS.seasons.yearFromEventKey(EVENT_KEY);
+let SCHEMA = null;
 let allTeams = [];
 let allMatches = [];
+let _statsChart = null;
 
 (async function init() {
   if (!EVENT_KEY) { window.location.href = "events.html"; return; }
   if (!navigator.onLine) {
     document.getElementById("offlineBanner").style.display = "flex";
   }
+  SCHEMA = await window.CS.seasons.getSchema(YEAR);
   await Promise.all([loadEventInfo(), loadTeams(), loadMatches()]);
   loadStats();
   loadRankings();
@@ -213,7 +224,7 @@ function renderTeams(teams) {
   el.innerHTML = `
     <div style="display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
       ${teams.map(t => `
-        <a href="team.html?number=${t.team_number}" style="text-decoration:none">
+        <a href="team.html?number=${t.team_number}&year=${YEAR}" style="text-decoration:none">
           <div class="cs-card cs-card-sm" style="display:flex;align-items:center;gap:10px;cursor:pointer">
             <span class="cs-team-chip">${t.team_number}</span>
             <div>
@@ -293,7 +304,7 @@ function renderMatchRow(m) {
   const label  = matchLabel(m);
   // Fixed-width team number cells: always 52px, right/left aligned per alliance
   const teamCell = (n, color) =>
-    `<a href="team.html?number=${n}" style="display:inline-block;width:52px;text-align:center;padding:2px 4px;border-radius:4px;font-weight:700;font-size:0.8rem;text-decoration:none;color:${color==='red'?'#f87171':'#60a5fa'};background:${color==='red'?'rgba(239,68,68,.12)':'rgba(96,165,250,.12)'}">${n}</a>`;
+    `<a href="team.html?number=${n}&year=${YEAR}" style="display:inline-block;width:52px;text-align:center;padding:2px 4px;border-radius:4px;font-weight:700;font-size:0.8rem;text-decoration:none;color:${color==='red'?'#f87171':'#60a5fa'};background:${color==='red'?'rgba(239,68,68,.12)':'rgba(96,165,250,.12)'}">${n}</a>`;
   const pad = `<span style="display:inline-block;width:52px"></span>`;
   const redCells  = [...Array(3)].map((_,i) => red[i]  ? teamCell(red[i], "red")  : pad).join("");
   const blueCells = [...Array(3)].map((_,i) => blue[i] ? teamCell(blue[i],"blue") : pad).join("");
@@ -365,7 +376,10 @@ function renderMatches(matches) {
   el.innerHTML = html;
 }
 
-// ── Stats ──────────────────────────────────────────────────────────
+// ── Stats — schema-driven expected points, sortable, with chart ────
+let _statRows = [];
+let _statSort = { key: "total", dir: -1 };
+
 async function loadStats() {
   const db = window.CS.db;
   if (!db) return;
@@ -380,6 +394,12 @@ async function loadStats() {
       : '<div class="cs-empty">No scouting data yet for this event.</div>';
     return;
   }
+  if (!SCHEMA) {
+    el.innerHTML = `<div class="cs-empty">No scouting schema found for ${YEAR}.</div>`;
+    return;
+  }
+
+  const A = window.CS.analysis;
 
   // Group by team
   const byTeam = {};
@@ -388,48 +408,95 @@ async function loadStats() {
     byTeam[s.team_number].push(s);
   }
 
-  const schema = window.CS.schema2026;
-  const fuelFields = ["auto_fuel_scored", "teleop_fuel_scored"];
-  const climbField = "endgame_climb_level";
+  _statRows = Object.entries(byTeam).map(([tn, teamSubs]) => {
+    const pts = A.expectedPoints(teamSubs, SCHEMA);
+    return {
+      tn: parseInt(tn),
+      total:   pts.total   ?? 0,
+      auto:    pts.auto    ?? 0,
+      teleop:  pts.teleop  ?? 0,
+      endgame: pts.endgame ?? 0,
+      samples: teamSubs.length,
+    };
+  });
 
-  const rows = Object.entries(byTeam).map(([tn, teamSubs]) => {
-    const agg = window.CS.reliability.aggregateTeamStats(teamSubs, schema.sections.flatMap(s => s.fields));
-    const autoFuel   = agg.auto_fuel_scored?.mean  ?? "—";
-    const teleopFuel = agg.teleop_fuel_scored?.mean ?? "—";
-    const totalFuel  = (parseFloat(autoFuel) || 0) + (parseFloat(teleopFuel) || 0);
-    const climb      = agg.endgame_climb_level?.mean ?? "—";
-    const sampleSize = teamSubs.length;
-    return { tn, autoFuel, teleopFuel, totalFuel, climb, sampleSize };
-  }).sort((a, b) => b.totalFuel - a.totalFuel);
+  renderStatsTable();
+  renderStatsChart();
+}
 
-  el.innerHTML = `
+function sortStats(key) {
+  if (_statSort.key === key) _statSort.dir *= -1;
+  else _statSort = { key, dir: key === "tn" ? 1 : -1 };
+  renderStatsTable();
+}
+
+function renderStatsTable() {
+  const A = window.CS.analysis;
+  const { key, dir } = _statSort;
+  const rows = [..._statRows].sort((a, b) => (a[key] - b[key]) * dir);
+
+  const cols = [
+    { key: "tn",      label: "Team" },
+    { key: "auto",    label: "Auto Pts" },
+    { key: "teleop",  label: "Teleop Pts" },
+    { key: "endgame", label: "Endgame Pts" },
+    { key: "total",   label: "Total Pts" },
+    { key: "samples", label: "Samples" },
+  ];
+  const arrow = c => _statSort.key === c ? (_statSort.dir === -1 ? " ▾" : " ▴") : "";
+
+  document.getElementById("statsList").innerHTML = `
     <div style="overflow-x:auto">
       <table class="cs-stats-table">
         <thead>
-          <tr>
-            <th>Team</th>
-            <th>Auto FUEL</th>
-            <th>Teleop FUEL</th>
-            <th>Total FUEL</th>
-            <th>Climb</th>
-            <th>Samples</th>
-          </tr>
+          <tr>${cols.map(c => `<th style="cursor:pointer;user-select:none" onclick="sortStats('${c.key}')">${c.label}${arrow(c.key)}</th>`).join("")}</tr>
         </thead>
         <tbody>
-          ${rows.map(r => `
+          ${rows.map((r, i) => `
             <tr>
-              <td><a href="team.html?number=${r.tn}" style="color:var(--primary-500);font-weight:600">${r.tn}</a></td>
-              <td>${typeof r.autoFuel === 'number' ? r.autoFuel.toFixed(1) : r.autoFuel}</td>
-              <td>${typeof r.teleopFuel === 'number' ? r.teleopFuel.toFixed(1) : r.teleopFuel}</td>
-              <td style="font-weight:700;color:var(--primary-400)">${r.totalFuel.toFixed(1)}</td>
-              <td>${window.CS.ui.climbLabel(r.climb)}</td>
-              <td style="color:var(--surface-500)">${r.sampleSize}</td>
+              <td>
+                <span style="color:var(--surface-400);font-size:0.72rem;margin-right:6px">${i + 1}</span>
+                <a href="team.html?number=${r.tn}&year=${YEAR}" style="color:var(--primary-500);font-weight:600">${r.tn}</a>
+              </td>
+              <td style="color:${A.chartColors.auto}">${r.auto.toFixed(1)}</td>
+              <td style="color:${A.chartColors.teleop}">${r.teleop.toFixed(1)}</td>
+              <td style="color:${A.chartColors.endgame}">${r.endgame.toFixed(1)}</td>
+              <td style="font-weight:700;color:var(--primary-400)">${r.total.toFixed(1)}</td>
+              <td style="color:var(--surface-500)">${r.samples}</td>
             </tr>
           `).join("")}
         </tbody>
       </table>
     </div>
   `;
+}
+
+function renderStatsChart() {
+  const A = window.CS.analysis;
+  const top = [..._statRows].sort((a, b) => b.total - a.total).slice(0, 15);
+  if (top.length < 2) return;
+
+  document.getElementById("statsChartCard").style.display = "";
+  if (_statsChart) _statsChart.destroy();
+
+  const opts = A.baseChartOptions();
+  opts.indexAxis = "y";
+  opts.scales.x.stacked = true;
+  opts.scales.y.stacked = true;
+  opts.scales.x.beginAtZero = true;
+
+  _statsChart = new Chart(document.getElementById("statsChart"), {
+    type: "bar",
+    data: {
+      labels: top.map(r => String(r.tn)),
+      datasets: [
+        { label: "Auto",    data: top.map(r => r.auto),    backgroundColor: A.chartColors.auto },
+        { label: "Teleop",  data: top.map(r => r.teleop),  backgroundColor: A.chartColors.teleop },
+        { label: "Endgame", data: top.map(r => r.endgame), backgroundColor: A.chartColors.endgame },
+      ],
+    },
+    options: opts,
+  });
 }
 
 // ── Rankings ───────────────────────────────────────────────────────
@@ -458,7 +525,7 @@ async function loadRankings() {
           ${data.rankings.map(r => `
             <tr>
               <td style="font-weight:700;color:var(--primary-400)">${r.rank}</td>
-              <td><a href="team.html?number=${r.team_key.replace('frc','')}" style="color:var(--primary-500);font-weight:600">${r.team_key.replace('frc','')}</a></td>
+              <td><a href="team.html?number=${r.team_key.replace('frc','')}&year=${YEAR}" style="color:var(--primary-500);font-weight:600">${r.team_key.replace('frc','')}</a></td>
               <td style="font-weight:700">${r.extra_stats?.[0] ?? "—"}</td>
               ${r.sort_orders?.slice(0,3).map(v => `<td>${typeof v === 'number' ? v.toFixed(2) : v}</td>`).join("") || ""}
               <td style="color:var(--surface-500)">${r.record?.wins ?? 0}-${r.record?.losses ?? 0}-${r.record?.ties ?? 0}</td>

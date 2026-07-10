@@ -11,6 +11,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="lib/supabase-client.js"></script>
   <script src="lib/config.js"></script>
   <script src="lib/tba.js"></script>
@@ -18,14 +19,19 @@
   <script src="lib/offline.js"></script>
   <script src="lib/reliability.js"></script>
   <script src="lib/schema2026.js"></script>
+  <script src="lib/seasons.js"></script>
+  <script src="lib/analysis.js"></script>
   <script src="lib/ui.js"></script>
   <style>
     .cs-tab { padding:12px 18px;font-size:.875rem;font-weight:600;background:transparent;border:none;cursor:pointer;color:var(--surface-500);border-bottom:2px solid transparent;white-space:nowrap; }
     .cs-tab.active { color:var(--primary-500);border-bottom-color:var(--primary-500); }
 
-    /* EPA bars */
-    .epa-bar-bg  { background:var(--surface-200);border-radius:99px;height:6px;overflow:hidden;flex:1 }
-    .epa-bar-fill{ height:100%;border-radius:99px;background:var(--primary-500);transition:width .4s ease }
+    /* CS-EPA hero cards */
+    .epa-card { text-align:center;padding:14px 8px;border-radius:12px;background:var(--surface-50);border:1px solid var(--surface-100); }
+    .epa-card.total { background:var(--primary-950);border-color:var(--primary-800); }
+    .epa-val  { font-size:1.6rem;font-weight:900;line-height:1.1; }
+    .epa-lbl  { font-size:0.66rem;color:var(--surface-400);text-transform:uppercase;letter-spacing:.05em;margin-top:3px; }
+    .epa-sb   { font-size:0.64rem;color:var(--surface-300);margin-top:5px;letter-spacing:.02em; }
 
     /* Match table — fixed columns so team numbers never shift layout */
     .match-row {
@@ -56,9 +62,7 @@
     .t-cell:hover { opacity:.75 }
     .t-empty { display:inline-block;width:52px; }
 
-    /* Event header gets the green — people care more about the event than the round */
     .event-match-hdr { background:var(--primary-950);padding:8px 12px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--primary-400);display:flex;align-items:center;justify-content:space-between; }
-    /* Round header is now the muted surface style */
     .de-round-hdr { padding:5px 12px;font-size:0.72rem;font-weight:700;color:var(--surface-500);text-transform:uppercase;letter-spacing:.05em;background:var(--surface-100); }
 
     /* Submission table */
@@ -68,20 +72,18 @@
     .sub-table tr:last-child td { border-bottom:none }
     .sub-table tr:hover td { background:var(--surface-50) }
 
-    /* Export-style format toggle for submissions tab */
     .fmt-btn {
       flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
       padding:8px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;
       cursor:pointer;background:transparent;
       transition:all .12s;white-space:nowrap;min-height:40px;
     }
-    .fmt-btn.selected {
-      border:2px solid var(--primary-500);color:var(--primary-400);background:var(--primary-950);
-    }
-    .fmt-btn.unselected {
-      border:2px solid var(--surface-200);color:var(--surface-500);
-    }
+    .fmt-btn.selected { border:2px solid var(--primary-500);color:var(--primary-400);background:var(--primary-950); }
+    .fmt-btn.unselected { border:2px solid var(--surface-200);color:var(--surface-500); }
     .fmt-btn.unselected:hover { border-color:var(--primary-500);color:var(--primary-400); }
+
+    .chart-box { position:relative;height:230px; }
+    .section-sub { font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--surface-400);margin:14px 0 8px; }
   </style>
 </head>
 <body>
@@ -98,11 +100,12 @@
   </nav>
 </header>
 
-<!-- Tab bar -->
-<div style="background:var(--surface-50);border-bottom:1px solid var(--surface-100);display:flex;overflow-x:auto;position:sticky;top:56px;z-index:10">
+<!-- Tab bar + season picker -->
+<div style="background:var(--surface-50);border-bottom:1px solid var(--surface-100);display:flex;align-items:center;overflow-x:auto;position:sticky;top:56px;z-index:10">
   <button class="cs-tab active" onclick="showTab('overview')" id="tab-overview">Overview</button>
   <button class="cs-tab" onclick="showTab('pits')" id="tab-pits">Pits</button>
   <button class="cs-tab" onclick="showTab('submissions')" id="tab-submissions">All Submissions</button>
+  <div id="yearPicker" style="margin-left:auto;padding:6px 12px;flex-shrink:0"></div>
 </div>
 
 <main class="cs-page" style="padding-top:16px">
@@ -126,17 +129,34 @@
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <h3 class="cs-section-title" style="margin:0;display:flex;align-items:center;gap:6px">
           <span class="material-symbols-outlined" style="font-size:18px;color:var(--primary-500)">insights</span>
-          CrowdScout Averages
+          CrowdScout Expected Points
         </h3>
         <span id="csStatsCount" style="font-size:0.75rem;color:var(--surface-400)"></span>
       </div>
-      <div id="csStatsGrid"></div>
 
+      <!-- CS-EPA cards -->
+      <div id="epaCards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px"></div>
+
+      <!-- Charts -->
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:14px" id="chartsRow">
+        <div class="cs-card" style="padding:14px">
+          <div style="font-size:0.78rem;font-weight:700;color:var(--surface-500);margin-bottom:8px">Expected Points per Match</div>
+          <div class="chart-box"><canvas id="trendChart"></canvas></div>
+        </div>
+        <div class="cs-card" style="padding:14px">
+          <div style="font-size:0.78rem;font-weight:700;color:var(--surface-500);margin-bottom:8px" id="distChartTitle">Endgame Distribution</div>
+          <div class="chart-box"><canvas id="distChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Schema-driven metric grid -->
+      <div id="csStatsGrid"></div>
     </div>
+
     <div id="csStatsEmpty" style="display:none;margin-bottom:16px">
       <div class="cs-card" style="text-align:center;padding:20px;color:var(--surface-400)">
         <span class="material-symbols-outlined" style="display:block;font-size:32px;margin-bottom:6px">bar_chart</span>
-        No scouting data yet for this team.
+        <span id="csStatsEmptyMsg">No scouting data yet for this team.</span>
         <br/><a href="scout.html" style="color:var(--primary-500);font-size:0.85rem;margin-top:8px;display:inline-block">Be the first to scout them →</a>
       </div>
     </div>
@@ -147,9 +167,9 @@
       <div id="upcomingList"></div>
     </div>
 
-    <!-- 2026 Match History (all events, inline) -->
+    <!-- Match History (all events, inline) -->
     <div id="matchHistorySection" style="margin-bottom:16px">
-      <h3 class="cs-section-title">2026 Match History</h3>
+      <h3 class="cs-section-title" id="matchHistoryTitle">Match History</h3>
       <div id="matchHistoryList"><div class="cs-skeleton" style="height:80px;border-radius:8px"></div></div>
     </div>
 
@@ -167,17 +187,14 @@
   <!-- ── All Submissions ──────────────────────────────────────────── -->
   <div id="pane-submissions" style="display:none">
 
-    <!-- Filters — same options as export.html -->
     <div class="cs-card" style="margin-bottom:14px;padding:14px 16px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-        <!-- Event filter -->
         <div class="cs-field" style="margin:0">
           <label class="cs-label">Event</label>
           <select id="subEventFilter" class="cs-select" style="font-size:0.85rem" onchange="filterSubmissions()">
             <option value="">All Events</option>
           </select>
         </div>
-        <!-- Match type -->
         <div class="cs-field" style="margin:0">
           <label class="cs-label">Match Type</label>
           <select id="subTypeFilter" class="cs-select" style="font-size:0.85rem" onchange="filterSubmissions()">
@@ -187,7 +204,6 @@
           </select>
         </div>
       </div>
-      <!-- Scout username search + keyword search in same row -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
         <div class="cs-field" style="margin:0">
           <label class="cs-label">Scout Username</label>
@@ -198,15 +214,6 @@
           <input id="subSearch" class="cs-input" placeholder="Search notes…" style="font-size:0.85rem" oninput="filterSubmissions()"/>
         </div>
       </div>
-      <!-- Data type -->
-      <div class="cs-field" style="margin-bottom:10px">
-        <label class="cs-label">Data Type</label>
-        <select id="subDataType" class="cs-select" style="font-size:0.85rem" onchange="filterSubmissions()">
-          <option value="raw">Raw submissions (one row per scout)</option>
-          <option value="aggregated">Aggregated per match (weighted avg)</option>
-        </select>
-      </div>
-      <!-- Format toggle — outline/transparent style matching export.html -->
       <div class="cs-field" style="margin:0">
         <label class="cs-label">Format</label>
         <div style="display:flex;gap:8px">
@@ -223,7 +230,6 @@
       </div>
     </div>
 
-    <!-- Results label + download -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
       <span id="subResultsLabel" style="font-size:0.8rem;color:var(--surface-400)"></span>
       <button id="subDownloadBtn" class="cs-btn cs-btn-secondary cs-btn-sm" onclick="downloadSubExport()" style="display:none">
@@ -249,20 +255,26 @@
 <script>
 const params = new URLSearchParams(location.search);
 const TEAM_NUMBER = parseInt(params.get("number")) || 0;
-const YEAR = 2026;
-let teamEvents2026 = [];
+const YEAR = parseInt(params.get("year")) || window.CS.seasons.activeYear();
+let SCHEMA = null;           // season schema JSON, loaded in init
+let teamEventsYear = [];
 let _allSubs = [];
-let _sbYear = null; // stored so renderScoutStats can embed SB values
+let _sbYear = null;
+let _charts = {};            // Chart.js instances
 
 if (!TEAM_NUMBER) window.location.href = "teams.html";
 
 (async function init() {
   document.getElementById("headerTitle").textContent = `Team ${TEAM_NUMBER}`;
   document.title = `Team ${TEAM_NUMBER} — CrowdScout`;
+  document.getElementById("matchHistoryTitle").textContent = `${YEAR} Match History`;
   if (!navigator.onLine) {
     document.getElementById("offlineBanner").style.display = "flex";
   }
-  // All load in parallel
+
+  window.CS.seasons.renderYearPicker(document.getElementById("yearPicker"), YEAR);
+  SCHEMA = await window.CS.seasons.getSchema(YEAR);
+
   await Promise.all([
     loadTeamInfo(),
     loadTeamEvents().then(() => loadAllMatchHistory()),
@@ -286,9 +298,8 @@ async function loadTeamInfo() {
     window.CS.tba.getTeamMedia(TEAM_NUMBER, YEAR),
     window.CS.statbotics.getTeamYear(TEAM_NUMBER, YEAR),
   ]);
-  _sbYear = sbYear; // store globally so renderScoutStats can embed SB values
+  _sbYear = sbYear;
   renderHeroCard(team, media, sbYear);
-  // SB comparison is now embedded inside CS metric cards — no separate box
   if (team) loadUpcomingMatches();
 }
 
@@ -313,9 +324,14 @@ function renderHeroCard(team, media, sbYear) {
   const loc = [team.city, team.state_prov, team.country].filter(Boolean).join(", ");
   const sponsorList = (team.name || "").split("/").map(s => s.trim()).filter(Boolean).slice(0, 8);
 
-  // Record from Statbotics (display in details, no rank/pct)
   const rec = sbYear?.record;
   const recStr = rec ? `${rec.wins ?? 0}W – ${rec.losses ?? 0}L – ${rec.ties ?? 0}T` : null;
+
+  // Statbotics season rank/percentile — the "how good are they" one-liner
+  const sbRank = sbYear?.epa?.ranks?.total;
+  const sbRankStr = sbRank?.rank
+    ? `EPA Rank #${sbRank.rank}${sbRank.percentile != null ? ` · Top ${Math.max(1, Math.round((1 - sbRank.percentile) * 100))}%` : ""}`
+    : null;
 
   card.innerHTML = `
     <div style="display:flex;gap:0;min-height:100px">
@@ -329,13 +345,12 @@ function renderHeroCard(team, media, sbYear) {
             <span style="font-size:1.5rem;font-weight:900;color:var(--primary-500)">${TEAM_NUMBER}</span>
             <span style="font-size:1.1rem;font-weight:700;color:var(--surface-950);margin-left:8px">${team.nickname || team.name}</span>
           </div>
-          <!-- TBA + Statbotics links together -->
           <div style="display:flex;gap:6px;flex-shrink:0">
-            <a href="https://www.thebluealliance.com/team/${TEAM_NUMBER}" target="_blank" rel="noopener"
+            <a href="https://www.thebluealliance.com/team/${TEAM_NUMBER}/${YEAR}" target="_blank" rel="noopener"
                class="cs-btn cs-btn-ghost cs-btn-sm" style="padding:4px 8px">
               <span class="material-symbols-outlined" style="font-size:13px">open_in_new</span> TBA
             </a>
-            <a href="https://www.statbotics.io/teams/${TEAM_NUMBER}" target="_blank" rel="noopener"
+            <a href="https://www.statbotics.io/team/${TEAM_NUMBER}/${YEAR}" target="_blank" rel="noopener"
                class="cs-btn cs-btn-ghost cs-btn-sm" style="padding:4px 8px">
               <span class="material-symbols-outlined" style="font-size:13px">open_in_new</span> Statbotics
             </a>
@@ -348,6 +363,7 @@ function renderHeroCard(team, media, sbYear) {
           ${team.rookie_year ? `<div style="font-size:0.78rem;color:var(--surface-400)">Rookie: ${team.rookie_year}</div>` : ""}
           ${team.school_name ? `<div style="font-size:0.78rem;color:var(--surface-400)">${team.school_name}</div>` : ""}
           ${recStr ? `<div style="font-size:0.78rem;color:var(--surface-400)">${YEAR} Record: <strong style="color:var(--surface-600)">${recStr}</strong></div>` : ""}
+          ${sbRankStr ? `<div style="font-size:0.78rem;color:var(--surface-400)">${sbRankStr}</div>` : ""}
         </div>
       </div>
     </div>
@@ -361,9 +377,7 @@ function renderHeroCard(team, media, sbYear) {
   `;
 }
 
-// ──────────────────────────────────────────────────────────────────────
-// Helper: get Statbotics EPA breakdown values (null if unavailable)
-// ──────────────────────────────────────────────────────────────────────
+// Statbotics EPA breakdown (null-safe)
 function getSbEPA(sbYear) {
   if (!sbYear?.epa) return { total:null, auto:null, teleop:null, endgame:null };
   const epa = sbYear.epa;
@@ -377,7 +391,9 @@ function getSbEPA(sbYear) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Write per-scout reliability scores to Supabase scout_reliability table
+// Write per-scout reliability scores back to Supabase.
+// RLS only lets a user update their own row, so writes for other scouts
+// fail silently — scores still apply live via computeSubmissionReliabilities.
 // ──────────────────────────────────────────────────────────────────────
 async function writeReliabilityScores(db, scoutReliabilities) {
   for (const [ownerId, { score, outlierCount, totalCount }] of scoutReliabilities) {
@@ -389,24 +405,19 @@ async function writeReliabilityScores(db, scoutReliabilities) {
         submissions_count: totalCount,
         last_computed:     new Date().toISOString(),
       }, { onConflict: "user_id" });
-    } catch (e) {
-      console.warn("[CS.reliability] Failed to write score for", ownerId, e);
-    }
+    } catch (e) { /* RLS-blocked for non-self rows — expected */ }
   }
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// CROWDSCOUT SCOUTED STATS (dominant)
+// CROWDSCOUT SCOUTED STATS
 // ──────────────────────────────────────────────────────────────────────
 async function loadScoutData() {
   const db = window.CS.db;
   if (!db) return;
   if (!navigator.onLine) {
     document.getElementById("csStatsEmpty").style.display = "";
-    document.getElementById("csStatsEmpty").innerHTML = `<div class="cs-card" style="text-align:center;padding:20px;color:var(--surface-400)">
-      <span class="material-symbols-outlined" style="display:block;font-size:32px;margin-bottom:6px">wifi_off</span>
-      You're offline. Scout data is unavailable.
-    </div>`;
+    document.getElementById("csStatsEmptyMsg").textContent = "You're offline. Scout data is unavailable.";
     document.getElementById("submissionsList").innerHTML = '<div class="cs-empty">You\'re offline. Submissions unavailable.</div>';
     return;
   }
@@ -416,17 +427,17 @@ async function loadScoutData() {
     .eq("team_number", TEAM_NUMBER)
     .order("created_at", { ascending: false });
 
-  _allSubs = subs || [];
+  // Season filter via event key prefix ("2026casj" → 2026)
+  _allSubs = (subs || []).filter(s => window.CS.seasons.yearFromEventKey(s.event_key) === YEAR);
 
-  // ── Outlier detection + reliability scoring ─────────────────────────
+  // Outlier detection + reliability scoring on numeric schema fields
+  const keyFields = SCHEMA
+    ? window.CS.analysis.nonTextFields(SCHEMA).filter(f => ["tally","number"].includes(f.type)).map(f => f.id)
+    : undefined;
   if (_allSubs.length >= 3) {
-    const { outlierIds, cleanSubs, scoutReliabilities } =
-      window.CS.reliability.computeSubmissionReliabilities(_allSubs);
-
-    // Tag each sub as outlier so the table can show it
+    const { outlierIds, scoutReliabilities } =
+      window.CS.reliability.computeSubmissionReliabilities(_allSubs, keyFields);
     _allSubs.forEach(s => { s._outlier = outlierIds.has(s.id); });
-
-    // Write per-scout reliability back to Supabase (fire-and-forget, non-blocking)
     writeReliabilityScores(db, scoutReliabilities);
   }
 
@@ -441,7 +452,7 @@ async function loadScoutData() {
     }
   }
 
-  // Populate event filter for submissions tab
+  // Populate event filter
   const evtSet = [...new Set(_allSubs.map(s => s.event_key).filter(Boolean))].sort();
   const ef = document.getElementById("subEventFilter");
   evtSet.forEach(e => { const o = document.createElement("option"); o.value = e; o.textContent = e; ef.appendChild(o); });
@@ -451,62 +462,165 @@ async function loadScoutData() {
 }
 
 function renderScoutStats(subs) {
-  // Exclude flagged outlier submissions from stat calculations
   const cleanSubs = subs.filter(s => !s._outlier);
   const outlierCount = subs.length - cleanSubs.length;
 
-  if (!cleanSubs.length && !subs.length) {
+  if (!subs.length || !SCHEMA) {
     document.getElementById("csStatsSection").style.display = "none";
     document.getElementById("csStatsEmpty").style.display = "";
+    if (!SCHEMA && subs.length) {
+      document.getElementById("csStatsEmptyMsg").textContent = `No scouting schema found for ${YEAR}.`;
+    }
     return;
   }
   document.getElementById("csStatsSection").style.display = "";
   document.getElementById("csStatsEmpty").style.display = "none";
 
-  const countText = `${subs.length} submission${subs.length !== 1 ? "s" : ""}` +
+  document.getElementById("csStatsCount").textContent =
+    `${subs.length} submission${subs.length !== 1 ? "s" : ""}` +
     (outlierCount > 0 ? ` · ${outlierCount} outlier${outlierCount !== 1 ? "s" : ""} excluded` : "");
-  document.getElementById("csStatsCount").textContent = countText;
 
-  const schema = window.CS.schema2026;
-  const allFields = schema.sections.flatMap(s => s.fields).filter(f => f.type !== "text");
-  const agg = window.CS.reliability.aggregateTeamStats(cleanSubs, allFields);
+  renderEpaCards(cleanSubs);
+  renderTrendChart(cleanSubs);
+  renderDistChart(cleanSubs);
+  renderMetricGrid(cleanSubs);
+}
 
-  // Get SB EPA breakdown for inline comparison
-  const sb = getSbEPA(_sbYear);
-  const fmtSB = v => v != null ? `SB: ${window.CS.statbotics.fmtEPA(v, 1)}` : null;
-  const fmt1  = v => v != null ? Number(v).toFixed(1) : "—";
+function renderEpaCards(cleanSubs) {
+  const A = window.CS.analysis;
+  const pts = A.expectedPoints(cleanSubs, SCHEMA);
+  const sb  = getSbEPA(_sbYear);
+  const fmtSB = v => v != null ? `SB EPA: ${A.fmtPts(v)}` : "";
 
-  const auto  = agg.auto_fuel_scored?.mean  ?? null;
-  const tele  = agg.teleop_fuel_scored?.mean ?? null;
-  const total = auto != null && tele != null ? auto + tele : null;
-
-  // Each metric optionally has sbVal — shown as a small secondary line inside the same card
-  const metrics = [
-    { label:"Avg Auto FUEL",   val:fmt1(auto),  color:"#60a5fa",             conf:agg.auto_fuel_scored?.confidence,  sbVal:fmtSB(sb.auto) },
-    { label:"Avg Teleop FUEL", val:fmt1(tele),  color:"#c084fc",             conf:agg.teleop_fuel_scored?.confidence, sbVal:fmtSB(sb.teleop) },
-    { label:"Avg Total FUEL",  val:total!=null?total.toFixed(1):"—", color:"var(--primary-500)", bold:true,           sbVal:fmtSB(sb.total) },
-    { label:"Climb",           val:window.CS.ui.climbLabel(Math.round(agg.endgame_climb_level?.mean??0)), color:"#fbbf24", sbVal:fmtSB(sb.endgame) },
-    { label:"Left Zone",       val:agg.auto_left_zone?.mean!=null ? Math.round(agg.auto_left_zone.mean*100)+"%" : "—", color:"var(--surface-700)" },
-    { label:"Defense",         val:agg.teleop_played_defense?.mean!=null ? Math.round(agg.teleop_played_defense.mean*100)+"%" : "—", color:"var(--surface-700)" },
-    { label:"Robot Died",      val:agg.post_robot_died?.mean!=null ? Math.round(agg.post_robot_died.mean*100)+"%" : "—", color:"#f87171" },
+  const cards = [
+    { key:"total",   label:"Total Pts / Match", color:"var(--primary-500)", cls:"total" },
+    { key:"auto",    label:"Auto",              color:A.chartColors.auto },
+    { key:"teleop",  label:"Teleop",            color:A.chartColors.teleop },
+    { key:"endgame", label:"Endgame",           color:A.chartColors.endgame },
   ];
 
-  document.getElementById("csStatsGrid").innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
-      ${metrics.map(m => `
-        <div class="cs-card" style="text-align:center;padding:12px 8px${m.bold ? ';background:var(--primary-950);border-color:var(--primary-800)' : ''}">
-          <div style="font-size:${m.bold?'1.8':'1.3'}rem;font-weight:${m.bold?'900':'700'};color:${m.color}">${m.val}</div>
-          <div style="font-size:0.68rem;color:${m.bold?'var(--primary-400)':'var(--surface-400)'};text-transform:uppercase;letter-spacing:.04em;margin-top:2px">${m.label}</div>
-          ${m.conf!=null ? `<div class="cs-reliability-bar" style="margin-top:6px"><div class="cs-reliability-fill" style="width:${Math.round(m.conf*100)}%"></div></div>` : ""}
-          ${m.sbVal ? `<div style="font-size:0.62rem;color:var(--surface-300);margin-top:5px;letter-spacing:.02em">${m.sbVal}</div>` : ""}
-        </div>`).join("")}
-    </div>`;
+  document.getElementById("epaCards").innerHTML = cards.map(c => `
+    <div class="epa-card ${c.cls || ""}">
+      <div class="epa-val" style="color:${c.color}">${A.fmtPts(pts[c.key])}</div>
+      <div class="epa-lbl">${c.label}</div>
+      <div class="epa-sb">${fmtSB(sb[c.key])}</div>
+    </div>`).join("");
+}
+
+function renderTrendChart(cleanSubs) {
+  const A = window.CS.analysis;
+  const series = A.perMatchPoints(cleanSubs, SCHEMA);
+  const el = document.getElementById("trendChart");
+  if (_charts.trend) _charts.trend.destroy();
+  if (series.length < 2) {
+    el.parentElement.innerHTML = '<div class="cs-empty" style="padding:30px 0;font-size:0.8rem">Need 2+ scouted matches for a trend.</div>';
+    return;
+  }
+
+  const opts = A.baseChartOptions();
+  opts.scales.y.beginAtZero = true;
+  opts.plugins.tooltip = {
+    callbacks: {
+      afterTitle: items => series[items[0].dataIndex].eventKey,
+      afterBody:  items => `${series[items[0].dataIndex].sampleSize} scout(s)`,
+    },
+  };
+
+  _charts.trend = new Chart(el, {
+    type: "line",
+    data: {
+      labels: series.map(r => r.label),
+      datasets: [
+        { label: "Total",   data: series.map(r => r.points),  borderColor: A.chartColors.primary, backgroundColor: "rgba(153,229,80,.12)", fill: true, tension: .3, borderWidth: 2, pointRadius: 3 },
+        { label: "Auto",    data: series.map(r => r.auto),    borderColor: A.chartColors.auto,    tension: .3, borderWidth: 1.5, pointRadius: 2 },
+        { label: "Teleop",  data: series.map(r => r.teleop),  borderColor: A.chartColors.teleop,  tension: .3, borderWidth: 1.5, pointRadius: 2 },
+        { label: "Endgame", data: series.map(r => r.endgame), borderColor: A.chartColors.endgame, tension: .3, borderWidth: 1.5, pointRadius: 2 },
+      ],
+    },
+    options: opts,
+  });
+}
+
+function renderDistChart(cleanSubs) {
+  const A = window.CS.analysis;
+  // Pick the most interesting select field: prefer an endgame select (climb-style)
+  const fields = A.nonTextFields(SCHEMA);
+  const distField =
+    fields.find(f => f.type === "select" && f.id.startsWith("endgame")) ||
+    fields.find(f => f.type === "select");
+
+  const el = document.getElementById("distChart");
+  if (_charts.dist) _charts.dist.destroy();
+  if (!distField) { el.parentElement.innerHTML = '<div class="cs-empty" style="padding:30px 0;font-size:0.8rem">No categorical fields in schema.</div>'; return; }
+
+  document.getElementById("distChartTitle").textContent = distField.label + " Distribution";
+  const counts = A.distribution(cleanSubs, distField);
+  if (!counts.size) { el.parentElement.innerHTML = '<div class="cs-empty" style="padding:30px 0;font-size:0.8rem">No data yet.</div>'; return; }
+
+  _charts.dist = new Chart(el, {
+    type: "doughnut",
+    data: {
+      labels: [...counts.keys()],
+      datasets: [{
+        data: [...counts.values()],
+        backgroundColor: A.chartColors.palette,
+        borderColor: "#171a18",
+        borderWidth: 2,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom", labels: { color: A.chartColors.text, boxWidth: 10, font: { size: 10 } } } },
+    },
+  });
+}
+
+function renderMetricGrid(cleanSubs) {
+  const A = window.CS.analysis;
+  const agg = A.aggregateFields(cleanSubs, SCHEMA);
+
+  let html = "";
+  for (const section of SCHEMA.sections) {
+    const fields = (section.fields || []).filter(f => f.type !== "text");
+    if (!fields.length) continue;
+    html += `<div class="section-sub">${section.title}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">
+        ${fields.map(f => {
+          const a = agg[f.id];
+          const conf = a?.confidence;
+          return `<div class="cs-card" style="text-align:center;padding:12px 8px">
+            <div style="font-size:1.2rem;font-weight:700;color:var(--surface-950)">${A.fieldDisplay(f, a)}</div>
+            <div style="font-size:0.66rem;color:var(--surface-400);text-transform:uppercase;letter-spacing:.04em;margin-top:2px">${f.label}</div>
+            ${conf != null ? `<div class="cs-reliability-bar" style="margin-top:6px"><div class="cs-reliability-fill" style="width:${Math.round(conf*100)}%"></div></div>` : ""}
+          </div>`;
+        }).join("")}
+      </div>`;
+  }
+  document.getElementById("csStatsGrid").innerHTML = html;
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// SUBMISSIONS TABLE
+// SUBMISSIONS TABLE — schema-driven columns
 // ──────────────────────────────────────────────────────────────────────
 let _subFormat = "table";
+
+// Key columns: numeric fields first (max 4), then selects with points, then died-style booleans
+function subTableFields() {
+  if (!SCHEMA) return [];
+  const fields = window.CS.analysis.nonTextFields(SCHEMA);
+  const nums    = fields.filter(f => ["tally","number"].includes(f.type)).slice(0, 4);
+  const selects = fields.filter(f => f.type === "select" && f.id.startsWith("endgame")).slice(0, 1);
+  const bools   = fields.filter(f => f.type === "boolean" && f.id.startsWith("post")).slice(0, 1);
+  return [...nums, ...selects, ...bools];
+}
+
+function rawFieldDisplay(field, val) {
+  if (val === undefined || val === null || val === "") return "—";
+  if (field.type === "boolean") return val ? "Yes" : "No";
+  if (field.type === "select" || field.type === "range") return window.CS.analysis.optionLabel(field, val);
+  return String(val);
+}
 
 function setSubFormat(fmt) {
   _subFormat = fmt;
@@ -516,13 +630,12 @@ function setSubFormat(fmt) {
   filterSubmissions();
 }
 
-function filterSubmissions() {
+function getFilteredSubs() {
   const evtFilter   = document.getElementById("subEventFilter").value;
   const typeFilter  = document.getElementById("subTypeFilter").value;
   const scoutFilter = document.getElementById("subScoutFilter").value.toLowerCase().trim();
   const q           = document.getElementById("subSearch").value.toLowerCase().trim();
 
-  // All filters stack — each one narrows further
   let filtered = _allSubs;
   if (evtFilter)   filtered = filtered.filter(s => s.event_key === evtFilter);
   if (typeFilter)  filtered = filtered.filter(s => s.match_type === typeFilter);
@@ -530,10 +643,20 @@ function filterSubmissions() {
   if (q)           filtered = filtered.filter(s =>
     (s.event_key||"").includes(q) ||
     String(s.match_number).includes(q) ||
-    (s.answers?.post_notes||"").toLowerCase().includes(q)
+    JSON.stringify(s.answers||{}).toLowerCase().includes(q)
   );
+  return filtered;
+}
 
-  renderSubmissions(filtered);
+function filterSubmissions() { renderSubmissions(getFilteredSubs()); }
+
+function matchLink(s) {
+  // Quals map cleanly to TBA keys; double-elim playoff keys need the set number,
+  // which submissions don't store — best-effort sf{N}m1 form.
+  const key = s.match_type === "playoff"
+    ? `${s.event_key||""}_sf${s.match_number}m1`
+    : `${s.event_key||""}_qm${s.match_number}`;
+  return `match.html?key=${encodeURIComponent(key)}`;
 }
 
 function renderSubmissions(subs) {
@@ -559,34 +682,35 @@ function renderSubmissions(subs) {
     return;
   }
 
-  // Table view
   dlBtn.style.display = "none";
+  const cols = subTableFields();
   el.innerHTML = `<div style="overflow-x:auto;border:1px solid var(--surface-100);border-radius:10px">
     <table class="sub-table">
       <thead>
         <tr>
-          <th>Event</th><th>Match</th><th>Auto</th><th>Teleop</th><th>Climb</th><th>Died</th><th>Scout</th><th>Notes</th><th>Date</th>
+          <th>Event</th><th>Match</th>
+          ${cols.map(f => `<th>${window.CS.analysis.phaseLabel(SCHEMA, f)}</th>`).join("")}
+          <th>Scout</th><th>Notes</th><th>Date</th>
         </tr>
       </thead>
       <tbody>
         ${subs.map(s => {
           const a = s.answers || {};
           const label = s.match_type === "playoff" ? `P${s.match_number}` : `Q${s.match_number}`;
+          const noteField = window.CS.analysis.allFields(SCHEMA).find(f => f.type === "text");
           return `<tr>
             <td>${s.event_key||"—"}</td>
-            <td><a href="match.html?key=${encodeURIComponent((s.event_key||"")+"_"+(s.match_type==="playoff"?"sf":"qm")+s.match_number)}" style="color:var(--primary-500);font-weight:600">${label}</a></td>
-            <td${s._outlier?' style="color:#f87171"':''}>${a.auto_fuel_scored??0}${s._outlier?'*':''}</td>
-            <td${s._outlier?' style="color:#f87171"':''}>${a.teleop_fuel_scored??0}${s._outlier?'*':''}</td>
-            <td>${window.CS.ui.climbLabel(a.endgame_climb_level)}</td>
-            <td>${a.post_robot_died?"Yes":"No"}</td>
+            <td><a href="${matchLink(s)}" style="color:var(--primary-500);font-weight:600">${label}</a></td>
+            ${cols.map(f => `<td${s._outlier && ["tally","number"].includes(f.type) ? ' style="color:#f87171"' : ''}>${rawFieldDisplay(f, a[f.id])}${s._outlier && ["tally","number"].includes(f.type) ? "*" : ""}</td>`).join("")}
             <td style="color:var(--surface-400)">${s._username||"—"}</td>
-            <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--surface-500);font-style:italic">${a.post_notes||""}</td>
+            <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--surface-500);font-style:italic">${noteField ? (a[noteField.id]||"") : ""}</td>
             <td style="color:var(--surface-400);white-space:nowrap">${new Date(s.created_at).toLocaleDateString()}</td>
           </tr>`;
         }).join("")}
       </tbody>
     </table>
-  </div>`;
+  </div>
+  ${subs.some(s => s._outlier) ? '<div style="font-size:0.72rem;color:var(--surface-400);margin-top:6px">* flagged as statistical outlier — excluded from averages</div>' : ""}`;
 }
 
 function escapeHtml(str) {
@@ -594,52 +718,35 @@ function escapeHtml(str) {
 }
 
 function buildSubCSV(subs) {
-  const cols = ["event_key","match_number","match_type","auto_fuel_scored","teleop_fuel_scored","endgame_climb_level","auto_climbed_level1","post_robot_died","reliability_score","scout","notes","created_at"];
+  const fields = window.CS.analysis.allFields(SCHEMA);
+  const cols = ["event_key","match_number","match_type", ...fields.map(f => f.id), "reliability_score","scout","outlier","created_at"];
+  const esc = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
   const rows = subs.map(s => {
     const a = s.answers || {};
     return [
       s.event_key, s.match_number, s.match_type,
-      a.auto_fuel_scored??0, a.teleop_fuel_scored??0,
-      a.endgame_climb_level??"", a.auto_climbed_level1?"true":"false",
-      a.post_robot_died?"true":"false", s.reliability_score??1,
-      s._username||"", (a.post_notes||"").replace(/"/g,'""'), s.created_at,
-    ].map(v => `"${v}"`).join(",");
+      ...fields.map(f => a[f.id] ?? ""),
+      s.reliability_score ?? 1, s._username || "", s._outlier ? "true" : "false", s.created_at,
+    ].map(esc).join(",");
   });
   return [cols.join(","), ...rows].join("\n");
 }
 
 function buildSubJSON(subs) {
-  return subs.map(s => {
-    const a = s.answers || {};
-    return {
-      event_key: s.event_key, match_number: s.match_number, match_type: s.match_type,
-      auto_fuel_scored: a.auto_fuel_scored??0, teleop_fuel_scored: a.teleop_fuel_scored??0,
-      endgame_climb_level: a.endgame_climb_level, auto_climbed_level1: !!a.auto_climbed_level1,
-      post_robot_died: !!a.post_robot_died, reliability_score: s.reliability_score??1,
-      scout: s._username||null, notes: a.post_notes||null, created_at: s.created_at,
-    };
-  });
+  return subs.map(s => ({
+    event_key: s.event_key, match_number: s.match_number, match_type: s.match_type,
+    answers: s.answers || {},
+    reliability_score: s.reliability_score ?? 1,
+    scout: s._username || null, outlier: !!s._outlier, created_at: s.created_at,
+  }));
 }
 
 function downloadSubExport() {
-  // Gather currently filtered subs
-  const evtFilter   = document.getElementById("subEventFilter").value;
-  const typeFilter  = document.getElementById("subTypeFilter").value;
-  const scoutFilter = document.getElementById("subScoutFilter").value.toLowerCase().trim();
-  const q           = document.getElementById("subSearch").value.toLowerCase().trim();
-  let filtered = _allSubs;
-  if (evtFilter)   filtered = filtered.filter(s => s.event_key === evtFilter);
-  if (typeFilter)  filtered = filtered.filter(s => s.match_type === typeFilter);
-  if (scoutFilter) filtered = filtered.filter(s => (s._username||"").toLowerCase().includes(scoutFilter));
-  if (q)           filtered = filtered.filter(s =>
-    (s.event_key||"").includes(q) || String(s.match_number).includes(q) ||
-    (s.answers?.post_notes||"").toLowerCase().includes(q)
-  );
-
+  const filtered = getFilteredSubs();
   const isCSV = _subFormat === "csv";
   const content  = isCSV ? buildSubCSV(filtered) : JSON.stringify(buildSubJSON(filtered), null, 2);
   const mime     = isCSV ? "text/csv" : "application/json";
-  const filename = `crowdscout_team${TEAM_NUMBER}_${Date.now()}.${_subFormat}`;
+  const filename = `crowdscout_team${TEAM_NUMBER}_${YEAR}_${Date.now()}.${_subFormat}`;
   const blob = new Blob([content], { type: mime });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement("a");
@@ -652,20 +759,16 @@ function downloadSubExport() {
 // ──────────────────────────────────────────────────────────────────────
 async function loadTeamEvents() {
   const events = await window.CS.tba.getTeamEvents(TEAM_NUMBER, YEAR);
-  if (!events || !events.length) {
-    teamEvents2026 = [];
-    return;
-  }
-  teamEvents2026 = events.sort((a, b) => (a.start_date||"").localeCompare(b.start_date||""));
+  teamEventsYear = (events || []).sort((a, b) => (a.start_date||"").localeCompare(b.start_date||""));
 }
 
 // ──────────────────────────────────────────────────────────────────────
 // UPCOMING MATCHES
 // ──────────────────────────────────────────────────────────────────────
 async function loadUpcomingMatches() {
-  if (!teamEvents2026.length) return;
+  if (!teamEventsYear.length) return;
   const now = new Date();
-  const upcoming = teamEvents2026.filter(e => e.end_date && new Date(e.end_date) >= now);
+  const upcoming = teamEventsYear.filter(e => e.end_date && new Date(e.end_date) >= now);
   if (!upcoming.length) return;
 
   const soonestEvent = upcoming[0];
@@ -695,9 +798,9 @@ async function loadUpcomingMatches() {
         <span style="font-size:0.75rem;color:var(--surface-400)">${timeStr}</span>
       </div>
       <div style="font-size:0.82rem">
-        ${red.map(n=>`<a href="team.html?number=${n}" class="t-cell red${n==TEAM_NUMBER?' hl':''}">${n}</a>`).join("")}
+        ${red.map(n=>`<a href="team.html?number=${n}&year=${YEAR}" class="t-cell red${n==TEAM_NUMBER?' hl':''}">${n}</a>`).join("")}
         <span style="color:var(--surface-400);margin:0 6px;font-size:0.78rem">vs</span>
-        ${blue.map(n=>`<a href="team.html?number=${n}" class="t-cell blue${n==TEAM_NUMBER?' hl':''}">${n}</a>`).join("")}
+        ${blue.map(n=>`<a href="team.html?number=${n}&year=${YEAR}" class="t-cell blue${n==TEAM_NUMBER?' hl':''}">${n}</a>`).join("")}
       </div>
       <div style="font-size:0.75rem;color:var(--surface-400);margin-top:4px">${soonestEvent.short_name||soonestEvent.name}</div>
     </div>`;
@@ -705,21 +808,20 @@ async function loadUpcomingMatches() {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// FULL MATCH HISTORY (all events, no filter)
+// FULL MATCH HISTORY
 // ──────────────────────────────────────────────────────────────────────
 async function loadAllMatchHistory() {
   const el = document.getElementById("matchHistoryList");
 
-  if (!teamEvents2026.length) {
+  if (!teamEventsYear.length) {
     el.innerHTML = !navigator.onLine
       ? '<div class="cs-empty"><span class="material-symbols-outlined" style="display:block;font-size:32px;margin-bottom:6px">wifi_off</span>You\'re offline. Match history unavailable.</div>'
-      : '<div class="cs-empty">No 2026 events found for this team.</div>';
+      : `<div class="cs-empty">No ${YEAR} events found for this team.</div>`;
     return;
   }
 
-  // Fetch matches for all events in parallel
   const matchesByEvent = await Promise.all(
-    teamEvents2026.map(async e => ({
+    teamEventsYear.map(async e => ({
       event: e,
       matches: await window.CS.tba.getTeamEventMatches(TEAM_NUMBER, e.key) || [],
       rankings: await window.CS.tba.getEventRankings(e.key),
@@ -730,7 +832,6 @@ async function loadAllMatchHistory() {
   for (const { event: e, matches, rankings } of matchesByEvent) {
     if (!matches.length) continue;
 
-    // Sort: quals first, then playoffs (by set/match)
     const sorted = [...matches].sort((a, b) => {
       const lo = {qm:0, sf:1, f:2};
       const la = lo[a.comp_level]??3, lb = lo[b.comp_level]??3;
@@ -739,7 +840,6 @@ async function loadAllMatchHistory() {
       return (a.match_number||0)-(b.match_number||0);
     });
 
-    // Rank/record
     let rankLine = "";
     if (rankings?.rankings) {
       const r = rankings.rankings.find(r => r.team_key === `frc${TEAM_NUMBER}`);
@@ -760,7 +860,7 @@ async function loadAllMatchHistory() {
   }
 
   if (!html) {
-    el.innerHTML = '<div class="cs-empty">No match results yet for the 2026 season.</div>';
+    el.innerHTML = `<div class="cs-empty">No match results yet for the ${YEAR} season.</div>`;
     return;
   }
   el.innerHTML = html;
@@ -831,7 +931,7 @@ function renderOneMatchRow(m) {
 
   const pad = `<span class="t-empty"></span>`;
   const teamCell = (n, color) =>
-    `<a href="team.html?number=${n}" class="t-cell ${color}${n==TEAM_NUMBER?' hl':''}">${n}</a>`;
+    `<a href="team.html?number=${n}&year=${YEAR}" class="t-cell ${color}${n==TEAM_NUMBER?' hl':''}">${n}</a>`;
 
   const rc = [...Array(3)].map((_,i) => red[i]  ? teamCell(red[i], "red")  : pad).join("");
   const bc = [...Array(3)].map((_,i) => blue[i] ? teamCell(blue[i],"blue") : pad).join("");

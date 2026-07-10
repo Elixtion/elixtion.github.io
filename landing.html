@@ -40,14 +40,6 @@
       border-radius: 16px; padding: 28px; width: 100%; max-width: 400px;
       position: relative;
     }
-    .google-btn {
-      width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px;
-      background: #fff; color: #1a1a1a; border: none; border-radius: 8px;
-      padding: 12px 20px; font-size: 1rem; font-weight: 600; cursor: pointer;
-      min-height: 48px; box-shadow: 0 1px 6px rgba(0,0,0,.2);
-    }
-    .google-btn:hover { background: #f5f5f5; }
-    .google-btn svg { flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -201,23 +193,6 @@
       <p id="authSub" style="font-size:0.875rem;color:var(--surface-500);margin:0">Sign in to start scouting</p>
     </div>
 
-    <!-- Google OAuth -->
-    <button class="google-btn" id="googleBtn" onclick="signInGoogle()">
-      <svg width="20" height="20" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
-        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
-        <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
-        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/>
-      </svg>
-      Continue with Google
-    </button>
-
-    <div id="authDivider" style="display:flex;align-items:center;gap:10px;margin:16px 0">
-      <div style="flex:1;height:1px;background:var(--surface-200)"></div>
-      <span style="font-size:0.75rem;color:var(--surface-400)">or</span>
-      <div style="flex:1;height:1px;background:var(--surface-200)"></div>
-    </div>
-
     <!-- Success pane (hidden by default — shown after signup email sent) -->
     <div id="authSuccessPane" style="display:none;text-align:center;padding:20px 0">
       <span class="material-symbols-outlined" style="font-size:48px;color:var(--primary-500);display:block;margin-bottom:12px">check_circle</span>
@@ -238,9 +213,12 @@
           <input id="authPassword" type="password" class="cs-input" placeholder="••••••••" autocomplete="current-password"/>
         </div>
         <div id="authError" style="font-size:0.8rem;color:#f87171;margin-bottom:8px;display:none"></div>
-        <button class="cs-btn cs-btn-secondary" style="width:100%" id="emailSubmitBtn" onclick="handleEmailAuth()">
-          <span id="emailBtnLabel">Sign In with Email</span>
+        <button class="cs-btn cs-btn-primary" style="width:100%" id="emailSubmitBtn" onclick="handleEmailAuth()">
+          <span id="emailBtnLabel">Sign In</span>
         </button>
+        <div style="text-align:center;margin-top:10px">
+          <a href="forgot-password.html" style="font-size:0.8rem;color:var(--primary-400)">Forgot password?</a>
+        </div>
       </div>
 
       <div style="text-align:center;margin-top:12px;font-size:0.8rem;color:var(--surface-500)" id="authToggle">
@@ -272,32 +250,23 @@ let _authMode = "login"; // 'login' | 'signup'
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(console.error);
 })();
 
-// ── Auth modal ───────────────────────────────────────────────────
+// ── Auth modal (sign-in only — signup has a dedicated page) ──────
 function openAuth(mode = "login") {
-  _authMode = mode;
-  // Always reset: hide success pane, show form content
+  if (mode === "signup") { window.location.href = "signup.html"; return; }
+  _authMode = "login";
   document.getElementById("authSuccessPane").style.display = "none";
   document.getElementById("authFormContent").style.display = "";
-  document.getElementById("googleBtn").style.display = "";
-  document.getElementById("authDivider").style.display = "flex";
   document.getElementById("authModal").style.display = "flex";
-  updateAuthUI();
-}
-function closeAuth() { document.getElementById("authModal").style.display = "none"; }
-function closeAuthOnBg(e) { if (e.target === document.getElementById("authModal")) closeAuth(); }
-
-function updateAuthUI() {
-  const isLogin = _authMode === "login";
-  document.getElementById("authTitle").textContent = isLogin ? "Welcome back" : "Create your account";
-  document.getElementById("authSub").textContent   = isLogin ? "Sign in to continue" : "Free forever";
-  document.getElementById("emailBtnLabel").textContent = isLogin ? "Sign In with Email" : "Create Account";
-  document.getElementById("authToggle").innerHTML = isLogin
-    ? `Don't have an account? <button onclick="toggleAuthMode()" style="background:none;border:none;color:var(--primary-500);cursor:pointer;font-weight:600;padding:0">Sign Up</button>`
-    : `Already have an account? <button onclick="toggleAuthMode()" style="background:none;border:none;color:var(--primary-500);cursor:pointer;font-weight:600;padding:0">Sign In</button>`;
+  document.getElementById("authTitle").textContent = "Welcome back";
+  document.getElementById("authSub").textContent = "Sign in to continue";
+  document.getElementById("authToggle").innerHTML =
+    `Don't have an account? <a href="signup.html" style="color:var(--primary-500);font-weight:600;text-decoration:none">Sign Up</a>`;
   document.getElementById("authError").style.display = "none";
   document.getElementById("authEmail").value = "";
   document.getElementById("authPassword").value = "";
 }
+function closeAuth() { document.getElementById("authModal").style.display = "none"; }
+function closeAuthOnBg(e) { if (e.target === document.getElementById("authModal")) closeAuth(); }
 
 // Translate raw Supabase error strings into user-friendly messages
 function friendlyAuthError(msg) {
@@ -325,19 +294,6 @@ function friendlyAuthError(msg) {
   return msg || "Something went wrong. Please try again.";
 }
 
-function toggleAuthMode() {
-  _authMode = _authMode === "login" ? "signup" : "login";
-  updateAuthUI();
-}
-
-async function signInGoogle() {
-  const btn = document.getElementById("googleBtn");
-  btn.disabled = true;
-  btn.textContent = "Redirecting…";
-  await window.CS.auth.signInWithGoogle();
-  // Page will redirect — no need to re-enable btn
-}
-
 async function handleEmailAuth() {
   const email    = document.getElementById("authEmail").value.trim();
   const password = document.getElementById("authPassword").value;
@@ -345,35 +301,21 @@ async function handleEmailAuth() {
   const btn      = document.getElementById("emailSubmitBtn");
 
   if (!email || !password) { showAuthError("Enter your email and password."); return; }
-  if (password.length < 6) { showAuthError("Password must be at least 6 characters."); return; }
 
   btn.disabled = true;
   document.getElementById("emailBtnLabel").textContent = "Please wait…";
   errEl.style.display = "none";
 
-  const db = window.CS.db;
-  let result;
-  if (_authMode === "login") {
-    result = await db.auth.signInWithPassword({ email, password });
-  } else {
-    result = await db.auth.signUp({ email, password });
-  }
+  const result = await window.CS.auth.signIn(email, password);
 
   btn.disabled = false;
-  document.getElementById("emailBtnLabel").textContent = _authMode === "login" ? "Sign In with Email" : "Create Account";
+  document.getElementById("emailBtnLabel").textContent = "Sign In";
 
   if (result.error) {
     showAuthError(friendlyAuthError(result.error.message));
     return;
   }
 
-  if (_authMode === "signup" && !result.data?.session) {
-    // Email confirmation required — show success pane
-    showSuccess("Check your inbox to confirm your account, then sign in here.");
-    return;
-  }
-
-  // Signed in — redirect
   window.location.href = "home.html";
 }
 
@@ -382,27 +324,6 @@ function showAuthError(msg) {
   el.textContent = msg;
   el.style.display = "";
 }
-
-function showSuccess(msg) {
-  // Hide form content + google btn + divider, show success pane only
-  document.getElementById("authFormContent").style.display = "none";
-  document.getElementById("googleBtn").style.display = "none";
-  document.getElementById("authDivider").style.display = "none";
-  document.getElementById("authSuccessMsg").textContent = msg;
-  document.getElementById("authSuccessPane").style.display = "";
-}
-
-// Handle OAuth callback (hash fragment from Supabase redirect)
-(function checkOAuthCallback() {
-  // Supabase sets the session from the URL hash automatically
-  // We just need to wait and check
-  if (window.location.hash.includes("access_token")) {
-    setTimeout(async () => {
-      const session = await window.CS?.auth?.getSession?.();
-      if (session) window.location.href = "home.html";
-    }, 500);
-  }
-})();
 </script>
 </body>
 </html>

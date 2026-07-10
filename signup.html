@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Create Account — CrowdScout</title>
+  <meta name="theme-color" content="#111312"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="lib/supabase-client.js"></script>
+</head>
+<body style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px">
+
+<div style="width:100%;max-width:400px">
+
+  <div style="text-align:center;margin-bottom:28px">
+    <a href="landing.html">
+      <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png"
+           alt="CrowdScout" style="height:52px;width:52px;border-radius:12px;margin-bottom:12px"/>
+    </a>
+    <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 4px">Create Your Account</h1>
+    <p style="color:var(--surface-500);font-size:0.875rem;margin:0">Sign up to submit scouting data. Viewing is free for everyone.</p>
+  </div>
+
+  <!-- Signup form -->
+  <div class="cs-card" id="formPane">
+    <div class="cs-field">
+      <label class="cs-label">Email</label>
+      <input id="email" type="email" class="cs-input" placeholder="you@example.com" autocomplete="email"/>
+    </div>
+    <div class="cs-field">
+      <label class="cs-label">Password</label>
+      <input id="password" type="password" class="cs-input" placeholder="At least 6 characters"
+             autocomplete="new-password" oninput="checkStrength()"/>
+      <div id="strengthMsg" style="font-size:0.72rem;color:var(--surface-400);margin-top:4px"></div>
+    </div>
+    <div class="cs-field">
+      <label class="cs-label">Confirm Password</label>
+      <input id="password2" type="password" class="cs-input" placeholder="Repeat your password"
+             autocomplete="new-password" onkeydown="if(event.key==='Enter')handleSignUp()"/>
+    </div>
+    <div id="errMsg" style="font-size:0.8rem;color:#f87171;margin-bottom:8px;display:none"></div>
+    <button class="cs-btn cs-btn-primary" style="width:100%;margin-bottom:10px" id="signUpBtn" onclick="handleSignUp()">
+      Create Account
+    </button>
+
+    <div style="text-align:center;font-size:0.8rem;color:var(--surface-500)">
+      Already have an account?
+      <a href="login.html" style="color:var(--primary-500);font-weight:600;text-decoration:none">Sign in</a>
+    </div>
+  </div>
+
+  <!-- Post-signup: check your inbox -->
+  <div class="cs-card" id="sentPane" style="display:none;text-align:center">
+    <span class="material-symbols-outlined" style="font-size:44px;color:var(--primary-500);display:block;margin-bottom:10px">mark_email_unread</span>
+    <div style="font-weight:700;font-size:1.05rem;margin-bottom:6px">Confirm your email</div>
+    <p style="font-size:0.85rem;color:var(--surface-500);margin:0 0 14px">
+      We sent a confirmation link to <strong id="sentTo" style="color:var(--surface-700)"></strong>.
+      Click it to activate your account — check your spam folder if you don't see it.
+    </p>
+    <button class="cs-btn cs-btn-secondary" style="width:100%;margin-bottom:8px" id="resendBtn" onclick="resend()">
+      Resend email
+    </button>
+    <div id="resendMsg" style="font-size:0.78rem;color:var(--primary-400);display:none;margin-bottom:8px"></div>
+    <a href="login.html" style="font-size:0.8rem;color:var(--surface-400)">Back to sign in</a>
+  </div>
+
+  <div style="text-align:center;margin-top:16px">
+    <a href="landing.html" style="font-size:0.8rem;color:var(--surface-400)">← Back to home</a>
+  </div>
+
+</div>
+
+<div id="cs-toast-container"></div>
+
+<script>
+let _sentEmail = "";
+
+// If already logged in, skip to home
+(async function init() {
+  const session = await window.CS?.auth?.getSession?.();
+  if (session) { window.location.href = "home.html"; return; }
+})();
+
+function checkStrength() {
+  const v = document.getElementById("password").value;
+  const el = document.getElementById("strengthMsg");
+  if (!v) { el.textContent = ""; return; }
+  if (v.length < 6) { el.textContent = "Too short — at least 6 characters."; el.style.color = "#f87171"; return; }
+  const score = (v.length >= 10 ? 1 : 0) + (/[A-Z]/.test(v) ? 1 : 0) + (/[0-9]/.test(v) ? 1 : 0) + (/[^A-Za-z0-9]/.test(v) ? 1 : 0);
+  const labels = ["Weak", "Okay", "Good", "Strong", "Very strong"];
+  const colors = ["#f87171", "#fbbf24", "#fbbf24", "var(--primary-500)", "var(--primary-500)"];
+  el.textContent = labels[score];
+  el.style.color = colors[score];
+}
+
+async function handleSignUp() {
+  const email = document.getElementById("email").value.trim();
+  const p1 = document.getElementById("password").value;
+  const p2 = document.getElementById("password2").value;
+
+  if (!email) { showErr("Enter your email address."); return; }
+  if (p1.length < 6) { showErr("Password must be at least 6 characters."); return; }
+  if (p1 !== p2) { showErr("Passwords don't match."); return; }
+
+  const btn = document.getElementById("signUpBtn");
+  btn.disabled = true;
+  btn.textContent = "Creating account…";
+  document.getElementById("errMsg").style.display = "none";
+
+  const result = await window.CS.auth.signUp(email, p1);
+
+  btn.disabled = false;
+  btn.textContent = "Create Account";
+
+  if (result.error) { showErr(window.CS.auth.friendlyError(result.error.message)); return; }
+
+  // Supabase quirk: signing up an already-registered email returns a fake user
+  // with an empty identities array instead of an error.
+  if (result.data?.user && Array.isArray(result.data.user.identities) && result.data.user.identities.length === 0) {
+    showErr("An account with this email already exists. Try signing in instead.");
+    return;
+  }
+
+  if (result.data?.session) {
+    // Email confirmation disabled in project settings — signed in immediately
+    window.location.href = "profile-setup.html";
+    return;
+  }
+
+  // Confirmation required — show the inbox pane
+  _sentEmail = email;
+  document.getElementById("sentTo").textContent = email;
+  document.getElementById("formPane").style.display = "none";
+  document.getElementById("sentPane").style.display = "";
+}
+
+async function resend() {
+  if (!_sentEmail) return;
+  const btn = document.getElementById("resendBtn");
+  btn.disabled = true;
+  btn.textContent = "Sending…";
+  const { error } = await window.CS.auth.resendConfirmation(_sentEmail);
+  btn.disabled = false;
+  btn.textContent = "Resend email";
+  const msg = document.getElementById("resendMsg");
+  msg.style.display = "";
+  if (error) {
+    msg.style.color = "#f87171";
+    msg.textContent = window.CS.auth.friendlyError(error.message);
+  } else {
+    msg.style.color = "var(--primary-400)";
+    msg.textContent = "Sent! Give it a minute, and check spam.";
+  }
+}
+
+function showErr(msg) {
+  const el = document.getElementById("errMsg");
+  el.textContent = msg;
+  el.style.display = "";
+}
+</script>
+</body>
+</html>

@@ -6,13 +6,18 @@
  *   - Everything else: NetworkFirst
  */
 
-const CACHE_VERSION = "cs-v3";
+const CACHE_VERSION = "cs-v4";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 
 const STATIC_ASSETS = [
   "/",
   "/landing.html",
+  "/login.html",
+  "/signup.html",
+  "/forgot-password.html",
+  "/reset-password.html",
+  "/auth-callback.html",
   "/home.html",
   "/events.html",
   "/event.html",
@@ -33,6 +38,8 @@ const STATIC_ASSETS = [
   "/lib/offline.js",
   "/lib/reliability.js",
   "/lib/schema2026.js",
+  "/lib/seasons.js",
+  "/lib/analysis.js",
   "/lib/ui.js",
   "/images/Untitled design (3).png",
 ];

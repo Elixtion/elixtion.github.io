@@ -20,13 +20,39 @@
   <div style="width:32px;height:32px;border:3px solid var(--surface-200);border-top-color:var(--primary-500);border-radius:50%;animation:spin .8s linear infinite" id="spinner"></div>
   <style>@keyframes spin { to { transform:rotate(360deg); } }</style>
 
+  <div id="actionRow" style="display:none;flex-direction:column;gap:10px;width:100%;max-width:300px"></div>
+
 <script>
 (async function handleCallback() {
-  // Supabase automatically exchanges the code/token from the URL hash or query string
-  // when the client is initialised — we just need to wait for a session.
+  const hashParams  = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const queryParams = new URLSearchParams(window.location.search);
 
+  // ── 1. Error from Supabase (expired / already-used link) ────────────────
+  const errDesc = hashParams.get("error_description") || queryParams.get("error_description");
+  const errCode = hashParams.get("error_code") || queryParams.get("error_code");
+  if (errDesc || errCode) {
+    fail(
+      "Link expired or invalid",
+      window.CS.auth.friendlyError(errDesc || errCode),
+      [
+        { label: "Resend from Sign Up", href: "signup.html" },
+        { label: "Back to Sign In", href: "login.html" },
+      ]
+    );
+    return;
+  }
+
+  // ── 2. Password recovery links belong on the reset page ─────────────────
+  const type = hashParams.get("type") || queryParams.get("type");
+  if (type === "recovery") {
+    // Preserve the hash so the reset page can establish the session
+    window.location.replace("reset-password.html" + window.location.search + window.location.hash);
+    return;
+  }
+
+  // ── 3. Normal confirmation / magic-link: wait for the session ───────────
   let attempts = 0;
-  const MAX = 20; // 10 seconds max
+  const MAX = 20; // 10 seconds
 
   async function check() {
     attempts++;
@@ -37,20 +63,17 @@
       document.getElementById("subMsg").textContent = "Redirecting…";
       document.getElementById("spinner").style.display = "none";
 
-      // Check if profile is complete
       const profile = await window.CS.profile.get(session.user.id);
-      if (!window.CS.profile.isComplete(profile)) {
-        window.location.href = "profile-setup.html";
-      } else {
-        window.location.href = "home.html";
-      }
+      window.location.href = window.CS.profile.isComplete(profile) ? "home.html" : "profile-setup.html";
       return;
     }
 
     if (attempts >= MAX) {
-      document.getElementById("statusMsg").textContent = "Sign-in failed";
-      document.getElementById("subMsg").innerHTML = 'Could not establish a session. <a href="login.html" style="color:var(--primary-500)">Try again</a>';
-      document.getElementById("spinner").style.display = "none";
+      fail(
+        "Sign-in failed",
+        "Could not establish a session. Your link may have expired.",
+        [{ label: "Try signing in", href: "login.html" }]
+      );
       return;
     }
 
@@ -60,6 +83,17 @@
   // Give Supabase 300ms to process the URL hash before polling
   setTimeout(check, 300);
 })();
+
+function fail(title, msg, actions) {
+  document.getElementById("statusMsg").textContent = title;
+  document.getElementById("subMsg").textContent = msg;
+  document.getElementById("spinner").style.display = "none";
+  const row = document.getElementById("actionRow");
+  row.style.display = "flex";
+  row.innerHTML = actions.map(a =>
+    `<a href="${a.href}" class="cs-btn cs-btn-secondary" style="text-decoration:none">${a.label}</a>`
+  ).join("");
+}
 </script>
 </body>
 </html>

@@ -15,6 +15,8 @@
   <script src="lib/config.js"></script>
   <script src="lib/tba.js"></script>
   <script src="lib/offline.js"></script>
+  <script src="lib/schema2026.js"></script>
+  <script src="lib/seasons.js"></script>
   <script src="lib/ui.js"></script>
 </head>
 <body>
@@ -39,6 +41,7 @@
       <span class="material-symbols-outlined">search</span>
       <input id="searchInput" class="cs-input" placeholder="Search events…" oninput="filterEvents()"/>
     </div>
+    <div id="yearPicker"></div>
     <select id="weekFilter" class="cs-select" style="width:auto;min-width:130px" onchange="filterEvents()">
       <option value="">All Weeks</option>
       <option value="1">Week 1</option>
@@ -88,8 +91,12 @@
 
 <script>
 let allEvents = [];
+const YEAR = parseInt(new URLSearchParams(location.search).get("year")) || window.CS.seasons.activeYear();
 
 (async function init() {
+  document.getElementById("loadingState").innerHTML =
+    `<span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px">hourglass_top</span>Loading ${YEAR} events…`;
+  window.CS.seasons.renderYearPicker(document.getElementById("yearPicker"), YEAR);
   await loadEvents();
 })();
 
@@ -103,7 +110,7 @@ async function loadEvents() {
 
   let events = null;
   if (navigator.onLine) {
-    events = await window.CS.tba.getSeasonEvents(2026);
+    events = await window.CS.tba.getSeasonEvents(YEAR);
     if (events) {
       // cache them
       for (const e of events) {
@@ -113,7 +120,8 @@ async function loadEvents() {
   }
 
   if (!events && cachedEvents.length) {
-    events = cachedEvents.map(e => ({ ...e, key: e.event_key }));
+    events = cachedEvents.map(e => ({ ...e, key: e.event_key }))
+      .filter(e => window.CS.seasons.yearFromEventKey(e.key) === YEAR);
     document.getElementById("offlineBanner").style.display = "flex";
   } else if (!navigator.onLine) {
     document.getElementById("offlineBanner").style.display = "flex";

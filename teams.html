@@ -15,6 +15,8 @@
   <script src="lib/config.js"></script>
   <script src="lib/tba.js"></script>
   <script src="lib/offline.js"></script>
+  <script src="lib/schema2026.js"></script>
+  <script src="lib/seasons.js"></script>
   <script src="lib/ui.js"></script>
   <style>
     /* Event autocomplete */
@@ -76,6 +78,8 @@
              oninput="onSearch()" onkeydown="if(event.key==='Enter')doSearch()"/>
     </div>
 
+    <div id="yearPicker"></div>
+
     <!-- Event autocomplete (no label — placeholder gives enough context) -->
     <div class="ac-container" id="eventAC" style="min-width:220px;flex:1">
       <div class="cs-search">
@@ -115,8 +119,8 @@
 <div id="cs-toast-container"></div>
 
 <script>
-const YEAR = 2026;
-const INDEX_LS_KEY = "cs_teams_index_ts";
+const YEAR = parseInt(new URLSearchParams(location.search).get("year")) || window.CS.seasons.activeYear();
+const INDEX_LS_KEY = "cs_teams_index_ts_" + YEAR;
 const INDEX_MAX_AGE = 12 * 60 * 60 * 1000; // 12 hours
 
 let _teamsIndex  = []; // all teams sorted by team_number
@@ -129,6 +133,7 @@ let _indexReady = false;
   if (!navigator.onLine) {
     document.getElementById("offlineBanner").style.display = "flex";
   }
+  window.CS.seasons.renderYearPicker(document.getElementById("yearPicker"), YEAR);
   // Load events for autocomplete (fast, single call)
   loadEventsIndex();
   // Build team index in background
@@ -390,7 +395,7 @@ function renderTeams(teams, emptyMsg) {
       ${teams.map(t => {
         const loc = [t.city, t.state_prov, t.country].filter(Boolean).join(", ");
         return `
-          <a href="team.html?number=${t.team_number}" style="text-decoration:none">
+          <a href="team.html?number=${t.team_number}&year=${YEAR}" style="text-decoration:none">
             <div class="cs-card" style="cursor:pointer;display:flex;align-items:center;gap:12px">
               <span class="cs-team-chip" style="font-size:1rem;min-width:60px;justify-content:center;flex-shrink:0">${t.team_number}</span>
               <div style="min-width:0;flex:1">

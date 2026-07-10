@@ -11,16 +11,6 @@
   <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="lib/supabase-client.js"></script>
-  <style>
-    .google-btn {
-      width:100%;display:flex;align-items:center;justify-content:center;gap:12px;
-      background:#fff;color:#1a1a1a;border:none;border-radius:8px;
-      padding:12px 20px;font-size:1rem;font-weight:600;cursor:pointer;
-      min-height:48px;box-shadow:0 1px 6px rgba(0,0,0,.2);
-    }
-    .google-btn:hover { background:#f5f5f5; }
-    .google-btn:disabled { opacity:.6;cursor:not-allowed; }
-  </style>
 </head>
 <body style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px">
 
@@ -36,24 +26,6 @@
   </div>
 
   <div class="cs-card">
-    <!-- Google -->
-    <button class="google-btn" id="googleBtn" onclick="signInGoogle()">
-      <svg width="20" height="20" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
-        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
-        <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
-        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/>
-      </svg>
-      Continue with Google
-    </button>
-
-    <div style="display:flex;align-items:center;gap:10px;margin:16px 0">
-      <div style="flex:1;height:1px;background:var(--surface-200)"></div>
-      <span style="font-size:0.75rem;color:var(--surface-400)">or use email</span>
-      <div style="flex:1;height:1px;background:var(--surface-200)"></div>
-    </div>
-
-    <!-- Email / password -->
     <div class="cs-field">
       <label class="cs-label">Email</label>
       <input id="email" type="email" class="cs-input" placeholder="you@example.com" autocomplete="email"/>
@@ -61,16 +33,26 @@
     <div class="cs-field">
       <label class="cs-label">Password</label>
       <input id="password" type="password" class="cs-input" placeholder="••••••••"
-             autocomplete="current-password" onkeydown="if(event.key==='Enter')handleEmail()"/>
+             autocomplete="current-password" onkeydown="if(event.key==='Enter')handleSignIn()"/>
     </div>
     <div id="errMsg" style="font-size:0.8rem;color:#f87171;margin-bottom:8px;display:none"></div>
-    <button class="cs-btn cs-btn-secondary" style="width:100%;margin-bottom:10px" id="emailBtn" onclick="handleEmail()">
-      Sign In with Email
+    <div id="resendRow" style="display:none;margin-bottom:8px">
+      <button onclick="resendConfirmation()" id="resendBtn"
+              style="background:none;border:none;color:var(--primary-500);cursor:pointer;font-weight:600;padding:0;font-size:0.8rem">
+        Resend confirmation email
+      </button>
+    </div>
+    <button class="cs-btn cs-btn-primary" style="width:100%;margin-bottom:10px" id="signInBtn" onclick="handleSignIn()">
+      Sign In
     </button>
 
-    <div style="text-align:center;font-size:0.8rem;color:var(--surface-500)">
+    <div style="text-align:center;margin-bottom:10px">
+      <a href="forgot-password.html" style="font-size:0.8rem;color:var(--primary-400)">Forgot password?</a>
+    </div>
+
+    <div style="text-align:center;font-size:0.8rem;color:var(--surface-500);border-top:1px solid var(--surface-100);padding-top:12px">
       No account?
-      <button onclick="switchToSignup()" style="background:none;border:none;color:var(--primary-500);cursor:pointer;font-weight:600;padding:0">Create one</button>
+      <a href="signup.html" style="color:var(--primary-500);font-weight:600;text-decoration:none">Create one</a>
     </div>
   </div>
 
@@ -87,84 +69,50 @@
 (async function init() {
   const session = await window.CS?.auth?.getSession?.();
   if (session) { window.location.href = "home.html"; return; }
-
-  // Handle OAuth redirect callback (hash-based token from Supabase)
-  if (window.location.hash.includes("access_token")) {
-    setTimeout(async () => {
-      const s = await window.CS?.auth?.getSession?.();
-      if (s) window.location.href = "home.html";
-    }, 600);
-  }
 })();
 
-async function signInGoogle() {
-  const btn = document.getElementById("googleBtn");
-  btn.disabled = true;
-  btn.childNodes[btn.childNodes.length - 1].textContent = " Redirecting…";
-  await window.CS.auth.signInWithGoogle();
-}
-
-let _mode = "login";
-function switchToSignup() {
-  _mode = "signup";
-  document.getElementById("emailBtn").textContent = "Create Account";
-  document.getElementById("errMsg").style.display = "none";
-}
-
-async function handleEmail() {
+async function handleSignIn() {
   const email    = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
   if (!email || !password) { showErr("Enter your email and password."); return; }
-  if (password.length < 6) { showErr("Password must be at least 6 characters."); return; }
 
-  const btn = document.getElementById("emailBtn");
+  const btn = document.getElementById("signInBtn");
   btn.disabled = true;
   btn.textContent = "Please wait…";
   document.getElementById("errMsg").style.display = "none";
+  document.getElementById("resendRow").style.display = "none";
 
-  const db = window.CS.db;
-  let result;
-  if (_mode === "login") {
-    result = await db.auth.signInWithPassword({ email, password });
-  } else {
-    result = await db.auth.signUp({ email, password });
-  }
+  const result = await window.CS.auth.signIn(email, password);
 
   btn.disabled = false;
-  btn.textContent = _mode === "login" ? "Sign In with Email" : "Create Account";
+  btn.textContent = "Sign In";
 
-  if (result.error) { showErr(friendlyAuthError(result.error.message)); return; }
-
-  if (_mode === "signup" && !result.data?.session) {
-    showErr("Check your inbox for a confirmation link, then sign in here.", "info");
+  if (result.error) {
+    showErr(window.CS.auth.friendlyError(result.error.message));
+    // Offer resend if the account exists but is unconfirmed
+    if ((result.error.message || "").toLowerCase().includes("not confirmed")) {
+      document.getElementById("resendRow").style.display = "";
+    }
     return;
   }
   window.location.href = "home.html";
 }
 
-function friendlyAuthError(msg) {
-  const m = (msg || "").toLowerCase();
-  if (m.includes("invalid login credentials") || m.includes("invalid credentials") || m.includes("email or password"))
-    return "Incorrect email or password. Please try again.";
-  if (m.includes("email not confirmed"))
-    return "Please verify your email before signing in. Check your inbox.";
-  if (m.includes("user already registered") || m.includes("already registered") || m.includes("already exists"))
-    return "An account with this email already exists. Try signing in instead.";
-  if (m.includes("password should be at least") || m.includes("password must be"))
-    return "Password must be at least 6 characters long.";
-  if (m.includes("for security purposes") || m.includes("after 60 seconds"))
-    return "Too many attempts. Please wait 60 seconds before trying again.";
-  if (m.includes("rate limit") || m.includes("too many requests"))
-    return "Too many requests. Please wait a moment and try again.";
-  if (m.includes("network") || m.includes("failed to fetch"))
-    return "Network error. Check your connection and try again.";
-  if (m.includes("email") && (m.includes("invalid") || m.includes("format")))
-    return "Please enter a valid email address.";
-  if (m.includes("signup") && m.includes("disabled"))
-    return "New sign-ups are temporarily disabled. Try again later.";
-  if (m.includes("database") || m.includes("unexpected"))
-    return "Something went wrong on our end. Please try again.";
-  return msg || "Something went wrong. Please try again.";
+async function resendConfirmation() {
+  const email = document.getElementById("email").value.trim();
+  if (!email) { showErr("Enter your email above first."); return; }
+  const btn = document.getElementById("resendBtn");
+  btn.disabled = true;
+  btn.textContent = "Sending…";
+  const { error } = await window.CS.auth.resendConfirmation(email);
+  btn.disabled = false;
+  if (error) {
+    btn.textContent = "Resend confirmation email";
+    showErr(window.CS.auth.friendlyError(error.message));
+  } else {
+    btn.textContent = "Sent! Check your inbox.";
+    showErr("Confirmation email sent. Check your inbox and spam folder.", "info");
+  }
 }
 
 function showErr(msg, type = "error") {
