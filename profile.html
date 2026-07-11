@@ -17,16 +17,8 @@
 </head>
 <body>
 
-<header class="cs-header">
-  <a href="home.html" class="cs-header-brand">
-    <span class="material-symbols-outlined" style="color:var(--surface-500);font-size:20px">arrow_back</span>
-    <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
-    <span>Profile</span>
-  </a>
-  <button class="cs-btn cs-btn-ghost cs-btn-sm" onclick="signOut()">
-    <span class="material-symbols-outlined" style="font-size:16px">logout</span> Sign Out
-  </button>
-</header>
+<header class="cs-header"></header>
+<script>window.CS.ui.initHeader("");</script>
 
 <main class="cs-page" style="padding-top:20px">
 
@@ -120,10 +112,17 @@ async function loadProfile() {
   _profile = await window.CS.profile.get(_session.user.id);
   const db = window.CS.db;
   const { data: subs } = await db.from("scout_submissions").select("id").eq("owner_id", _session.user.id);
-  const { data: rel } = await db.from("scout_reliability").select("*").eq("user_id", _session.user.id).maybeSingle();
+  // Reliability is stored per season — show the submissions-weighted overall score
+  const { data: relRows } = await db.from("scout_reliability").select("*").eq("user_id", _session.user.id);
 
   const count = subs?.length ?? 0;
-  const relScore = rel?.reliability_score ?? 1.0;
+  let relScore = 1.0;
+  if (relRows?.length) {
+    const totalN = relRows.reduce((s, r) => s + (r.submissions_count || 0), 0);
+    relScore = totalN > 0
+      ? relRows.reduce((s, r) => s + Number(r.reliability_score || 0) * (r.submissions_count || 0), 0) / totalN
+      : Number(relRows[0].reliability_score ?? 1.0);
+  }
   const trustLevel = window.CS.reliability.getTrustLevel(count);
   const meta = _session.user.user_metadata || {};
   const avatarUrl = meta.avatar_url ||

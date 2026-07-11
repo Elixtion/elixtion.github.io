@@ -45,17 +45,7 @@
 </head>
 <body>
 
-<header class="cs-header">
-  <a href="home.html" class="cs-header-brand">
-    <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
-    <span>Teams</span>
-  </a>
-  <nav class="cs-nav">
-    <a href="scout.html">Scout</a>
-    <a href="events.html">Events</a>
-    <a href="profile.html">Profile</a>
-  </nav>
-</header>
+<header class="cs-header"></header>
 
 <main class="cs-page-wide" style="padding-top:16px">
 
@@ -130,6 +120,7 @@ let _indexReady = false;
 
 // ── Init ──────────────────────────────────────────────────────────────
 (async function init() {
+  window.CS.ui.initHeader("teams");
   if (!navigator.onLine) {
     document.getElementById("offlineBanner").style.display = "flex";
   }

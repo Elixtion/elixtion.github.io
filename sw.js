@@ -6,7 +6,7 @@
  *   - Everything else: NetworkFirst
  */
 
-const CACHE_VERSION = "cs-v4";
+const CACHE_VERSION = "cs-v5";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 
@@ -107,10 +107,20 @@ self.addEventListener("fetch", (event) => {
 });
 
 // ── Strategies ─────────────────────────────────────────────────────────────────
+// Same-origin requests bypass the HTTP cache during revalidation. Without this,
+// navigations can carry If-None-Match headers, the server answers 304, and the
+// SW cache never updates — pages stay stale forever after a deploy.
+// (cache:"no-cache" is invalid for no-cors CDN requests, so scope to same-origin.)
+function revalidateFetch(request) {
+  return request.url.startsWith(self.location.origin)
+    ? fetch(request, { cache: "no-cache" })
+    : fetch(request);
+}
+
 async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
-  const networkFetch = fetch(request)
+  const networkFetch = revalidateFetch(request)
     .then((res) => {
       if (res && res.status === 200) cache.put(request, res.clone());
       return res;
@@ -121,7 +131,7 @@ async function staleWhileRevalidate(request, cacheName) {
 
 async function networkFirstWithCache(request, cacheName) {
   try {
-    const res = await fetch(request);
+    const res = await revalidateFetch(request);
     if (res && res.status === 200) {
       const cache = await caches.open(cacheName);
       cache.put(request, res.clone());

@@ -21,17 +21,7 @@
 </head>
 <body>
 
-<header class="cs-header">
-  <a href="home.html" class="cs-header-brand">
-    <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
-    <span>Events</span>
-  </a>
-  <nav class="cs-nav">
-    <a href="scout.html">Scout</a>
-    <a href="teams.html">Teams</a>
-    <a href="profile.html">Profile</a>
-  </nav>
-</header>
+<header class="cs-header"></header>
 
 <main class="cs-page-wide" style="padding-top:16px">
 
@@ -94,6 +84,7 @@ let allEvents = [];
 const YEAR = parseInt(new URLSearchParams(location.search).get("year")) || window.CS.seasons.activeYear();
 
 (async function init() {
+  window.CS.ui.initHeader("events");
   document.getElementById("loadingState").innerHTML =
     `<span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px">hourglass_top</span>Loading ${YEAR} events…`;
   window.CS.seasons.renderYearPicker(document.getElementById("yearPicker"), YEAR);

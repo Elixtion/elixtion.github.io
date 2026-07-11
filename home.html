@@ -19,31 +19,7 @@
 </head>
 <body>
 
-<header class="cs-header">
-  <a href="home.html" class="cs-header-brand">
-    <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
-    <span>CrowdScout</span>
-  </a>
-  <nav class="cs-nav">
-    <a href="scout.html">Scout</a>
-    <a href="events.html">Events</a>
-    <a href="teams.html">Teams</a>
-  </nav>
-  <div style="position:relative">
-    <button id="profileBtn" class="profile-btn" aria-label="Profile">
-      <img id="profileAvatar" class="profile-avatar" src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Sin_cara.png" alt="avatar"/>
-    </button>
-    <div id="profileDropdown" class="dropdown">
-      <div style="padding:10px 12px;font-size:0.8rem;color:var(--surface-400)" id="cs-dropdown-email">—</div>
-      <div class="divider"></div>
-      <a href="profile.html"><span class="material-symbols-outlined" style="font-size:18px">person</span> Profile</a>
-      <a href="scout-history.html"><span class="material-symbols-outlined" style="font-size:18px">history</span> My Submissions</a>
-      <a href="export.html"><span class="material-symbols-outlined" style="font-size:18px">download</span> Export Data</a>
-      <div class="divider"></div>
-      <button id="signOutBtn"><span class="material-symbols-outlined" style="font-size:18px">logout</span> Sign Out</button>
-    </div>
-  </div>
-</header>
+<header class="cs-header"></header>
 
 <main class="cs-page-wide" style="padding-top:20px">
 
@@ -127,11 +103,7 @@
   const session = await window.CS.auth.requireAuth("landing.html");
   if (!session) return;
 
-  window.CS.ui.initProfileDropdown({ btnId:"profileBtn", dropdownId:"profileDropdown", avatarId:"profileAvatar" });
-  document.getElementById("signOutBtn").onclick = async () => {
-    await window.CS.auth.signOut();
-    window.location.href = "landing.html";
-  };
+  window.CS.ui.initHeader("");
 
   const meta = session.user.user_metadata || {};
   const name = meta.full_name?.split(" ")[0] || meta.name?.split(" ")[0] || "Scout";
@@ -171,10 +143,17 @@ async function manualSync() {
 async function loadMyStats(session) {
   const db = window.CS.db;
   const { data: subs } = await db.from("scout_submissions").select("id").eq("owner_id", session.user.id);
-  const { data: rel } = await db.from("scout_reliability").select("*").eq("user_id", session.user.id).maybeSingle();
+  // Reliability is stored per season — show the submissions-weighted overall score
+  const { data: relRows } = await db.from("scout_reliability").select("*").eq("user_id", session.user.id);
   const count = subs?.length ?? 0;
   const trustLevel = window.CS.reliability.getTrustLevel(count);
-  const relScore = rel?.reliability_score ?? 1.0;
+  let relScore = 1.0;
+  if (relRows?.length) {
+    const totalN = relRows.reduce((s, r) => s + (r.submissions_count || 0), 0);
+    relScore = totalN > 0
+      ? relRows.reduce((s, r) => s + Number(r.reliability_score || 0) * (r.submissions_count || 0), 0) / totalN
+      : Number(relRows[0].reliability_score ?? 1.0);
+  }
   document.getElementById("myStats").innerHTML = `
     <div class="cs-card" style="text-align:center;padding:16px">
       <div style="font-size:2rem;font-weight:800;color:var(--primary-500)">${count}</div>

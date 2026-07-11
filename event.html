@@ -24,17 +24,7 @@
 </head>
 <body>
 
-<header class="cs-header">
-  <a href="events.html" class="cs-header-brand">
-    <span class="material-symbols-outlined" style="color:var(--surface-500);font-size:20px">arrow_back</span>
-    <img src="https://raw.githubusercontent.com/Elixtion/elixtion.github.io/refs/heads/main/images/Untitled%20design%20(3).png" alt="CrowdScout"/>
-    <span id="headerTitle">Event</span>
-  </a>
-  <nav class="cs-nav">
-    <a href="scout.html">Scout</a>
-    <a href="teams.html">Teams</a>
-  </nav>
-</header>
+<header class="cs-header"></header>
 
 <!-- Tab bar -->
 <div style="background:var(--surface-50);border-bottom:1px solid var(--surface-100);display:flex;overflow-x:auto;gap:0">
@@ -149,6 +139,7 @@ let _statsChart = null;
 
 (async function init() {
   if (!EVENT_KEY) { window.location.href = "events.html"; return; }
+  window.CS.ui.initHeader("events");
   if (!navigator.onLine) {
     document.getElementById("offlineBanner").style.display = "flex";
   }
@@ -171,7 +162,7 @@ async function loadEventInfo() {
   const e = await window.CS.tba.getEvent(EVENT_KEY);
   const el = document.getElementById("eventHeader");
   if (!e) { el.innerHTML = `<div style="font-weight:700">${EVENT_KEY}</div>`; return; }
-  document.getElementById("headerTitle").textContent = e.short_name || e.name;
+  document.title = `${e.short_name || e.name} — CrowdScout`;
   const loc = [e.city, e.state_prov, e.country].filter(Boolean).join(", ");
   const start = window.CS.ui.fmtDate(e.start_date);
   const end = window.CS.ui.fmtDate(e.end_date);
