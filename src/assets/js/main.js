@@ -276,19 +276,16 @@
   }
 
   /* ---------------- Scroll reveals ----------------
-     Dimension lines draw, framed photos wipe in, the record chart stacks up
-     and robot illustrations are drawn, each once, as they enter the screen. */
-  const revealables = document.querySelectorAll(".dim, .frame, .chart, .robot-art[data-draw]");
-  document.querySelectorAll(".robot-art[data-draw] .r-o").forEach((el) => el.setAttribute("pathLength", "1"));
+     Dimension lines draw, framed photos wipe in and the record chart stacks
+     up, each once, as they enter the screen. These are small and local, so
+     they also run with "reduce motion" on; the parallax grid does not. */
+  const revealables = document.querySelectorAll(".dim, .frame, .chart");
   document.querySelectorAll(".chart").forEach((c) => c.querySelectorAll(".sq, .ch").forEach((el, i) => el.style.setProperty("--i", i)));
-  if ("IntersectionObserver" in window && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  if ("IntersectionObserver" in window) {
     const io = new IntersectionObserver((entries) => {
       entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); } });
     }, { rootMargin: "0px 0px -8% 0px", threshold: 0.15 });
-    revealables.forEach((el) => {
-      if (el.matches(".dim, .frame, .chart")) el.setAttribute("data-reveal", "");
-      io.observe(el);
-    });
+    revealables.forEach((el) => { el.setAttribute("data-reveal", ""); io.observe(el); });
   } else {
     revealables.forEach((el) => el.classList.add("is-in"));
   }

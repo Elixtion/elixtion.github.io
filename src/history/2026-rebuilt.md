@@ -5,8 +5,8 @@ robot: OHMER
 programSeason: 30th season
 summary: A turreted shooter, two regionals and an offseason podium finish in the program's 30th year.
 hero:
-  src: https://www.teamresistance.org/wp-content/uploads/2026/06/itdone-edited-1-scaled.jpg
-  alt: The completed 2026 robot, OHMER, ready to compete
+  src: /assets/img/2026/ohmer-studio.jpg
+  alt: "OHMER, the 2026 robot: a clear hopper full of yellow game pieces, the shooter on top and blue bumpers numbered 86"
   caption: OHMER, our 30th-season robot, built for Rebuilt.
 feature:
   src: https://www.teamresistance.org/wp-content/uploads/2026/06/69ae065f7e5bf29af7b0e3c6d2a31531-1024x683.jpg
@@ -60,6 +60,7 @@ photos:
     - { src: "https://www.teamresistance.org/wp-content/uploads/2026/06/55186730369_2925c6979a_k-1024x683.jpg", alt: "Woodie Flowers Speech, at the 2026 Orlando Regional", caption: "Woodie Flowers Speech", w: 1024, h: 683 }
     - { src: "https://www.teamresistance.org/wp-content/uploads/2026/06/hp-edited.jpg", alt: "Human Player-ing, at the 2026 Orlando Regional", caption: "Human Player-ing", tall: true, w: 1365, h: 1820 }
     - { src: "https://www.teamresistance.org/wp-content/uploads/2026/06/69ae065f7e5bf29af7b0e3c6d2a31531-1024x683.jpg", alt: "OHMER on the move, at the 2026 Orlando Regional", caption: "OHMER on the move", w: 1024, h: 683 }
+    - { src: "/assets/img/2026/ohmer-orlando-match.jpg", alt: "OHMER in red bumpers during a match at the 2026 Orlando Regional, game pieces on the floor around it", caption: "Mid-match", w: 604, h: 369 }
     - { src: "https://www.teamresistance.org/wp-content/uploads/2026/06/46f1bd8e0106dfa4473a893d1e1d05f4-1024x683.jpg", alt: "OHMER… on the fly?, at the 2026 Orlando Regional", caption: "OHMER… on the fly?", w: 1024, h: 683 }
     - { src: "https://www.teamresistance.org/wp-content/uploads/2026/06/allnc7-1024x683.jpg", alt: "Alliance 7, at the 2026 Orlando Regional", caption: "Alliance 7", w: 1024, h: 683 }
     - { src: "https://www.teamresistance.org/wp-content/uploads/2026/06/locked-1024x683.jpg", alt: "Still locked in, at the 2026 Orlando Regional", caption: "Still locked in.", w: 1024, h: 683 }
@@ -92,7 +93,6 @@ photos:
     - { src: "https://www.teamresistance.org/wp-content/uploads/2026/10/IMG_6822-edited-954x1024.jpg", alt: "Award winners, at the 2026 Space Coast Showdown", caption: "Award winners", w: 954, h: 1024 }
     - { src: "https://www.teamresistance.org/wp-content/uploads/2026/10/IMG_1079-1024x576.jpg", alt: "At the Space Coast Showdown, at the 2026 Space Coast Showdown", caption: "At the Space Coast Showdown", w: 1024, h: 576 }
     - { src: "https://www.teamresistance.org/wp-content/uploads/2026/10/IMG_1030-1024x576.jpg", alt: "At the Space Coast Showdown, at the 2026 Space Coast Showdown", caption: "At the Space Coast Showdown", w: 1024, h: 576 }
-illustration: /assets/robots/2026.svg
 ---
 
 ## Build season

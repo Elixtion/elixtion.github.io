@@ -41,7 +41,6 @@ events:
 links:
   - { label: Technical binder (PDF), url: "/assets/docs/2027-binder.pdf" }
   - { label: Code on GitHub, url: "https://github.com/teamresistance" }
-illustration: /assets/robots/2027.svg   # optional drawing of the robot (SVG, see src/assets/robots/)
 photos:
   build:
     # w and h (pixel size) are optional but stop the page jumping while photos load.

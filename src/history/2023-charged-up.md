@@ -30,7 +30,6 @@ photos:
     - { src: "https://www.teamresistance.org/wp-content/uploads/2025/10/IMG_7009-768x1024.jpg", alt: "Talking to the judges, 2023 season", caption: "Talking to the judges", tall: true, w: 768, h: 1024 }
     - { src: "https://www.teamresistance.org/wp-content/uploads/2025/10/Screenshot-2025-10-14-at-11.55.04-AM.png", alt: "Behind the Bumpers with FUN Robotics Network, 2023 season", caption: "Behind the Bumpers with FUN Robotics Network", w: 392, h: 221 }
     - { src: "https://www.teamresistance.org/wp-content/uploads/2025/10/IMG_20230318_163050-edited-scaled.jpg", alt: "Industrial Design Winners, 2023 season", caption: "Industrial Design Winners!!!", w: 2560, h: 1440 }
-illustration: /assets/robots/2023.svg
 ---
 
 ## Season overview

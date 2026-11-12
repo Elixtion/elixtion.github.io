@@ -40,7 +40,6 @@ photos:
     - { src: "https://www.teamresistance.org/wp-content/uploads/2025/09/IMG_9849-1024x768.jpg", alt: "Drive team picture, 2024 season", caption: "Drive team picture!!!", w: 1024, h: 768 }
     - { src: "https://www.teamresistance.org/wp-content/uploads/2025/09/IMG_7966-1024x768.jpg", alt: "Competing at the Space Coast Showdown, 2024 season", caption: "Competing at the Space Coast Showdown", w: 1024, h: 768 }
     - { src: "https://www.teamresistance.org/wp-content/uploads/2025/09/Screenshot-2025-09-01-at-4.29.18-PM.png", alt: "Driving OHMER-24, 2024 season", caption: "Driving OHMER-24", w: 488, h: 184 }
-illustration: /assets/robots/2024.svg
 ---
 
 ## Season overview

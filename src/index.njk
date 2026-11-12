@@ -63,24 +63,6 @@ bodyClass: home
   {%- endif %}
 </section>
 
-{%- set drawn = collections.seasons | withIllustration | reverse %}
-{%- if drawn.length %}
-<section class="wrap lineup-wrap" aria-labelledby="h-lineup">
-  <h2 id="h-lineup" class="vh">Recent robots</h2>
-  {{ dim(drawn[0].data.year + " to " + (drawn | last).data.year) }}
-  <ul class="lineup" role="list">
-    {%- for s in drawn %}
-    <li class="lineup__item">
-      <a href="{{ s.url }}">
-        {{ s.data.illustration | inlineSvg | safe }}
-        <span class="lineup__year">{{ s.data.year }}</span>
-        <span class="lineup__game">{{ s.data.game }}</span>
-      </a>
-    </li>
-    {%- endfor %}
-  </ul>
-</section>
-{%- endif %}
 
 <section class="detail wrap" id="record" data-zoom="4" aria-labelledby="h-record">
   {{ detailHead("B", "Our record", "h-record") }}

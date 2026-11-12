@@ -42,15 +42,15 @@ Files whose names start with `_` never publish, so you can keep drafts and templ
 
 Figures number themselves (Fig. 1, Fig. 2…) across each page. Gallery photos keep their own shape, so portrait photos show in full: give each photo `w` and `h` (its pixel size) and the layout reserves the right space before it loads. Add `tall: true` to a season's `hero` if the main photo is portrait.
 
-### Robot illustrations
+### Season photos
 
-Each season can have a drawing of its robot: set `illustration: /assets/robots/2026.svg` in the season file. It appears beside the season title, on its card on `/history/`, and in the "recent robots" lineup on the home page. The drawings for 2023 to 2026 live in `src/assets/robots/`. To add one, copy an existing SVG and keep its `r-` class names, which the draw-on animation relies on.
+Photos can be linked from anywhere or stored in `src/assets/img/<year>/` and referenced as `/assets/img/<year>/name.jpg`. Keep them around 1800px wide.
 
 ### Motion
 
 - **Grid:** scrolls slower than the page, which gives a parallax effect. The construction lines through the title fade out as soon as you scroll.
-- **Drawing on:** dimension lines draw outward from the center, framed photos wipe in, the record chart stacks up in year order, and robot illustrations are outlined and then filled in.
-- **Reduced motion:** all of it switches off for people who set "reduce motion," and without JavaScript everything shows normally.
+- **Drawing on:** dimension lines draw outward from the center, framed photos wipe in and the record chart stacks up in year order.
+- **Reduced motion:** with "reduce motion" set (on Windows: Settings > Accessibility > Visual effects > Animation effects off), the parallax grid and zoom stop, since large background motion is what causes discomfort. The small drawing-on effects still run. Without JavaScript everything shows normally.
 
 ## Components
 

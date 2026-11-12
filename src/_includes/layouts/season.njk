@@ -9,7 +9,7 @@ layout: layouts/base.njk
 {%- set champ = (championships | byYear(year))[0] %}
 {%- set total = events | recordTotal %}
 
-{{ pageHeader(game, (robot + ", " if robot else "") + (programSeason or ""), year | string, "", illustration) }}
+{{ pageHeader(game, (robot + ", " if robot else "") + (programSeason or ""), year | string) }}
 
 <div class="wrap season-top">
   {%- if hero %}

@@ -87,7 +87,6 @@ photos:
     - { src: "https://www.teamresistance.org/wp-content/uploads/2025/10/IMG_0301.jpg", alt: "Motor issues, at the 2025 Space Coast Showdown", caption: "Motor issues…", tall: true, w: 568, h: 1009 }
     - { src: "https://www.teamresistance.org/wp-content/uploads/2025/10/IMG_0304-1024x576.jpg", alt: "Alliance selection, at the 2025 Space Coast Showdown", caption: "Alliance selection!", w: 1024, h: 576 }
     - { src: "https://www.teamresistance.org/wp-content/uploads/2025/10/IMG_4950-edited.jpg", alt: "GO OHMER, at the 2025 Space Coast Showdown", caption: "GO OHMER!!!", w: 1345, h: 756 }
-illustration: /assets/robots/2025.svg
 ---
 
 ## Build season
