@@ -29,6 +29,10 @@
         </ul>
       </nav>
     </div>
-    <p class="site-footer__legal">© {{ build.year }} {{ site.org.legalName }} FIRST® and FIRST Robotics Competition are registered trademarks of FIRST.</p>
+    <div class="site-footer__bottom">
+      <p class="site-footer__legal">© {{ build.year }} {{ site.org.legalName }} FIRST® and FIRST Robotics Competition are registered trademarks of FIRST.</p>
+      {#- Turns off the moving background and scroll effects (remembered on this device). -#}
+      <button class="motion-toggle" type="button" data-motion-toggle aria-pressed="true">Animations <span class="switch" aria-hidden="true"></span></button>
+    </div>
   </div>
 </footer>

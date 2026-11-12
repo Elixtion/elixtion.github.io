@@ -4,16 +4,26 @@ title: Newsletter
 permalink: /newsletter/
 description: Team Resistance newsletters, with news from the shop, competitions and the community.
 ---
-{% from "components/ui.njk" import pageHeader with context %}
+{#- The newest issue (by date) is shown in full automatically. Add an issue in
+    src/newsletter/issues/ and it takes over the top of this page. -#}
+{% from "components/ui.njk" import pageHeader, detailHead, issueViewer with context %}
+{%- set current = collections.issues[0] %}
 {{ pageHeader("Newsletter", "news from the shop, competitions and the community", collections.issues.length + (" issue" if collections.issues.length == 1 else " issues")) }}
 
-<section class="wrap" aria-labelledby="issues-h">
-  <h2 id="issues-h" class="vh">Issues</h2>
+{%- if current %}
+<section class="detail wrap" aria-labelledby="h-current">
+  {{ detailHead("A", "Current issue", "h-current") }}
+  {{ issueViewer(current) }}
+</section>
+{%- endif %}
+
+<section class="detail wrap" aria-labelledby="issues-h">
+  {{ detailHead("B", "All issues", "issues-h") }}
   <ol class="index-list" role="list">
     {%- for issue in collections.issues %}
     <li>
       <time class="k" datetime="{{ issue.date | isoDate }}">{{ issue.date | readableDate }}</time>
-      <div><h2><a href="{{ issue.url }}">{{ issue.data.title }}</a></h2>{% if issue.data.summary %}<p>{{ issue.data.summary }}</p>{% endif %}</div>
+      <div><h3><a href="{{ issue.url }}">{{ issue.data.title }}</a></h3>{% if issue.data.summary %}<p>{{ issue.data.summary }}</p>{% endif %}</div>
     </li>
     {%- endfor %}
   </ol>

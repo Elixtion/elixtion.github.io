@@ -6,7 +6,8 @@
     "start": "eleventy --serve",
     "build": "eleventy",
     "fetch-brand": "node scripts/fetch-brand.mjs",
-    "test:a11y": "node scripts/a11y-check.mjs"
+    "test:a11y": "node scripts/a11y-check.mjs",
+    "cursors": "node scripts/build-cursors.mjs"
   },
   "keywords": [],
   "author": "",
@@ -18,5 +19,8 @@
     "@fontsource/barlow-condensed": "^5.3.0",
     "playwright": "^1.65.0"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@11ty/eleventy-img": "^6.0.4"
+  }
 }

@@ -1,6 +1,7 @@
 [
   {
     "name": "JEA",
+    "band": "platinum",
     "url": "https://www.jea.com/",
     "logo": "https://www.teamresistance.org/wp-content/uploads/2026/06/JEA_Logo_DarkBackground_Reversed.svg",
     "featured": true,
@@ -9,6 +10,7 @@
   {
     "name": "Florida State College at Jacksonville",
     "short": "FSCJ",
+    "band": "platinum",
     "url": "https://www.fscj.edu/",
     "logo": "https://www.teamresistance.org/wp-content/uploads/2026/06/Logo-of-FSCJ_white_reversed.svg",
     "featured": true,

@@ -4,16 +4,16 @@ title: Sponsors
 permalink: /sponsors/
 description: The companies and organizations that make Team Resistance possible, and how to support the team.
 ---
-{% from "components/ui.njk" import pageHeader, detailHead, sponsorGrid with context %}
+{% from "components/ui.njk" import pageHeader, detailHead, sponsorsByBand with context %}
 {%- set featured = sponsors | where("featured", true) %}
 {{ pageHeader("Sponsors", "the companies and organizations that fund every robot", sponsors.length + " sponsors") }}
 
 <section class="wrap" aria-labelledby="h-all">
   <h2 id="h-all" class="vh">All sponsors</h2>
-  {{ sponsorGrid(sponsors, "h-all") }}
+  {{ sponsorsByBand(sponsors) }}
 </section>
 
-<section class="detail wrap" data-zoom="2" aria-labelledby="h-support">
+<section class="detail wrap" aria-labelledby="h-support">
   {{ detailHead("A", "Support the team", "h-support") }}
   <div class="sponsor-cols">
     <div>

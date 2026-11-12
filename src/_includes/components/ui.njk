@@ -1,5 +1,6 @@
 {#- Reusable drawing parts. Import what you need:
-    {% from "components/ui.njk" import pageHeader, dim, detailHead, figure, seasonCard, resultsTable, recordTable, sponsorGrid, docList %}
+    {% from "components/ui.njk" import pageHeader, dim, detailHead, figure, seasonCard, resultsTable,
+       recordTable, legend, sponsorGrid, sponsorsByBand, bannerRail, issueViewer, docList with context %}
 -#}
 
 {#- Page title. The heading is the CAD origin; the note is drawn with a leader line. -#}
@@ -26,10 +27,12 @@
 <div class="dhead"><span class="bubble" aria-hidden="true">{{ letter }}</span><h2 id="{{ id }}">{{ title }}</h2></div>
 {% endmacro %}
 
-{#- Single framed, auto-numbered figure. -#}
-{% macro figure(src, alt, caption="", lazy=true, cls="", tall=false) %}
+{#- Single framed, auto-numbered figure. Figures near the top of a page pass
+    lazy=false so they load first. Add "fig--hero" to cls for a large photo:
+    it opens up as it scrolls into view. sizes: how wide it shows (see config). -#}
+{% macro figure(src, alt, caption="", lazy=true, cls="", tall=false, sizes="") %}
 <figure class="fig {{ cls }}{% if tall %} fig--tall{% endif %}">
-  <div class="frame"><img src="{{ src }}" alt="{{ alt }}"{% if lazy %} loading="lazy"{% endif %} decoding="async"></div>
+  <div class="frame"><div class="frame__img"><img src="{{ src }}" alt="{{ alt }}"{% if sizes %} data-sizes="{{ sizes }}"{% endif %}{% if lazy %} loading="lazy"{% else %} fetchpriority="high"{% endif %} decoding="async"></div></div>
   {%- if caption %}<figcaption><span class="fig-no" aria-hidden="true"></span><span>{{ caption }}</span></figcaption>{% endif %}
 </figure>
 {% endmacro %}
@@ -37,10 +40,10 @@
 {#- Card for one robot season. -#}
 {% macro seasonCard(season) %}
 <article class="season-card">
-  <div class="frame">
-    {%- if season.data.hero %}<img src="{{ season.data.hero.src }}" alt="" loading="lazy" decoding="async">
+  <div class="frame"><div class="frame__img">
+    {%- if season.data.hero %}<img src="{{ season.data.hero.src }}" alt="" data-sizes="(min-width: 80rem) 25rem, (min-width: 48rem) 50vw, 100vw" loading="lazy" decoding="async">
     {%- else %}<span class="season-card__blank" aria-hidden="true"></span>{% endif %}
-  </div>
+  </div></div>
   <p class="season-card__year" aria-hidden="true">{{ season.data.year }}</p>
   <h3><a href="{{ season.url }}"><span class="vh">{{ season.data.year }}: </span>{{ season.data.game }}</a></h3>
   {%- if season.data.robot %}<p class="season-card__robot">{{ season.data.robot }}</p>{% endif %}
@@ -127,16 +130,56 @@
 </ul>
 {% endmacro %}
 
-{% macro sponsorGrid(sponsors, labelledby) %}
-<ul class="logos" role="list" aria-labelledby="{{ labelledby }}">
-  {%- for s in sponsors %}
+{#- A grid of sponsor logos. band sets the logo size (see _data/sponsorBands.json). -#}
+{% macro sponsorGrid(list, labelledby, band={}) %}
+<ul class="logos" role="list"{% if labelledby %} aria-labelledby="{{ labelledby }}"{% endif %} style="--logo-h:{{ band.logo or 44 }}px;--cell:{{ band.cell or '11rem' }}">
+  {%- for s in list %}
   <li>
-    {%- if s.url %}<a href="{{ s.url }}" rel="noopener">{% endif %}
-    <img src="{{ s.logo }}" alt="{{ s.name }}{% if s.url %} (external site){% endif %}" loading="lazy" decoding="async">
-    {%- if s.url %}</a>{% endif %}
+    {%- if s.url %}<a class="logos__cell" href="{{ s.url }}" rel="noopener">{% else %}<span class="logos__cell">{% endif %}
+    <img src="{{ s.logo }}" alt="{{ s.name }}{% if s.url %} (external site){% endif %}" data-sizes="22rem" loading="lazy" decoding="async">
+    {%- if s.url %}</a>{% else %}</span>{% endif %}
   </li>
   {%- endfor %}
 </ul>
+{% endmacro %}
+
+{#- Every sponsor, grouped by band, largest first. -#}
+{% macro sponsorsByBand(list) %}
+{%- for g in list | byBand(sponsorBands) %}
+<div class="band band--{{ g.id }}">
+  {%- if g.name %}<h3 class="band__name" id="band-{{ g.id }}">{{ g.name }}</h3>{% endif %}
+  {{ sponsorGrid(g.sponsors, ("band-" + g.id) if g.name else "", g) }}
+</div>
+{%- endfor %}
+{% endmacro %}
+
+{#- A row of blue banners hanging from a rail. Pass a list of awards
+    (usually `awards | banners`, or filtered by year). -#}
+{% macro bannerRail(list, label="Blue banners") %}
+{%- if list and list.length %}
+<ul class="banners" role="list" aria-label="{{ label }}">
+  {%- for a in list %}<li class="banners__item">{{ a | bannerSvg | safe }}</li>{% endfor %}
+</ul>
+{%- endif %}
+{% endmacro %}
+
+{#- One newsletter issue, readable on the page: the PDF in a viewer, or the
+    issue's own text if it has no PDF. -#}
+{% macro issueViewer(issue, body="", level=3) %}
+<article class="issue" aria-labelledby="issue-{{ issue.fileSlug }}">
+  <div class="issue__head">
+    <div>
+      <h{{ level }} class="issue__title" id="issue-{{ issue.fileSlug }}">{{ issue.data.title }}</h{{ level }}>
+      <time class="meta" datetime="{{ issue.date | isoDate }}">{{ issue.date | readableDate }}</time>
+    </div>
+    {%- if issue.data.pdf %}<p class="text-links"><a href="{{ issue.data.pdf }}">Open the PDF<span class="vh">: {{ issue.data.title }}</span></a><a href="{{ issue.data.pdf }}" download>Download<span class="vh"> {{ issue.data.title }}</span></a></p>{% endif %}
+  </div>
+  {%- if issue.data.pdf %}
+  <div class="frame issue__viewer"><iframe src="{{ issue.data.pdf }}#view=FitH" title="{{ issue.data.title }} (PDF)" loading="lazy"></iframe></div>
+  {%- else %}
+  <div class="prose">{{ (body or issue.templateContent) | safe }}</div>
+  {%- endif %}
+</article>
 {% endmacro %}
 
 {% macro docList(documents) %}

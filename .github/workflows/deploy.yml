@@ -26,6 +26,14 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Resized photos and downloaded originals are kept between builds.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .cache
+            _site/img
+          key: photos-${{ github.run_id }}
+          restore-keys: photos-
       - name: Download official logos (falls back to the brand site if this fails)
         run: npm run fetch-brand
         continue-on-error: true

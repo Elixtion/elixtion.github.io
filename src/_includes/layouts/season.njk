@@ -4,9 +4,10 @@ layout: layouts/base.njk
 {#- Robot season page. Everything comes from front matter so every season matches.
     See src/history/_TEMPLATE.md for the fields. Awards and Championship appearances
     are pulled from src/_data by year. -#}
-{% from "components/ui.njk" import pageHeader, dim, detailHead, figure, resultsTable with context %}
+{% from "components/ui.njk" import pageHeader, dim, detailHead, figure, resultsTable, bannerRail with context %}
 {%- set seasonAwards = awards | byYear(year) %}
 {%- set champ = (championships | byYear(year))[0] %}
+{%- set seasonBanners = seasonAwards | banners %}
 {%- set total = events | recordTotal %}
 
 {{ pageHeader(game, (robot + ", " if robot else "") + (programSeason or ""), year | string) }}
@@ -14,13 +15,13 @@ layout: layouts/base.njk
 <div class="wrap season-top">
   {%- if hero %}
   {{ dim(year + " season" + (", " + events.length + " events" if events and events.length > 1 else "")) }}
-  {{ figure(hero.src, hero.alt, hero.caption or summary, false, "", hero.tall) }}
+  {{ figure(hero.src, hero.alt, hero.caption or summary, false, "fig--hero", hero.tall) }}
   {%- else %}
   <p class="lede">{{ summary }}</p>
   {%- endif %}
 </div>
 
-<section class="detail wrap" data-zoom="2.5" aria-labelledby="results">
+<section class="detail wrap" aria-labelledby="results">
   {{ detailHead("A", "Results", "results") }}
   {%- set hasAside = seasonAwards.length or champ or (links and links.length) %}
   <div class="season-grid{% if not hasAside %} season-grid--solo{% endif %}">
@@ -34,6 +35,7 @@ layout: layouts/base.njk
     </div>
     {%- if hasAside %}
     <aside class="panel season-awards" aria-label="Awards and links">
+      {%- if seasonBanners.length %}{{ bannerRail(seasonBanners, year + " blue banners") }}{% endif %}
       {%- if seasonAwards.length or champ %}
       <h3>Awards</h3>
       {%- if seasonAwards.length %}
@@ -53,7 +55,7 @@ layout: layouts/base.njk
 </section>
 
 {%- if content | trim %}
-<section class="detail wrap" data-zoom="1.6" aria-labelledby="log">
+<section class="detail wrap" aria-labelledby="log">
   {{ detailHead("B", "Season log", "log") }}
   <div class="prose prose--wide">{{ content | safe }}</div>
 </section>

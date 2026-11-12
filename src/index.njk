@@ -5,7 +5,7 @@ bodyClass: home
 ---
 {#- Home. Almost everything here is pulled from data and collections:
     the first and latest seasons, the latest robot, the record and the sponsors. -#}
-{% from "components/ui.njk" import dim, detailHead, figure, resultsTable, recordTable, legend, sponsorGrid with context %}
+{% from "components/ui.njk" import dim, detailHead, figure, resultsTable, recordTable, legend, sponsorGrid, bannerRail with context %}
 {%- set latest = collections.seasons[0] %}
 {%- set first = collections.seasons | last %}
 {%- set rows = awards | record(championships) %}
@@ -22,18 +22,18 @@ bodyClass: home
     <div class="pair">
       <div class="then">
         <p class="year-label" aria-hidden="true">{{ first.data.year }}</p>
-        {{ figure(first.data.hero.src, first.data.hero.alt, first.data.hero.caption or first.data.summary, false) }}
+        {{ figure(first.data.hero.src, first.data.hero.alt, first.data.hero.caption or first.data.summary, false, "", false, "(min-width: 56rem) 30rem, 100vw") }}
       </div>
       <div class="now">
         <p class="year-label" aria-hidden="true">{{ latest.data.year }}</p>
-        {{ figure(latest.data.hero.src, latest.data.hero.alt, latest.data.hero.caption or latest.data.summary, false) }}
+        {{ figure(latest.data.hero.src, latest.data.hero.alt, latest.data.hero.caption or latest.data.summary, false, "", false, "(min-width: 56rem) 46rem, 100vw") }}
       </div>
     </div>
   </div>
 </header>
 
 <div class="wrap statement">
-  <p class="statement__big">{{ site.statement }}</p>
+  <p class="statement__big" data-words>{{ site.statement }}</p>
   <div>
     <p class="lede">{{ site.lede }}</p>
     <p class="text-links"><a href="#latest">The {{ latest.data.year }} robot</a><a href="#record">Our record</a><a href="/history/">Every season</a></p>
@@ -41,15 +41,15 @@ bodyClass: home
 </div>
 
 <section class="count" aria-label="The team in numbers">
-  <div class="wrap"><p>{{ site.record | emphasize | safe }}</p></div>
+  <div class="wrap"><p data-words>{{ site.record | emphasize | safe }}</p></div>
 </section>
 
-<section class="detail wrap" id="latest" data-zoom="2.5" aria-labelledby="h-latest">
+<section class="detail wrap" id="latest" aria-labelledby="h-latest">
   {{ detailHead("A", latest.data.robot + ", " + latest.data.year, "h-latest") }}
   <div class="feature">
     <div>
       {{ dim(latest.data.game + ", " + latest.data.year + " season") }}
-      {{ figure(latest.data.feature.src if latest.data.feature else latest.data.hero.src, latest.data.feature.alt if latest.data.feature else latest.data.hero.alt, latest.data.feature.caption if latest.data.feature else "") }}
+      {{ figure(latest.data.feature.src if latest.data.feature else latest.data.hero.src, latest.data.feature.alt if latest.data.feature else latest.data.hero.alt, latest.data.feature.caption if latest.data.feature else "", true, "fig--hero", false, "(min-width: 61rem) 44rem, 100vw") }}
     </div>
     <div>
       {{ resultsTable(latest.data.events, latest.data.specs, "Event results", false) }}
@@ -58,23 +58,26 @@ bodyClass: home
   </div>
   {%- if latest.data.highlights %}
   <div class="strip">
-    {%- for h in latest.data.highlights %}{{ figure(h.src, h.alt, h.caption) }}{% endfor %}
+    {%- for h in latest.data.highlights %}{{ figure(h.src, h.alt, h.caption, true, "", false, "(min-width: 80rem) 25rem, 33vw") }}{% endfor %}
   </div>
   {%- endif %}
 </section>
 
 
-<section class="detail wrap" id="record" data-zoom="4" aria-labelledby="h-record">
+<section class="detail wrap" id="record" aria-labelledby="h-record">
   {{ detailHead("B", "Our record", "h-record") }}
+  {{ bannerRail(awards | banners) }}
   {{ legend() }}
   {% recordChart awards, championships %}
   {{ recordTable(rows, 5, "/awards/", "Full awards page") }}
 </section>
 
-<section class="wrap detail" style="padding-top:0" aria-labelledby="h-sponsors">
+{#- Only the featured sponsors (featured: true in sponsors.json) appear here. -#}
+{%- set featured = sponsors | where("featured", true) %}
+<section class="wrap detail" aria-labelledby="h-sponsors">
   <div class="sponsors-head">
     <h2 id="h-sponsors">Sponsors</h2>
-    <p>These companies fund the parts, tools and travel behind every robot. <a href="/sponsors/">Sponsorship information</a></p>
+    <p>{% for s in featured %}{{ s.short or s.name }}{% if not loop.last %} and {% endif %}{% endfor %} lead the companies that fund the parts, tools and travel behind every robot. <a href="/sponsors/">All {{ sponsors.length }} sponsors</a></p>
   </div>
-  {{ sponsorGrid(sponsors, "h-sponsors") }}
+  {{ sponsorGrid(featured, "h-sponsors", sponsorBands | bandOf("platinum")) }}
 </section>

@@ -26,7 +26,6 @@
 <body class="{{ bodyClass }}">
   <a class="skip-link" href="#main">Skip to main content</a>
   <canvas class="cad" aria-hidden="true" data-cad></canvas>
-  <div class="status" aria-hidden="true"><span>X <b data-x>0.0</b></span><span>Y <b data-y>0.0</b></span><span>mm</span></div>
   {% include "partials/header.njk" %}
   <main id="main" tabindex="-1">
     {{ content | safe }}

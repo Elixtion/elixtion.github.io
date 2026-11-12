@@ -30,7 +30,8 @@
   --wrap: 77.5rem;
   --gutter: clamp(1.25rem, 4vw, 2.5rem);
   --header-h: 4.5rem;
-  --space: clamp(4rem, 10vw, 8rem);
+  /* One gap between every top-level block on every page */
+  --section: clamp(3rem, 1.6rem + 3.6vw, 5.25rem);
 }
 
 /* ---------- Base ---------- */
@@ -38,8 +39,13 @@
 [hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overflow-x: clip; scroll-padding-top: 1rem; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+/* Cursor: a T-handle hex key (gold grip over anything clickable) */
+html { cursor: url("/assets/cursor/t-handle-32.png") 2 2, auto; cursor: -webkit-image-set(url("/assets/cursor/t-handle-32.png") 1x, url("/assets/cursor/t-handle-64.png") 2x) 2 2, auto; }
+a, button, summary, select, label.choice, .gallery__link, [role="button"] { cursor: url("/assets/cursor/t-handle-link-32.png") 2 2, pointer; cursor: -webkit-image-set(url("/assets/cursor/t-handle-link-32.png") 1x, url("/assets/cursor/t-handle-link-64.png") 2x) 2 2, pointer; }
+input:not([type="checkbox"], [type="radio"]), textarea { cursor: text; }
 body { margin: 0; background: var(--ink); color: var(--paper); font: 400 1.0625rem/1.65 var(--sans); -webkit-font-smoothing: antialiased; }
 img, svg { display: block; max-width: 100%; height: auto; }
+picture { display: contents; }
 img { color: var(--soft); font-size: .9rem; }
 a { color: var(--gold); text-underline-offset: .2em; text-decoration-thickness: 1px; }
 a:hover { text-decoration-thickness: 2px; }
@@ -63,9 +69,6 @@ main:focus { outline: none; }
 
 /* ---------- CAD viewport ---------- */
 .cad { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
-.status { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; display: flex; gap: 1.5rem; justify-content: flex-end; padding: .3rem 1rem; background: rgba(11, 14, 12, .94); border-top: 1px solid var(--rule); font-family: var(--cond); font-weight: 600; font-size: .85rem; letter-spacing: .04em; color: var(--dimc); pointer-events: none; font-variant-numeric: tabular-nums; }
-.status b { color: var(--paper); font-weight: 600; display: inline-block; min-width: 4.5em; text-align: right; }
-@media (hover: none), (max-width: 40rem) { .status { display: none; } }
 
 /* ---------- Drawing parts ---------- */
 .dim { position: relative; height: 30px; color: var(--dimc); }
@@ -83,11 +86,24 @@ main:focus { outline: none; }
 /* Numbered figures with corner marks */
 body { counter-reset: fig; }
 .fig { margin: 0; counter-increment: fig; }
-.frame { position: relative; display: block; border: 1px solid var(--rule-strong); padding: 6px; background: var(--ink); }
-.frame::before, .frame::after { content: ""; position: absolute; width: 14px; height: 14px; border: 0 solid var(--dimc); pointer-events: none; }
-.frame::before { left: -8px; top: -8px; border-width: 1px 0 0 1px; }
-.frame::after { right: -8px; bottom: -8px; border-width: 0 1px 1px 0; }
+/* A frame hugs its photo: a 1px border with corner brackets drawn on the
+   border's own corners, so nothing can sit away from the photo. */
+.frame { --c: var(--dimc); position: relative; display: block; border: 1px solid var(--rule-strong); padding: 5px; background: var(--ink); }
+.frame::after {
+  content: ""; position: absolute; inset: -1px; pointer-events: none;
+  background:
+    linear-gradient(var(--c), var(--c)) left top / 14px 2px, linear-gradient(var(--c), var(--c)) left top / 2px 14px,
+    linear-gradient(var(--c), var(--c)) right top / 14px 2px, linear-gradient(var(--c), var(--c)) right top / 2px 14px,
+    linear-gradient(var(--c), var(--c)) left bottom / 14px 2px, linear-gradient(var(--c), var(--c)) left bottom / 2px 14px,
+    linear-gradient(var(--c), var(--c)) right bottom / 14px 2px, linear-gradient(var(--c), var(--c)) right bottom / 2px 14px;
+  background-repeat: no-repeat;
+}
+a.frame:hover { --c: var(--gold); }
+/* While a photo loads, its space shows a section hatch rather than nothing. */
+.frame__img { position: relative; display: block; overflow: hidden; background: var(--panel) repeating-linear-gradient(-45deg, transparent 0 9px, rgba(255, 255, 255, .045) 9px 10px); }
 .frame img { width: 100%; object-fit: cover; }
+.js .frame__img img { opacity: 0; transition: opacity .45s ease; }
+.js .frame__img img.is-loaded { opacity: 1; }
 figcaption { display: flex; gap: .75rem; color: var(--soft); font-size: .95rem; padding-top: .7rem; line-height: 1.4; }
 .fig-no::before { content: "Fig. " counter(fig); font-family: var(--cond); font-weight: 600; color: var(--paper); white-space: nowrap; }
 
@@ -98,7 +114,10 @@ figcaption { display: flex; gap: .75rem; color: var(--soft); font-size: .95rem; 
 .bubble::after { content: ""; position: absolute; left: 100%; top: 50%; width: 14px; border-top: 1.5px solid var(--dimc); }
 .dhead h2 { margin-left: .5rem; }
 
-.detail { padding-block: var(--space); }
+/* Spacing: every top-level block in <main> is one --section apart. */
+main > * + * { margin-top: var(--section); }
+main > .page-header + * { margin-top: calc(var(--section) * .55); }
+main > :last-child { margin-bottom: var(--section); }
 
 /* Buttons are rare: links do most of the work */
 .btn { display: inline-flex; align-items: center; min-height: 48px; padding: .6rem 1.3rem; border: 1px solid var(--gold); color: var(--gold); text-decoration: none; font-weight: 600; }
@@ -145,15 +164,14 @@ figcaption { display: flex; gap: .75rem; color: var(--soft); font-size: .95rem; 
 }
 
 /* ---------- Page header (every page) ---------- */
-.page-header { padding-block: clamp(3rem, 8vw, 6rem) clamp(2rem, 5vw, 3.5rem); }
+.page-header { padding-top: clamp(3rem, 8vw, 6rem); }
 .page-title { font-family: var(--cond); font-weight: 800; text-transform: uppercase; font-size: clamp(3rem, 1.2rem + 8vw, 8.5rem); line-height: .86; letter-spacing: -.01em; width: fit-content; max-width: 100%; }
 .page-header .dim { margin-top: 2.5rem; }
-.page-body { padding-bottom: var(--space); }
+
 .page-hero { margin-bottom: 3rem; max-width: 60rem; }
 .page-hero img { aspect-ratio: 16 / 9; }
 
 /* ---------- Home ---------- */
-.home .page-header { padding-bottom: 0; }
 .home .page-title { font-size: clamp(3.6rem, 1.2rem + 12vw, 12.5rem); line-height: .84; }
 .compare { margin-top: clamp(3rem, 7vw, 5rem); }
 .compare .dim { display: none; margin-bottom: .8rem; }
@@ -165,7 +183,7 @@ figcaption { display: flex; gap: .75rem; color: var(--soft); font-size: .95rem; 
 .then img { aspect-ratio: 10 / 7; filter: grayscale(.35); }
 .now img { aspect-ratio: 3 / 2; }
 
-.statement { margin-top: clamp(3rem, 7vw, 5rem); padding-bottom: clamp(3rem, 7vw, 5rem); display: grid; grid-template-columns: 1fr; gap: 1.5rem 3rem; }
+.statement { display: grid; grid-template-columns: 1fr; gap: 1.5rem 3rem; }
 @media (min-width: 56rem) { .statement { grid-template-columns: 1.5fr 1fr; align-items: end; } }
 .statement__big { font-family: var(--cond); font-weight: 800; font-size: clamp(2.4rem, 1.5rem + 3.2vw, 4.6rem); line-height: .98; letter-spacing: -.01em; margin: 0; max-width: 16ch; }
 .statement .lede { margin-bottom: 1.25rem; }
@@ -176,10 +194,12 @@ figcaption { display: flex; gap: .75rem; color: var(--soft); font-size: .95rem; 
 .count em { font-style: normal; color: var(--gold); }
 
 .feature { display: grid; grid-template-columns: 1fr; gap: 2.5rem; }
+/* Grid children may shrink below their content (wide tables scroll instead). */
+:is(.feature, .season-grid, .pair, .statement, .contact-grid, .sponsor-cols) > * { min-width: 0; }
 @media (min-width: 61rem) { .feature { grid-template-columns: 1.35fr 1fr; align-items: start; } }
 .feature .dim { margin-bottom: .8rem; }
 .feature .frame img { aspect-ratio: 3 / 2; }
-.strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 3rem; }
+.strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 2.5rem; }
 .strip .frame img { aspect-ratio: 4 / 3; }
 @media (max-width: 37.5rem) { .strip { grid-template-columns: 1fr 1fr; } }
 
@@ -206,7 +226,7 @@ td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mk { display: inline-block; flex: none; width: 11px; height: 11px; margin-right: .5rem; vertical-align: -1px; background: var(--soft); }
 .mk.w { background: var(--gold); }
 .mk.c { width: 0; height: 0; background: none; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 11px solid var(--volt); }
-.chart { position: relative; height: 64px; margin: 0 6px 4.25rem; }
+.chart { position: relative; height: 64px; margin: 0 6px 3.75rem; }
 @media (max-width: 47.5rem) { .chart { display: none; } }
 .chart::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; border-top: 1px solid var(--dimc); }
 .chart .t { position: absolute; bottom: -6px; height: 6px; border-left: 1px solid var(--dimc); }
@@ -246,7 +266,7 @@ td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .more-rows > summary:hover { background: rgba(255, 255, 255, .04); }
 
 /* ---------- Robots index ---------- */
-.season-list { display: grid; gap: 3.5rem 2.5rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); padding-bottom: var(--space); }
+.season-list { display: grid; gap: 3.5rem 2.5rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); }
 .season-card { position: relative; }
 .season-card .frame img, .season-card__blank { aspect-ratio: 3 / 2; display: block; width: 100%; object-fit: cover; }
 .season-card__blank { background: repeating-linear-gradient(-45deg, transparent 0 10px, rgba(255, 255, 255, .05) 10px 11px); }
@@ -273,7 +293,7 @@ td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .season-awards .mk { margin-top: .4rem; }
 .season-awards li.win b { color: var(--gold); }
 .links-list li + li { margin-top: .4rem; }
-.pager { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding-bottom: var(--space); }
+.pager { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .pager__link { display: flex; flex-direction: column; gap: .2rem; padding: 1.1rem 1.25rem; border: 1px solid var(--rule-strong); background: var(--panel); color: var(--paper); text-decoration: none; font: 800 1.4rem/1.15 var(--cond); }
 .pager__link span { font: 600 .9rem/1 var(--sans); color: var(--soft); }
 .pager__link:hover { border-color: var(--gold); }
@@ -284,7 +304,7 @@ td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .prose { max-width: 46rem; }
 .prose--wide { max-width: none; }
 .prose--wide > p, .prose--wide > ul, .prose--wide > ol, .prose--wide > h2, .prose--wide > h3 { max-width: 46rem; }
-.prose h2 { font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.3rem); margin: 3.5rem 0 1rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); }
+.prose h2 { font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.3rem); margin: 3rem 0 1rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); }
 .prose h2:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
 .prose h3 { margin: 2rem 0 .6rem; }
 .prose p, .prose li { color: #DDE2DF; }
@@ -295,10 +315,9 @@ td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .callout__title { font-family: var(--cond); font-weight: 800; font-size: 1.25rem; margin-bottom: .25rem; }
 .callout > :last-child { margin-bottom: 0; }
 
-.gallery { margin: 1.5rem 0 3rem; }
+.gallery { margin: 1.5rem 0 2.5rem; }
 .gallery__grid { display: grid; gap: 1.75rem 1.5rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); }
-.gallery__link img { transition: opacity .2s; }
-.gallery__link:hover img { opacity: .85; }
+
 
 .lightbox { padding: 0; border: 0; background: transparent; color: var(--paper); width: 100vw; height: 100dvh; max-width: 100vw; max-height: 100dvh; }
 .lightbox::backdrop { background: rgba(11, 14, 12, .96); }
@@ -314,12 +333,15 @@ td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* ---------- Sponsors ---------- */
 .sponsors-head { display: flex; justify-content: space-between; align-items: end; gap: 1rem 2rem; flex-wrap: wrap; margin-bottom: 1.75rem; }
 .sponsors-head p { margin: 0; color: var(--soft); max-width: 34rem; }
-.logos { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); }
+/* Logo size follows the sponsor's band: --logo-h and --cell come from
+   _data/sponsorBands.json through the sponsorGrid macro. */
+.logos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--cell, 11rem)), 1fr)); border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); }
 .logos li { border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); background: var(--panel); }
-.logos li > a, .logos li > img { display: grid; place-items: center; min-height: 110px; padding: 1.25rem; }
-.logos a:hover { background: rgba(255, 255, 255, .05); }
-.logos img { max-height: 44px; width: auto; max-width: 100%; margin: auto; }
-.logos li > img { min-height: 0; box-sizing: content-box; max-height: 44px; }
+.logos__cell { display: grid; place-items: center; height: 100%; min-height: calc(var(--logo-h, 44px) + 4rem); padding: 1.25rem; }
+a.logos__cell:hover { background: rgba(255, 255, 255, .05); }
+.logos img { height: auto; width: auto; max-height: var(--logo-h, 44px); max-width: 100%; margin: auto; }
+.band + .band { margin-top: 2.5rem; }
+.band__name { font-size: 1.25rem; text-transform: uppercase; color: var(--soft); margin-bottom: .9rem; }
 .sponsor-cols { display: grid; gap: 3rem; grid-template-columns: 1fr; }
 @media (min-width: 56rem) { .sponsor-cols { grid-template-columns: 1fr 1fr; } }
 .sponsor-cols p { color: var(--soft); }
@@ -338,20 +360,20 @@ td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .doc__type { font-family: var(--cond); font-weight: 600; color: var(--soft); border: 1px solid var(--rule-strong); padding: .1rem .5rem; }
 
 /* ---------- Index pages (resources, newsletter) ---------- */
-.index-list { border-top: 1px solid var(--rule-strong); margin-bottom: var(--space); }
+.index-list { border-top: 1px solid var(--rule-strong); }
 .index-list li { position: relative; display: grid; gap: .25rem 2rem; padding: 1.4rem 0; border-bottom: 1px solid var(--rule); }
 @media (min-width: 48rem) { .index-list li { grid-template-columns: 14rem 1fr; align-items: baseline; } }
 .index-list .k { font-family: var(--cond); font-weight: 600; color: var(--soft); }
-.index-list h2 { font-size: 1.9rem; text-transform: none; }
-.index-list h2 a { color: var(--paper); text-decoration: none; }
-.index-list h2 a::after { content: ""; position: absolute; inset: 0; }
-.index-list li:hover h2 a { text-decoration: underline; text-decoration-color: var(--gold); }
+.index-list :is(h2, h3) { font-size: 1.9rem; text-transform: none; }
+.index-list :is(h2, h3) a { color: var(--paper); text-decoration: none; }
+.index-list :is(h2, h3) a::after { content: ""; position: absolute; inset: 0; }
+.index-list li:hover :is(h2, h3) a { text-decoration: underline; text-decoration-color: var(--gold); }
 .index-list li:has(a:focus-visible) { outline: 2px solid var(--gold); outline-offset: 4px; }
-.index-list h2 a:focus-visible { outline: none; }
+.index-list :is(h2, h3) a:focus-visible { outline: none; }
 .index-list p { margin: .3rem 0 0; color: var(--soft); }
 
 /* ---------- Forms ---------- */
-.contact-grid { display: grid; gap: 3rem; grid-template-columns: 1fr; padding-bottom: var(--space); }
+.contact-grid { display: grid; gap: 3rem; grid-template-columns: 1fr; }
 @media (min-width: 64rem) { .contact-grid { grid-template-columns: minmax(0, 1fr) 21rem; align-items: start; } }
 .form { display: grid; gap: 1.5rem; max-width: 46rem; }
 .form-row { display: grid; gap: 1.5rem; }
@@ -402,28 +424,34 @@ td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tb__nav { padding: .75rem 1rem; }
 .tb__nav ul { display: flex; flex-wrap: wrap; gap: .25rem 1.4rem; }
 .tb__nav a { color: var(--paper); display: inline-flex; min-height: 32px; align-items: center; }
-.site-footer__legal { margin: 1rem 0 0; font-size: .85rem; color: var(--dimc); }
+.site-footer__bottom { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 2rem; margin-top: 1rem; }
+.site-footer__legal { margin: 0; font-size: .85rem; color: var(--dimc); }
+.motion-toggle { display: inline-flex; align-items: center; gap: .6rem; min-height: 44px; padding: 0; background: none; border: 0; color: var(--soft); font: 600 .95rem/1 var(--sans); }
+.no-js .motion-toggle { display: none; }
+.motion-toggle .switch { position: relative; width: 34px; height: 18px; border: 1px solid var(--dimc); border-radius: 9px; }
+.motion-toggle .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--dimc); transition: transform .2s; }
+.motion-toggle[aria-pressed="true"] .switch { border-color: var(--volt); }
+.motion-toggle[aria-pressed="true"] .switch::after { transform: translateX(16px); background: var(--volt); }
+.motion-toggle:hover { color: var(--paper); }
 
 /* ---------- 404 ---------- */
-.not-found { padding-bottom: var(--space); }
+
 
 /* ---------- Preferences ---------- */
+/* Scroll effects follow the site's own Animations switch (footer), not the
+   system setting, so the hover/menu transitions are what this trims. */
 @media (prefers-reduced-motion: reduce) {
-  /* Scroll reveals are exempt: see "Scroll reveals" below. */
-  :not([data-reveal]):not([data-reveal] *),
-  :not([data-reveal]):not([data-reveal] *)::before,
-  :not([data-reveal]):not([data-reveal] *)::after { transition-duration: .01ms !important; animation-duration: .01ms !important; scroll-behavior: auto !important; }
+  html:not(.motion) *, html:not(.motion) *::before, html:not(.motion) *::after { transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 @media (forced-colors: active) {
-  .cad, .status { display: none; }
+  .cad { display: none; }
   .panel, .frame, .btn, .pager__link { border: 1px solid CanvasText; }
   .mk, .chart .sq { forced-color-adjust: none; }
 }
 @media print {
-  .cad, .status, .site-header, .site-footer, .skip-link, .pager { display: none !important; }
+  .cad, .site-header, .site-footer, .skip-link, .pager { display: none !important; }
   body { background: #fff; color: #000; }
-  .frame img { clip-path: none !important; }
-  .dim::before { transform: none !important; }
+  .frame__img, .frame__img img, .bb, [style*="--p"] { clip-path: none !important; transform: none !important; opacity: 1 !important; }
 }
 
 /* ==========================================================================
@@ -435,30 +463,52 @@ td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .gallery__grid > li { break-inside: avoid; margin-bottom: 1.75rem; }
 .gallery__link img { height: auto; }
 .gallery__link img:not([style]) { aspect-ratio: 4 / 3; }
+.gallery__link img { transition: opacity .45s ease; }
 .fig--tall { max-width: 28rem; }
 .fig--tall .frame img { aspect-ratio: auto !important; }
 
 /* Season results without an awards panel use the full width */
 .season-grid--solo { grid-template-columns: 1fr !important; max-width: 60rem; }
 
-/* ---------- Scroll reveals (with JS) ----------
-   Small, local effects: they run for everyone, including people who set
-   "reduce motion", because nothing large moves across the screen. The
-   parallax grid and zoom, which do, stay off for them (see main.js). */
-/* Dimension lines draw outward from the centre, then the label appears */
-.js .dim[data-reveal]::before { transform: scaleX(0); transition: transform .9s cubic-bezier(.2, .7, .2, 1); }
-.js .dim[data-reveal]::after, .js .dim[data-reveal] i, .js .dim[data-reveal] span { opacity: 0; transition: opacity .4s ease .6s; }
-.js .dim[data-reveal].is-in::before { transform: scaleX(1); }
-.js .dim[data-reveal].is-in::after, .js .dim[data-reveal].is-in i, .js .dim[data-reveal].is-in span { opacity: 1; }
+/* ==========================================================================
+   Blue banners (drawn by the bannerSvg filter)
+   ========================================================================== */
+ul.banners { --w: clamp(6rem, 11vw, 9.5rem); display: flex; flex-wrap: wrap; gap: 2rem 1.25rem; margin: 0 0 2.75rem; }
+.banners__item { position: relative; width: var(--w); }
+/* The pole runs through each banner's sleeve and joins up along a row. */
+.banners__item::before { content: ""; position: absolute; z-index: 1; left: -.7rem; right: -.7rem; top: calc(var(--w) * .05 - 2px); height: 4px; border-radius: 2px; background: linear-gradient(#EEF1F2, #8C9599); }
+.bb { width: 100%; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .5)); }
+.season-awards ul.banners { --w: 6.5rem; margin-bottom: 1.5rem; }
 
-/* Framed photos: corner marks snap into place and the image wipes in */
-.js .frame[data-reveal]::before { transform: translate(-10px, -10px); opacity: 0; transition: transform .6s ease, opacity .6s ease; }
-.js .frame[data-reveal]::after { transform: translate(10px, 10px); opacity: 0; transition: transform .6s ease, opacity .6s ease; }
-.js .frame[data-reveal] img { clip-path: inset(0 100% 0 0); transition: clip-path .9s cubic-bezier(.2, .7, .2, 1) .1s; }
-.js .frame[data-reveal].is-in::before, .js .frame[data-reveal].is-in::after { transform: none; opacity: 1; }
-.js .frame[data-reveal].is-in img { clip-path: inset(0 0 0 0); }
+/* ==========================================================================
+   Newsletter viewer
+   ========================================================================== */
+.issue__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: .75rem 2rem; margin-bottom: 1.25rem; }
+.issue__title { font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.2rem); text-transform: uppercase; }
+.issue__viewer iframe { display: block; width: 100%; height: min(85vh, 72rem); border: 0; background: #fff; }
+@media (max-width: 48rem) { .issue__viewer { display: none; } }
 
-/* Record chart: ticks, then squares stack up in time order */
-.js .chart[data-reveal] .sq, .js .chart[data-reveal] .ch { opacity: 0; transform: translateY(8px); transition: opacity .35s ease, transform .35s ease; transition-delay: calc(var(--i, 0) * 18ms); }
-.js .chart[data-reveal].is-in .sq, .js .chart[data-reveal].is-in .ch { opacity: 1; transform: none; }
+/* ==========================================================================
+   Scroll effects. JS sets --p (0 to 1 as an element comes up the screen),
+   --d (-1 to 1 as it passes the middle) and --u (per banner). They only
+   apply while the "motion" class is on <html>; without JS, or with the
+   Animations switch off, everything simply shows.
+   ========================================================================== */
+.motion .dim::before { transform: scaleX(var(--p, 1)); }
+.motion .dim::after, .motion .dim i, .motion .dim span { opacity: clamp(0, (var(--p, 1) - .55) * 4, 1); }
 
+.motion .fig--hero .frame__img { clip-path: inset(calc((1 - var(--p, 1)) * 9%) calc((1 - var(--p, 1)) * 13%)); }
+.motion .fig--hero .frame__img img { transform: scale(calc(1 + (1 - var(--p, 1)) * .16)); }
+.motion .frame__img img { transform: translateY(calc(var(--d, 0) * -3.5%)) scale(1.08); transform-origin: center; }
+.motion .fig--hero .frame__img img { transform: translateY(calc(var(--d, 0) * -2%)) scale(calc(1.05 + (1 - var(--p, 1)) * .16)); }
+
+.motion :is(.gallery__grid > li, .strip > .fig, .season-list > li) {
+  transform: translateY(calc((1 - var(--p, 1)) * 44px));
+}
+
+.motion .chart .sq, .motion .chart .ch { opacity: 0; transform: translateY(8px); transition: opacity .25s ease, transform .25s ease; }
+.motion .chart .on { opacity: 1; transform: none; }
+
+.motion .banners__item .bb { clip-path: inset(0 0 calc((1 - var(--u, 1)) * 94%) 0); }
+
+[data-words] .wd { transition: opacity .15s linear; }

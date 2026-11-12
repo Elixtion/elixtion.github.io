@@ -1,0 +1,8 @@
+[
+  { "id": "platinum", "name": "Platinum Band", "logo": 96, "cell": "22rem" },
+  { "id": "gold", "name": "Gold Band", "logo": 72, "cell": "17rem" },
+  { "id": "blue", "name": "Blue Band", "logo": 60, "cell": "14rem" },
+  { "id": "green", "name": "Green Band", "logo": 52, "cell": "12.5rem" },
+  { "id": "orange", "name": "Orange Band", "logo": 44, "cell": "11rem" },
+  { "id": "supporter", "name": "Supporter Band", "logo": 36, "cell": "9.5rem" }
+]
