@@ -1,0 +1,79 @@
+---
+layout: layouts/base.njk
+title: Home
+bodyClass: home
+---
+{#- Home. Almost everything here is pulled from data and collections:
+    the first and latest seasons, the latest robot, the record and the sponsors. -#}
+{% from "components/ui.njk" import dim, detailHead, figure, resultsTable, recordTable, legend, sponsorGrid with context %}
+{%- set latest = collections.seasons[0] %}
+{%- set first = collections.seasons | last %}
+{%- set rows = awards | record(championships) %}
+
+<header class="page-header wrap">
+  <h1 class="page-title" id="page-title" data-origin>{{ site.name }}</h1>
+  <p class="note">
+    <svg width="46" height="28" viewBox="0 0 46 28" aria-hidden="true"><circle cx="4" cy="4" r="3" fill="currentColor"/><path d="M4 4 L18 24 H46" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+    <span><b>{{ site.team }}</b>, {{ site.intro }}</span>
+  </p>
+
+  <div class="compare">
+    {{ dim((latest.data.year - first.data.year) + " seasons") }}
+    <div class="pair">
+      <div class="then">
+        <p class="year-label" aria-hidden="true">{{ first.data.year }}</p>
+        {{ figure(first.data.hero.src, first.data.hero.alt, first.data.hero.caption or first.data.summary, false) }}
+      </div>
+      <div class="now">
+        <p class="year-label" aria-hidden="true">{{ latest.data.year }}</p>
+        {{ figure(latest.data.hero.src, latest.data.hero.alt, latest.data.hero.caption or latest.data.summary, false) }}
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap statement">
+  <p class="statement__big">{{ site.statement }}</p>
+  <div>
+    <p class="lede">{{ site.lede }}</p>
+    <p class="text-links"><a href="#latest">The {{ latest.data.year }} robot</a><a href="#record">Our record</a><a href="/history/">Every season</a></p>
+  </div>
+</div>
+
+<section class="count" aria-label="The team in numbers">
+  <div class="wrap"><p>{{ site.record | emphasize | safe }}</p></div>
+</section>
+
+<section class="detail wrap" id="latest" data-zoom="2.5" aria-labelledby="h-latest">
+  {{ detailHead("A", latest.data.robot + ", " + latest.data.year, "h-latest") }}
+  <div class="feature">
+    <div>
+      {{ dim(latest.data.game + ", " + latest.data.year + " season") }}
+      {{ figure(latest.data.feature.src if latest.data.feature else latest.data.hero.src, latest.data.feature.alt if latest.data.feature else latest.data.hero.alt, latest.data.feature.caption if latest.data.feature else "") }}
+    </div>
+    <div>
+      {{ resultsTable(latest.data.events, latest.data.specs, "Event results", false) }}
+      <p class="more"><a href="{{ latest.url }}">The full {{ latest.data.year }} season log</a></p>
+    </div>
+  </div>
+  {%- if latest.data.highlights %}
+  <div class="strip">
+    {%- for h in latest.data.highlights %}{{ figure(h.src, h.alt, h.caption) }}{% endfor %}
+  </div>
+  {%- endif %}
+</section>
+
+<section class="detail wrap" id="record" data-zoom="4" aria-labelledby="h-record">
+  {{ detailHead("B", "Our record", "h-record") }}
+  {{ legend() }}
+  {% recordChart awards, championships %}
+  {{ recordTable(rows, 5, "/awards/", "Full awards page") }}
+</section>
+
+<section class="wrap detail" style="padding-top:0" aria-labelledby="h-sponsors">
+  <div class="sponsors-head">
+    <h2 id="h-sponsors">Sponsors</h2>
+    <p>These companies fund the parts, tools and travel behind every robot. <a href="/sponsors/">Sponsorship information</a></p>
+  </div>
+  {{ sponsorGrid(sponsors, "h-sponsors") }}
+</section>

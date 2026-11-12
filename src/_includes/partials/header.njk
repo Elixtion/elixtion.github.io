@@ -1,0 +1,38 @@
+<header class="site-header" data-header>
+  <div class="site-header__inner wrap">
+    <a class="site-header__brand" href="/">
+      <img src="{{ logos.logoHorizontalDark }}" alt="Team Resistance, FRC Team 86, home" height="34">
+    </a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" data-nav-toggle>
+      <span class="nav-toggle__bars" aria-hidden="true"></span><span class="nav-toggle__label">Menu</span>
+    </button>
+
+    <nav class="site-nav" id="site-nav" aria-label="Main" data-nav>
+      <ul class="site-nav__list" role="list">
+        {%- for item in nav %}
+        {%- set current = item.url | isCurrent(page.url) %}
+        {%- if item.collection %}
+        {%- set subId = "sub-" + loop.index %}
+        <li class="site-nav__item has-sub">
+          <button class="site-nav__link{% if current %} is-current{% endif %}" type="button" aria-expanded="false" aria-controls="{{ subId }}" data-sub-toggle>
+            {{ item.label }}<svg class="chev" aria-hidden="true" viewBox="0 0 12 12" width="12" height="12"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+          </button>
+          <ul class="site-nav__sub" id="{{ subId }}" role="list">
+            <li><a href="{{ item.url }}"{% if page.url == item.url %} aria-current="page"{% endif %}>{{ item.overview or item.label }}</a></li>
+            {%- for entry in collections[item.collection] %}
+            <li><a href="{{ entry.url }}"{% if page.url == entry.url %} aria-current="page"{% endif %}>{{ entry.data.navLabel or entry.data.title }}</a></li>
+            {%- endfor %}
+            {%- for x in item.extra %}
+            <li><a href="{{ x.url }}"{% if x.external %} rel="noopener"{% endif %}>{{ x.label }}{% if x.external %}<span class="vh"> (external site)</span>{% endif %}</a></li>
+            {%- endfor %}
+          </ul>
+        </li>
+        {%- else %}
+        <li class="site-nav__item"><a class="site-nav__link{% if current %} is-current{% endif %}" href="{{ item.url }}"{% if page.url == item.url %} aria-current="page"{% endif %}>{{ item.label }}</a></li>
+        {%- endif %}
+        {%- endfor %}
+      </ul>
+    </nav>
+  </div>
+</header>

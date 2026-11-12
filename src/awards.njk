@@ -1,0 +1,21 @@
+---
+layout: layouts/base.njk
+title: Awards
+permalink: /awards/
+description: Every award, event win and FIRST Championship appearance for Team Resistance since 1996.
+---
+{#- The full record. This is the page people choose for detail, so nothing is collapsed. -#}
+{% from "components/ui.njk" import pageHeader, detailHead, recordTable, legend with context %}
+{%- set rows = awards | record(championships) %}
+{{ pageHeader("Awards", "every award, event win and FIRST Championship appearance", awards.length + " awards", "1996 to " + build.year) }}
+
+<section class="count" aria-label="The team in numbers">
+  <div class="wrap"><p>{{ site.record | emphasize | safe }}</p></div>
+</section>
+
+<section class="detail wrap" data-zoom="3" aria-labelledby="h-chart">
+  {{ detailHead("A", "By season", "h-chart") }}
+  {{ legend() }}
+  {% recordChart awards, championships %}
+  {{ recordTable(rows) }}
+</section>

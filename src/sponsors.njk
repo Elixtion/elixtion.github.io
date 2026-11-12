@@ -1,0 +1,31 @@
+---
+layout: layouts/base.njk
+title: Sponsors
+permalink: /sponsors/
+description: The companies and organizations that make Team Resistance possible, and how to support the team.
+---
+{% from "components/ui.njk" import pageHeader, detailHead, sponsorGrid with context %}
+{%- set featured = sponsors | where("featured", true) %}
+{{ pageHeader("Sponsors", "the companies and organizations that fund every robot", sponsors.length + " sponsors") }}
+
+<section class="wrap" aria-labelledby="h-all">
+  <h2 id="h-all" class="vh">All sponsors</h2>
+  {{ sponsorGrid(sponsors, "h-all") }}
+</section>
+
+<section class="detail wrap" data-zoom="2" aria-labelledby="h-support">
+  {{ detailHead("A", "Support the team", "h-support") }}
+  <div class="sponsor-cols">
+    <div>
+      <h3>Companies and organizations</h3>
+      <p>Sponsorship can be financial, materials, mentorship, or event and workspace support. {% for s in featured %}{{ s.name }}{% if s.note %} ({{ s.note | lower }}){% endif %}{% if not loop.last %} and {% endif %}{% endfor %} lead the way.</p>
+      <p class="text-links"><a href="{{ site.links.sponsorshipPacket }}">Sponsorship packet (PDF)</a><a href="/contact/?type=sponsorship">Talk to us about sponsoring</a></p>
+    </div>
+    <div>
+      <h3>Individuals</h3>
+      <p>{{ site.org.legalName }} is a {{ site.org.status }} (EIN {{ site.org.ein }}), so gifts are tax-deductible to the extent allowed by law. Gifts over $250 qualify for sponsor benefits, so please contact us first.</p>
+      <p class="text-links">{% if site.donateUrl %}<a href="{{ site.donateUrl }}">Donate by PayPal or Venmo</a>{% endif %}<a href="/contact/?type=sponsorship">Ask about giving</a></p>
+      <p class="where">Checks: {{ site.org.legalName }}, {{ site.org.address | join(", ") }}</p>
+    </div>
+  </div>
+</section>

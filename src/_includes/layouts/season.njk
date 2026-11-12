@@ -1,0 +1,68 @@
+---
+layout: layouts/base.njk
+---
+{#- Robot season page. Everything comes from front matter so every season matches.
+    See src/history/_TEMPLATE.md for the fields. Awards and Championship appearances
+    are pulled from src/_data by year. -#}
+{% from "components/ui.njk" import pageHeader, dim, detailHead, figure, resultsTable with context %}
+{%- set seasonAwards = awards | byYear(year) %}
+{%- set champ = (championships | byYear(year))[0] %}
+{%- set total = events | recordTotal %}
+
+{{ pageHeader(game, (robot + ", " if robot else "") + (programSeason or ""), year | string) }}
+
+<div class="wrap season-top">
+  {%- if hero %}
+  {{ dim(year + " season" + (", " + events.length + " events" if events and events.length > 1 else "")) }}
+  {{ figure(hero.src, hero.alt, hero.caption or summary, false) }}
+  {%- else %}
+  <p class="lede">{{ summary }}</p>
+  {%- endif %}
+</div>
+
+<section class="detail wrap" data-zoom="2.5" aria-labelledby="results">
+  {{ detailHead("A", "Results", "results") }}
+  <div class="season-grid">
+    <div>
+      {%- if events and events.length %}
+      {{ resultsTable(events, specs, year + " " + game + " event results") }}
+      {%- elif specs %}
+      {{ resultsTable([], specs) }}
+      {%- endif %}
+      {%- if total %}<p class="total">Combined record <b>{{ total }}</b></p>{% endif %}
+    </div>
+    <aside class="panel season-awards" aria-labelledby="season-awards-h">
+      <h3 id="season-awards-h">Awards</h3>
+      {%- if seasonAwards.length %}
+      <ul role="list">
+        {%- for a in seasonAwards %}<li{% if a.win %} class="win"{% endif %}><span class="mk{% if a.win %} w{% endif %}" aria-hidden="true"></span><span><b>{{ a.award }}</b>{% if a.recipient %} ({{ a.recipient }}){% endif %}<br><span class="where">{{ a.event }}</span></span></li>{% endfor %}
+      </ul>
+      {%- else %}<p class="where">No awards this season.</p>{% endif %}
+      {%- if champ %}<p class="champ"><span class="mk c" aria-hidden="true"></span><span><b>{{ champ.event }}</b>{% if champ.note %}<br><span class="where">{{ champ.note }}</span>{% endif %}</span></p>{% endif %}
+      {%- if links and links.length %}
+      <h3>Links</h3>
+      <ul role="list" class="links-list">{% for l in links %}<li><a href="{{ l.url }}" rel="noopener">{{ l.label }}</a></li>{% endfor %}</ul>
+      {%- endif %}
+    </aside>
+  </div>
+</section>
+
+{%- if content | trim %}
+<section class="detail wrap" data-zoom="1.6" aria-labelledby="log">
+  {{ detailHead("B", "Season log", "log") }}
+  <div class="prose prose--wide">{{ content | safe }}</div>
+</section>
+{%- endif %}
+
+{#- Older / newer season, from the collection -#}
+{%- set list = collections.seasons %}
+{%- for s in list %}{% if s.url == page.url %}{% set idx = loop.index0 %}
+<nav class="pager wrap" aria-label="More seasons">
+  {%- if idx + 1 < list.length %}{% set older = list[idx + 1] %}
+  <a class="pager__link" href="{{ older.url }}"><span>Older season</span>{{ older.data.year }}: {{ older.data.game }}</a>
+  {%- else %}<span></span>{% endif %}
+  {%- if idx > 0 %}{% set newer = list[idx - 1] %}
+  <a class="pager__link pager__link--next" href="{{ newer.url }}"><span>Newer season</span>{{ newer.data.year }}: {{ newer.data.game }}</a>
+  {%- endif %}
+</nav>
+{%- endif %}{% endfor %}

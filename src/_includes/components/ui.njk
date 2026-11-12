@@ -1,0 +1,150 @@
+{#- Reusable drawing parts. Import what you need:
+    {% from "components/ui.njk" import pageHeader, dim, detailHead, figure, seasonCard, resultsTable, recordTable, sponsorGrid, docList %}
+-#}
+
+{#- Page title. The heading is the CAD origin; the note is drawn with a leader line. -#}
+{% macro pageHeader(title, note="", noteLead="", dimLabel="") %}
+<header class="page-header wrap">
+  <h1 class="page-title" id="page-title" data-origin>{{ title }}</h1>
+  {%- if note or noteLead %}
+  <p class="note">
+    <svg width="46" height="28" viewBox="0 0 46 28" aria-hidden="true"><circle cx="4" cy="4" r="3" fill="currentColor"/><path d="M4 4 L18 24 H46" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+    <span>{% if noteLead %}<b>{{ noteLead }}</b>{% if note %}, {% endif %}{% endif %}{{ note }}</span>
+  </p>
+  {%- endif %}
+  {%- if dimLabel %}{{ dim(dimLabel) }}{% endif %}
+</header>
+{% endmacro %}
+
+{#- Dimension line with arrows and a centered label. Decorative. -#}
+{% macro dim(label) %}
+<div class="dim" aria-hidden="true"><i class="l"></i><span>{{ label }}</span><i class="r"></i></div>
+{% endmacro %}
+
+{#- Detail-view heading: lettered bubble + h2. -#}
+{% macro detailHead(letter, title, id) %}
+<div class="dhead"><span class="bubble" aria-hidden="true">{{ letter }}</span><h2 id="{{ id }}">{{ title }}</h2></div>
+{% endmacro %}
+
+{#- Single framed, auto-numbered figure. -#}
+{% macro figure(src, alt, caption="", lazy=true, cls="") %}
+<figure class="fig {{ cls }}">
+  <div class="frame"><img src="{{ src }}" alt="{{ alt }}"{% if lazy %} loading="lazy"{% endif %} decoding="async"></div>
+  {%- if caption %}<figcaption><span class="fig-no" aria-hidden="true"></span><span>{{ caption }}</span></figcaption>{% endif %}
+</figure>
+{% endmacro %}
+
+{#- Card for one robot season. -#}
+{% macro seasonCard(season) %}
+<article class="season-card">
+  <div class="frame">
+    {%- if season.data.hero %}<img src="{{ season.data.hero.src }}" alt="" loading="lazy" decoding="async">{% else %}<span class="season-card__blank" aria-hidden="true"></span>{% endif %}
+  </div>
+  <p class="season-card__year" aria-hidden="true">{{ season.data.year }}</p>
+  <h3><a href="{{ season.url }}"><span class="vh">{{ season.data.year }}: </span>{{ season.data.game }}</a></h3>
+  {%- if season.data.robot %}<p class="season-card__robot">{{ season.data.robot }}</p>{% endif %}
+  {%- if season.data.summary %}<p>{{ season.data.summary }}</p>{% endif %}
+</article>
+{% endmacro %}
+
+{#- Specs + event results for one season. -#}
+{% macro resultsTable(events, specs=[], caption="Event results", alliance=true) %}
+<div class="panel">
+  {%- if specs and specs.length %}
+  <dl class="specs">
+    {%- for s in specs %}<div><dt>{{ s.label }}</dt><dd>{{ s.value }}</dd></div>{% endfor %}
+  </dl>
+  {%- endif %}
+  {%- if events and events.length %}
+  <div class="table-scroll" role="region" aria-label="{{ caption }}" tabindex="0">
+    <table>
+      <caption>{{ caption }}</caption>
+      <thead><tr><th scope="col">Event</th><th scope="col">Seed</th><th scope="col">Record</th>{% if alliance %}<th scope="col">Alliance</th>{% endif %}<th scope="col">Finish</th></tr></thead>
+      <tbody>
+        {%- for e in events %}
+        <tr>
+          <th scope="row">{{ e.name }}{% if e.when %}<span class="meta">{{ e.when }}</span>{% endif %}</th>
+          <td class="n">{{ e.rank or "—" }}</td>
+          <td class="n">{{ e.record or "—" }}</td>
+          {%- if alliance %}<td>{{ e.alliance or "—" }}</td>{% endif %}
+          <td>{{ e.result or "—" }}</td>
+        </tr>
+        {%- endfor %}
+      </tbody>
+    </table>
+  </div>
+  {%- endif %}
+</div>
+{% endmacro %}
+
+{#- Rows of the season record (see the "record" filter). -#}
+{% macro recordRows(rows) %}
+{%- for r in rows %}
+<tr{% if r.win %} class="win"{% endif %}>
+  <th scope="row">{% set u = collections.seasons | seasonUrl(r.year) %}{% if u %}<a href="{{ u }}">{{ r.year }}</a>{% else %}{{ r.year }}{% endif %}</th>
+  <td><ul>
+    {%- for a in r.awards %}<li>{{ a.award }}{% if a.recipient %} ({{ a.recipient }}){% endif %}<span class="where">{{ a.event }}</span></li>{% endfor %}
+    {%- if r.championship and not r.awards.length %}<li class="where">No awards</li>{% endif %}
+  </ul></td>
+  <td class="tags">
+    {%- if r.win %}<span><span class="mk w" aria-hidden="true"></span>Event win</span>{% endif %}
+    {%- if r.championship %}<span><span class="mk c" aria-hidden="true"></span>{{ r.championship.event }}</span>{% endif %}
+  </td>
+</tr>
+{%- endfor %}
+{% endmacro %}
+
+{#- Season-by-season record. Pass collapseAfter to fold the older rows into a disclosure. -#}
+{% macro recordTable(rows, collapseAfter=0, linkUrl="", linkLabel="") %}
+<div class="record panel">
+  <div class="record__head"><span>Awards and FIRST Championship appearances by season</span>{% if linkUrl %}<a href="{{ linkUrl }}">{{ linkLabel }}</a>{% endif %}</div>
+  {%- set shown = (rows | limit(collapseAfter)) if collapseAfter else rows %}
+  <table>
+    <caption class="vh">Awards and Championship appearances, newest first</caption>
+    <thead class="vh"><tr><th scope="col">Season</th><th scope="col">Awards</th><th scope="col">Notes</th></tr></thead>
+    <tbody>{{ recordRows(shown) }}</tbody>
+  </table>
+  {%- if collapseAfter and rows.length > collapseAfter %}
+  {%- set rest = rows | skip(collapseAfter) %}
+  <details class="more-rows">
+    <summary>Show {{ rest.length }} earlier seasons <span class="meta">({{ (rest | last).year }} to {{ rest[0].year }})</span></summary>
+    <table>
+      <caption class="vh">Earlier seasons</caption>
+      <thead class="vh"><tr><th scope="col">Season</th><th scope="col">Awards</th><th scope="col">Notes</th></tr></thead>
+      <tbody>{{ recordRows(rest) }}</tbody>
+    </table>
+  </details>
+  {%- endif %}
+</div>
+{% endmacro %}
+
+{% macro legend() %}
+<ul class="legend" role="list">
+  <li><span class="mk" aria-hidden="true"></span>Award</li>
+  <li><span class="mk w" aria-hidden="true"></span>Event win</li>
+  <li><span class="mk c" aria-hidden="true"></span>FIRST Championship</li>
+</ul>
+{% endmacro %}
+
+{% macro sponsorGrid(sponsors, labelledby) %}
+<ul class="logos" role="list" aria-labelledby="{{ labelledby }}">
+  {%- for s in sponsors %}
+  <li>
+    {%- if s.url %}<a href="{{ s.url }}" rel="noopener">{% endif %}
+    <img src="{{ s.logo }}" alt="{{ s.name }}{% if s.url %} (external site){% endif %}" loading="lazy" decoding="async">
+    {%- if s.url %}</a>{% endif %}
+  </li>
+  {%- endfor %}
+</ul>
+{% endmacro %}
+
+{% macro docList(documents) %}
+<ul class="docs" role="list">
+  {%- for d in documents %}
+  <li class="doc panel">
+    <div><h2 class="doc__title"><a href="{{ d.url }}">{{ d.title }}</a></h2>{% if d.description %}<p>{{ d.description }}</p>{% endif %}</div>
+    <span class="doc__type">{{ d.type or "PDF" }}</span>
+  </li>
+  {%- endfor %}
+</ul>
+{% endmacro %}

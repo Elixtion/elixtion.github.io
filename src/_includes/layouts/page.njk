@@ -1,0 +1,17 @@
+---
+layout: layouts/base.njk
+---
+{#- Standard content page. Front matter:
+    title (required), note (leader note under the title), hero {src, alt, caption},
+    documents [{title, url, description, type}]
+-#}
+{% from "components/ui.njk" import pageHeader, figure, docList with context %}
+{{ pageHeader(title, note or lead) }}
+
+<div class="wrap page-body">
+  {%- if hero %}{{ figure(hero.src, hero.alt, hero.caption, false, "page-hero") }}{% endif %}
+  {%- if documents %}<section class="page-docs" aria-label="Documents">{{ docList(documents) }}</section>{% endif %}
+  <div class="prose">
+    {{ content | safe }}
+  </div>
+</div>

@@ -1,0 +1,17 @@
+---
+layout: layouts/base.njk
+title: Robots
+permalink: /history/
+description: Every Team Resistance robot season, from our 1996 rookie year to today.
+---
+{% from "components/ui.njk" import pageHeader, seasonCard with context %}
+{%- set first = collections.seasons | last %}
+{%- set latest = collections.seasons[0] %}
+{{ pageHeader("Robots", "a new game and a new robot every season", "Since " + first.data.year, first.data.year + " to " + latest.data.year) }}
+
+<section class="wrap" aria-labelledby="seasons-h">
+  <h2 id="seasons-h" class="vh">Seasons</h2>
+  <ul class="season-list" role="list">
+    {%- for s in collections.seasons %}<li>{{ seasonCard(s) }}</li>{% endfor %}
+  </ul>
+</section>

@@ -1,0 +1,10 @@
+---
+layout: layouts/base.njk
+---
+{% from "components/ui.njk" import pageHeader, docList with context %}
+{{ pageHeader(title, summary, date | readableDate) }}
+<div class="wrap page-body">
+  {%- if pdf %}<section class="page-docs" aria-label="Download">{{ docList([{ title: "Read the " + title + " (PDF)", url: pdf, description: "The full issue.", type: "PDF" }]) }}</section>{% endif %}
+  <div class="prose">{{ content | safe }}</div>
+  <p class="more"><a href="/newsletter/">All newsletters</a></p>
+</div>
