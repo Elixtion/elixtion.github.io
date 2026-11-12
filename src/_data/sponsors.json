@@ -1,0 +1,78 @@
+[
+  {
+    "name": "JEA",
+    "url": "https://www.jea.com/",
+    "logo": "https://www.teamresistance.org/wp-content/uploads/2026/06/JEA_Logo_DarkBackground_Reversed.svg",
+    "featured": true,
+    "note": "our largest sponsor"
+  },
+  {
+    "name": "Florida State College at Jacksonville",
+    "short": "FSCJ",
+    "url": "https://www.fscj.edu/",
+    "logo": "https://www.teamresistance.org/wp-content/uploads/2026/06/Logo-of-FSCJ_white_reversed.svg",
+    "featured": true,
+    "note": "home of our downtown shop"
+  },
+  {
+    "name": "Gene Haas Foundation",
+    "url": "https://www.ghaasfoundation.org/",
+    "logo": "https://www.teamresistance.org/wp-content/uploads/2026/06/GHF_Dark_Background-2.svg"
+  },
+  {
+    "name": "Tom Bush Family of Dealerships",
+    "url": "https://www.tombush.com/",
+    "logo": "https://www.teamresistance.org/wp-content/uploads/2026/07/tombushwhite-edited.png"
+  },
+  {
+    "name": "BAE Systems",
+    "url": "https://www.baesystems.com/en",
+    "logo": "https://www.teamresistance.org/wp-content/uploads/2026/06/BAE_Systems_logo.svg"
+  },
+  {
+    "name": "Haskell",
+    "url": "https://www.haskell.com/",
+    "logo": "https://www.teamresistance.org/wp-content/uploads/2026/10/Haskell-AEC-Logo-White-01-1024x271.png"
+  },
+  {
+    "name": "Farris Technology",
+    "url": "https://farristechnology.com/",
+    "logo": "https://www.teamresistance.org/wp-content/uploads/2026/06/FarrisLogo_Reversed.svg"
+  },
+  {
+    "name": "Orange Park Machine & Fabrication",
+    "url": "https://opfab.com/",
+    "logo": "https://www.teamresistance.org/wp-content/uploads/2026/08/OPM_F_White.avif"
+  },
+  {
+    "name": "Ortega Ortho",
+    "url": "https://www.ortegaortho.com/",
+    "logo": "https://www.teamresistance.org/wp-content/uploads/2026/10/header-logo-1.png"
+  },
+  {
+    "name": "Bishop Classic Motors",
+    "url": "https://www.bishopclassicmotors.com/",
+    "logo": "https://www.teamresistance.org/wp-content/uploads/2026/06/BCM-Logo_Reversed.svg"
+  },
+  {
+    "name": "Eng Engineering Inc.",
+    "url": "https://www.engengineering.com/",
+    "logo": "https://www.teamresistance.org/wp-content/uploads/2026/06/EEI_Logo_Reversed.svg"
+  },
+  {
+    "name": "FRC Tees",
+    "url": "https://frctees.com/",
+    "logo": "https://www.teamresistance.org/wp-content/uploads/2026/10/FRCteesLogowhite-1-edited-2.webp"
+  },
+  {
+    "name": "Cauthen Family Investments, LLC",
+    "short": "CFI",
+    "url": "",
+    "logo": "https://www.teamresistance.org/wp-content/uploads/2026/06/CFI-LOGO_Reversed-1.svg"
+  },
+  {
+    "name": "Smith Eye Associates",
+    "url": "https://www.smitheyeassociates.com/",
+    "logo": "https://www.teamresistance.org/wp-content/uploads/2026/08/smitheyeassociates_vs_logo-1.png"
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "name": "team86-website",
+  "version": "1.0.0",
+  "description": "Team Resistance (FRC Team 86) website",
+  "scripts": {
+    "start": "eleventy --serve",
+    "build": "eleventy",
+    "fetch-brand": "node scripts/fetch-brand.mjs",
+    "test:a11y": "node scripts/a11y-check.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@11ty/eleventy": "^3.1.8",
+    "@axe-core/playwright": "^4.14.0",
+    "@fontsource/barlow": "^5.3.0",
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "playwright": "^1.65.0"
+  },
+  "type": "module"
+}

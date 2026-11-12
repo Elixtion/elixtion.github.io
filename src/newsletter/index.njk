@@ -1,0 +1,20 @@
+---
+layout: layouts/base.njk
+title: Newsletter
+permalink: /newsletter/
+description: Team Resistance newsletters, with news from the shop, competitions and the community.
+---
+{% from "components/ui.njk" import pageHeader with context %}
+{{ pageHeader("Newsletter", "news from the shop, competitions and the community", collections.issues.length + (" issue" if collections.issues.length == 1 else " issues")) }}
+
+<section class="wrap" aria-labelledby="issues-h">
+  <h2 id="issues-h" class="vh">Issues</h2>
+  <ol class="index-list" role="list">
+    {%- for issue in collections.issues %}
+    <li>
+      <time class="k" datetime="{{ issue.date | isoDate }}">{{ issue.date | readableDate }}</time>
+      <div><h2><a href="{{ issue.url }}">{{ issue.data.title }}</a></h2>{% if issue.data.summary %}<p>{{ issue.data.summary }}</p>{% endif %}</div>
+    </li>
+    {%- endfor %}
+  </ol>
+</section>

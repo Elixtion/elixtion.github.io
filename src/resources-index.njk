@@ -1,0 +1,21 @@
+---
+layout: layouts/base.njk
+title: Resources
+permalink: /resources/
+description: Fees, required forms, the team handbook, code of conduct and brand resources for Team Resistance members and families.
+---
+{% from "components/ui.njk" import pageHeader with context %}
+{%- set navRes = (nav | where("url", "/resources/"))[0] %}
+{{ pageHeader("Resources", "for current members and their families") }}
+
+<section class="wrap" aria-labelledby="res-h">
+  <h2 id="res-h" class="vh">All resources</h2>
+  <ul class="index-list" role="list">
+    {%- for r in collections.resources %}
+    <li><span class="k">{{ r.data.kind or "Members" }}</span><div><h2><a href="{{ r.url }}">{{ r.data.title }}</a></h2><p>{{ r.data.note or r.data.lead }}</p></div></li>
+    {%- endfor %}
+    {%- for x in navRes.extra %}
+    <li><span class="k">External</span><div><h2><a href="{{ x.url }}" rel="noopener">{{ x.label }}<span class="vh"> (external site)</span></a></h2><p>{{ x.description }}</p></div></li>
+    {%- endfor %}
+  </ul>
+</section>

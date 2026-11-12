@@ -1,0 +1,204 @@
+---
+layout: layouts/base.njk
+title: Contact
+permalink: /contact/
+description: Get in touch with Team Resistance about sponsorship, media, mentoring or general questions.
+---
+{% from "components/ui.njk" import pageHeader with context %}
+{{ pageHeader("Contact", "sponsorship, media, mentoring and general questions", "Get in touch") }}
+
+<div class="wrap">
+  <div class="contact-grid">
+    <div>
+      {%- if not site.contactFormAction %}
+      <div class="notice">
+        <p><strong>Website admins:</strong> the form isn't connected yet. Set <code>contactFormAction</code> in <code>src/_data/site.js</code> to your form service's URL.</p>
+      </div>
+      {%- endif %}
+
+      <form class="form" action="{{ site.contactFormAction or '#' }}" method="post" data-contact-form>
+        <div class="error-summary" tabindex="-1" role="alert" aria-labelledby="error-summary-title" data-error-summary hidden>
+          <h2 id="error-summary-title">There's a problem</h2>
+          <ul></ul>
+        </div>
+
+        <p class="hint">Fields marked <span class="req" aria-hidden="true">(required)</span><span class="vh">required</span> must be filled in.</p>
+
+        <div class="form-row">
+          <div class="field">
+            <label for="first-name">First name<span class="req">(required)</span></label>
+            <input id="first-name" name="first_name" type="text" autocomplete="given-name" required>
+          </div>
+          <div class="field">
+            <label for="last-name">Last name<span class="req">(required)</span></label>
+            <input id="last-name" name="last_name" type="text" autocomplete="family-name" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="email">Email<span class="req">(required)</span></label>
+            <input id="email" name="email" type="email" autocomplete="email" required spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="phone">Phone</label>
+            <input id="phone" name="phone" type="tel" autocomplete="tel">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="inquiry">What's this about?<span class="req">(required)</span></label>
+          <p class="hint" id="inquiry-hint">A few extra questions appear based on your answer.</p>
+          <select id="inquiry" name="inquiry_type" required aria-describedby="inquiry-hint">
+            <option value="">Choose one</option>
+            <option value="general">General question</option>
+            <option value="sponsorship">Sponsorship or partnership</option>
+            <option value="media">Media or press</option>
+            <option value="mentor">Volunteering or mentoring</option>
+            <option value="parent">Parent or family question</option>
+            <option value="student">Student interested in the team</option>
+          </select>
+        </div>
+
+        {# ---------- Sponsorship ---------- #}
+        <div class="form" data-show-for="sponsorship">
+          <div class="field">
+            <label for="org">Company or organization</label>
+            <input id="org" name="organization" type="text" autocomplete="organization">
+          </div>
+          <fieldset class="field">
+            <legend>Type of sponsorship</legend>
+            <div class="choice-grid">
+              {%- for opt in ["Financial", "In-kind donations or materials", "Mentorship or volunteering", "Event or workspace", "Other"] %}
+              <label class="choice"><input type="checkbox" name="sponsorship_type" value="{{ opt }}"> {{ opt }}</label>
+              {%- endfor %}
+            </div>
+          </fieldset>
+        </div>
+
+        {# ---------- Students & parents ---------- #}
+        <div class="form" data-show-for="student parent">
+          <div class="form-row">
+            <div class="field">
+              <label for="student-name">Student name</label>
+              <input id="student-name" name="student_name" type="text">
+            </div>
+            <div class="field">
+              <label for="grade">Grade</label>
+              <select id="grade" name="grade">
+                <option value="">Choose a grade</option>
+                {%- for g in ["9th", "10th", "11th", "12th"] %}<option>{{ g }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="school">School</label>
+            <input id="school" name="school" type="text">
+          </div>
+          <fieldset class="field">
+            <legend>Previous STEM or FRC experience?</legend>
+            <div class="choice-grid">
+              {%- for opt in ["Yes", "No", "Not sure"] %}
+              <label class="choice"><input type="radio" name="experience" value="{{ opt }}"> {{ opt }}</label>
+              {%- endfor %}
+            </div>
+          </fieldset>
+        </div>
+        <fieldset class="field" data-show-for="student">
+          <legend>Areas of interest</legend>
+          <div class="choice-grid">
+            {%- for opt in ["Business / sponsorship", "Electrical / wiring", "Design / CAD", "Marketing / outreach", "Mechanical / build", "Programming / software", "Strategy / scouting", "Website / multimedia", "Not sure yet"] %}
+            <label class="choice"><input type="checkbox" name="interests" value="{{ opt }}"> {{ opt }}</label>
+            {%- endfor %}
+          </div>
+        </fieldset>
+        <fieldset class="field" data-show-for="parent">
+          <legend>What would you like to know about?</legend>
+          <div class="choice-grid">
+            {%- for opt in ["Time commitment", "Cost / fees", "Safety", "Competition schedule", "Parent volunteering", "Other"] %}
+            <label class="choice"><input type="checkbox" name="topics" value="{{ opt }}"> {{ opt }}</label>
+            {%- endfor %}
+          </div>
+        </fieldset>
+
+        {# ---------- Mentors & volunteers ---------- #}
+        <div class="form" data-show-for="mentor">
+          <fieldset class="field">
+            <legend>Area of expertise</legend>
+            <div class="choice-grid">
+              {%- for opt in ["Engineering / manufacturing", "Programming / computer science", "Business / marketing", "Education / teaching", "Graphic design / multimedia", "Event planning", "Other"] %}
+              <label class="choice"><input type="checkbox" name="expertise" value="{{ opt }}"> {{ opt }}</label>
+              {%- endfor %}
+            </div>
+          </fieldset>
+          <fieldset class="field">
+            <legend>When are you available?</legend>
+            <div class="choice-grid">
+              {%- for opt in ["Regular meetings", "Build season (Jan–Apr)", "Competitions (Mar–May)", "Summer workshops (May–Aug)", "Fall session (Aug–Dec)", "Special events"] %}
+              <label class="choice"><input type="checkbox" name="availability" value="{{ opt }}"> {{ opt }}</label>
+              {%- endfor %}
+            </div>
+          </fieldset>
+          <div class="field">
+            <label for="hours">Hours per month</label>
+            <select id="hours" name="hours">
+              <option value="">Choose one</option>
+              {%- for opt in ["Less than 5", "5–10", "10–20", "More than 20"] %}<option>{{ opt }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+
+        {# ---------- Media ---------- #}
+        <div class="form-row" data-show-for="media">
+          <div class="field">
+            <label for="outlet">Media outlet</label>
+            <input id="outlet" name="outlet" type="text" autocomplete="organization">
+          </div>
+          <div class="field">
+            <label for="deadline">Deadline</label>
+            <input id="deadline" name="deadline" type="date">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="message">Message<span class="req">(required)</span></label>
+          <textarea id="message" name="message" required></textarea>
+        </div>
+
+        <label class="choice"><input type="checkbox" name="social_consent" value="yes"> It's OK for Team Resistance to share content I send on team social media.</label>
+
+        <div><button class="btn btn--primary" type="submit">Send message</button></div>
+      </form>
+    </div>
+
+    <aside aria-label="Other ways to reach us">
+      <section class="panel aside-block">
+        <h2>Meeting schedule</h2>
+        <dl>
+          {%- for m in site.meetings %}
+          <div><dt>{{ m.season }} <span class="where">({{ m.months }})</span></dt><dd>{{ m.when }}</dd></div>
+          {%- endfor %}
+        </dl>
+      </section>
+      {%- set realEmails = [] %}
+      {%- for e in site.emails %}{% if e.address %}{% set realEmails = realEmails.concat([e]) %}{% endif %}{% endfor %}
+      {%- if realEmails.length %}
+      <section class="panel aside-block">
+        <h2>Email</h2>
+        <dl>
+          {%- for e in realEmails %}<div><dt>{{ e.label }}</dt><dd><a href="mailto:{{ e.address }}">{{ e.address }}</a></dd></div>{% endfor %}
+        </dl>
+      </section>
+      {%- endif %}
+      <section class="panel aside-block">
+        <h2>Mail</h2>
+        <address class="where" style="font-style:normal">{{ site.org.legalName }}<br>{{ site.org.address | join("<br>") | safe }}</address>
+      </section>
+      <section class="panel aside-block">
+        <h2>Follow us</h2>
+        <ul role="list" class="links-list">
+          {%- for s in site.social %}{% if s.url %}<li><a href="{{ s.url }}" rel="noopener">{{ s.label }}<span class="vh"> (external site)</span></a></li>{% endif %}{% endfor %}
+        </ul>
+      </section>
+    </aside>
+  </div>
+</div>

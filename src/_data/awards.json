@@ -1,0 +1,167 @@
+[
+  {
+    "year": 2025,
+    "event": "Orlando Regional",
+    "award": "Autonomous Award"
+  },
+  {
+    "year": 2025,
+    "event": "Tallahassee Regional",
+    "award": "Autonomous Award"
+  },
+  {
+    "year": 2024,
+    "event": "Tallahassee Regional",
+    "award": "FIRST Dean's List Finalist",
+    "recipient": "Ramsey M."
+  },
+  {
+    "year": 2023,
+    "event": "Orlando Regional",
+    "award": "Industrial Design Award"
+  },
+  {
+    "year": 2023,
+    "event": "Tallahassee Regional",
+    "award": "FIRST Dean's List Finalist",
+    "recipient": "Lana Gerstenberger"
+  },
+  {
+    "year": 2022,
+    "event": "Tallahassee Regional",
+    "award": "Regional Winner",
+    "win": true
+  },
+  {
+    "year": 2022,
+    "event": "Tallahassee Regional",
+    "award": "Excellence in Engineering Award"
+  },
+  {
+    "year": 2022,
+    "event": "Orlando Regional",
+    "award": "Innovation in Control Award"
+  },
+  {
+    "year": 2021,
+    "event": "At Home Challenge (Carbon Group)",
+    "award": "Quality Award"
+  },
+  {
+    "year": 2020,
+    "event": "Rocket City Regional",
+    "award": "FIRST Dean's List Finalist",
+    "recipient": "Vireli Anbarasu"
+  },
+  {
+    "year": 2020,
+    "event": "Rocket City Regional",
+    "award": "FIRST Dean's List Finalist",
+    "recipient": "Aaed Musa"
+  },
+  {
+    "year": 2017,
+    "event": "Orlando Regional",
+    "award": "Regional Finalist"
+  },
+  {
+    "year": 2017,
+    "event": "Orlando Regional",
+    "award": "Wildcard"
+  },
+  {
+    "year": 2017,
+    "event": "Orlando Regional",
+    "award": "Excellence in Engineering Award"
+  },
+  {
+    "year": 2014,
+    "event": "South Florida Regional",
+    "award": "Excellence in Engineering Award"
+  },
+  {
+    "year": 2013,
+    "event": "South Florida Regional",
+    "award": "Quality Award"
+  },
+  {
+    "year": 2012,
+    "event": "Orlando Regional",
+    "award": "Regional Winner",
+    "win": true
+  },
+  {
+    "year": 2012,
+    "event": "Orlando Regional",
+    "award": "Engineering Excellence Award"
+  },
+  {
+    "year": 2010,
+    "event": "Florida Regional",
+    "award": "Regional Winner",
+    "win": true
+  },
+  {
+    "year": 2010,
+    "event": "Florida Regional",
+    "award": "Engineering Excellence Award"
+  },
+  {
+    "year": 2010,
+    "event": "Florida Regional",
+    "award": "Excellence in Design Award"
+  },
+  {
+    "year": 2008,
+    "event": "Florida Regional",
+    "award": "Regional Winner",
+    "win": true
+  },
+  {
+    "year": 2008,
+    "event": "Florida Regional",
+    "award": "Woodie Flowers Finalist Award",
+    "recipient": "Todd Lovelace (mentor)"
+  },
+  {
+    "year": 2007,
+    "event": "Florida Regional",
+    "award": "Regional Winner",
+    "win": true
+  },
+  {
+    "year": 2006,
+    "event": "Florida Regional",
+    "award": "Xerox Creativity Award"
+  },
+  {
+    "year": 2005,
+    "event": "Palmetto Regional",
+    "award": "Delphi “Drive Tomorrow’s Technology” Award"
+  },
+  {
+    "year": 2003,
+    "event": "Central Florida Regional",
+    "award": "Regional Finalist"
+  },
+  {
+    "year": 2002,
+    "event": "NASA KSC Southeast Regional",
+    "award": "Xerox Creativity Award"
+  },
+  {
+    "year": 2001,
+    "event": "NASA KSC Southeast Regional",
+    "award": "Judges' Award"
+  },
+  {
+    "year": 2000,
+    "event": "Kennedy Space Center Southeast Regional",
+    "award": "Best Play of the Day Award"
+  },
+  {
+    "year": 1998,
+    "event": "National Championship",
+    "award": "Participation Award"
+  }
+]
