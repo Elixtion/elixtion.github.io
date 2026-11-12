@@ -9,12 +9,12 @@ layout: layouts/base.njk
 {%- set champ = (championships | byYear(year))[0] %}
 {%- set total = events | recordTotal %}
 
-{{ pageHeader(game, (robot + ", " if robot else "") + (programSeason or ""), year | string) }}
+{{ pageHeader(game, (robot + ", " if robot else "") + (programSeason or ""), year | string, "", illustration) }}
 
 <div class="wrap season-top">
   {%- if hero %}
   {{ dim(year + " season" + (", " + events.length + " events" if events and events.length > 1 else "")) }}
-  {{ figure(hero.src, hero.alt, hero.caption or summary, false) }}
+  {{ figure(hero.src, hero.alt, hero.caption or summary, false, "", hero.tall) }}
   {%- else %}
   <p class="lede">{{ summary }}</p>
   {%- endif %}
@@ -22,7 +22,8 @@ layout: layouts/base.njk
 
 <section class="detail wrap" data-zoom="2.5" aria-labelledby="results">
   {{ detailHead("A", "Results", "results") }}
-  <div class="season-grid">
+  {%- set hasAside = seasonAwards.length or champ or (links and links.length) %}
+  <div class="season-grid{% if not hasAside %} season-grid--solo{% endif %}">
     <div>
       {%- if events and events.length %}
       {{ resultsTable(events, specs, year + " " + game + " event results") }}
@@ -31,19 +32,23 @@ layout: layouts/base.njk
       {%- endif %}
       {%- if total %}<p class="total">Combined record <b>{{ total }}</b></p>{% endif %}
     </div>
-    <aside class="panel season-awards" aria-labelledby="season-awards-h">
-      <h3 id="season-awards-h">Awards</h3>
+    {%- if hasAside %}
+    <aside class="panel season-awards" aria-label="Awards and links">
+      {%- if seasonAwards.length or champ %}
+      <h3>Awards</h3>
       {%- if seasonAwards.length %}
       <ul role="list">
         {%- for a in seasonAwards %}<li{% if a.win %} class="win"{% endif %}><span class="mk{% if a.win %} w{% endif %}" aria-hidden="true"></span><span><b>{{ a.award }}</b>{% if a.recipient %} ({{ a.recipient }}){% endif %}<br><span class="where">{{ a.event }}</span></span></li>{% endfor %}
       </ul>
-      {%- else %}<p class="where">No awards this season.</p>{% endif %}
+      {%- endif %}
       {%- if champ %}<p class="champ"><span class="mk c" aria-hidden="true"></span><span><b>{{ champ.event }}</b>{% if champ.note %}<br><span class="where">{{ champ.note }}</span>{% endif %}</span></p>{% endif %}
+      {%- endif %}
       {%- if links and links.length %}
       <h3>Links</h3>
       <ul role="list" class="links-list">{% for l in links %}<li><a href="{{ l.url }}" rel="noopener">{{ l.label }}</a></li>{% endfor %}</ul>
       {%- endif %}
     </aside>
+    {%- endif %}
   </div>
 </section>
 

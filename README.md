@@ -40,7 +40,17 @@ Files whose names start with `_` never publish, so you can keep drafts and templ
 {% recordChart awards, championships %}             {# the season timeline #}
 ```
 
-Figures number themselves (Fig. 1, Fig. 2…) across each page.
+Figures number themselves (Fig. 1, Fig. 2…) across each page. Gallery photos keep their own shape, so portrait photos show in full: give each photo `w` and `h` (its pixel size) and the layout reserves the right space before it loads. Add `tall: true` to a season's `hero` if the main photo is portrait.
+
+### Robot illustrations
+
+Each season can have a drawing of its robot: set `illustration: /assets/robots/2026.svg` in the season file. It appears beside the season title, on its card on `/history/`, and in the "recent robots" lineup on the home page. The drawings for 2023 to 2026 live in `src/assets/robots/`. To add one, copy an existing SVG and keep its `r-` class names, which the draw-on animation relies on.
+
+### Motion
+
+- **Grid:** scrolls slower than the page, which gives a parallax effect. The construction lines through the title fade out as soon as you scroll.
+- **Drawing on:** dimension lines draw outward from the center, framed photos wipe in, the record chart stacks up in year order, and robot illustrations are outlined and then filled in.
+- **Reduced motion:** all of it switches off for people who set "reduce motion," and without JavaScript everything shows normally.
 
 ## Components
 

@@ -226,6 +226,11 @@
       const a = origin.getBoundingClientRect();
       const fx = W / 2, fy = H / 2;
       ox = fx + (a.left - fx) * z; oy = fy + (a.bottom - fy) * z;
+      // The grid scrolls at 55% of page speed (parallax); the origin stays on the title.
+      const sy = window.scrollY || 0;
+      const gy = fy + (a.bottom + (still.matches ? 0 : sy * 0.45) - fy) * z;
+      // Construction lines belong to the title: they fade out as soon as you scroll.
+      const lineAlpha = Math.max(0, 1 - sy / 220);
 
       ctx.clearRect(0, 0, W, H);
       let sp = 20 * z;
@@ -236,15 +241,17 @@
         ctx.strokeStyle = Math.round((x - ox) / sp) % 5 === 0 ? "rgba(255,255,255,0.08)" : `rgba(255,255,255,${0.035 * fade})`;
         line(Math.round(x) + 0.5, 0, Math.round(x) + 0.5, H);
       }
-      for (let y = oy - Math.ceil(oy / sp) * sp; y <= H; y += sp) {
-        ctx.strokeStyle = Math.round((y - oy) / sp) % 5 === 0 ? "rgba(255,255,255,0.08)" : `rgba(255,255,255,${0.035 * fade})`;
+      for (let y = gy - Math.ceil(gy / sp) * sp; y <= H; y += sp) {
+        ctx.strokeStyle = Math.round((y - gy) / sp) % 5 === 0 ? "rgba(255,255,255,0.08)" : `rgba(255,255,255,${0.035 * fade})`;
         line(0, Math.round(y) + 0.5, W, Math.round(y) + 0.5);
       }
       // Construction lines through the origin, then the axes.
-      ctx.setLineDash([10, 4, 2, 4]);
-      ctx.strokeStyle = "rgba(255,205,0,0.28)"; line(0, oy, W, oy);
-      ctx.strokeStyle = "rgba(100,244,38,0.28)"; line(ox, 0, ox, H);
-      ctx.setLineDash([]);
+      if (lineAlpha > 0) {
+        ctx.setLineDash([10, 4, 2, 4]);
+        ctx.strokeStyle = `rgba(255,205,0,${0.28 * lineAlpha})`; line(0, oy, W, oy);
+        ctx.strokeStyle = `rgba(100,244,38,${0.28 * lineAlpha})`; line(ox, Math.max(0, oy - 260), ox, oy + 40);
+        ctx.setLineDash([]);
+      }
       if (ox > -200 && ox < W + 200 && oy > -200 && oy < H + 200) {
         ctx.lineWidth = 2;
         ctx.strokeStyle = "rgba(255,205,0,0.85)"; line(ox, oy, ox + 96, oy);
@@ -262,9 +269,27 @@
     size(); draw();
     if (document.fonts) document.fonts.ready.then(queue);
     window.addEventListener("load", queue);
-    window.addEventListener("scroll", queue, { passive: true });
+    window.addEventListener("scroll", () => { queue(); if (!raf) raf = requestAnimationFrame(draw); }, { passive: true });
     window.addEventListener("resize", () => { size(); queue(); });
     window.addEventListener("pointermove", (e) => { mx = e.clientX; my = e.clientY; readout(); }, { passive: true });
     still.addEventListener("change", queue);
+  }
+
+  /* ---------------- Scroll reveals ----------------
+     Dimension lines draw, framed photos wipe in, the record chart stacks up
+     and robot illustrations are drawn, each once, as they enter the screen. */
+  const revealables = document.querySelectorAll(".dim, .frame, .chart, .robot-art[data-draw]");
+  document.querySelectorAll(".robot-art[data-draw] .r-o").forEach((el) => el.setAttribute("pathLength", "1"));
+  document.querySelectorAll(".chart").forEach((c) => c.querySelectorAll(".sq, .ch").forEach((el, i) => el.style.setProperty("--i", i)));
+  if ("IntersectionObserver" in window && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); } });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.15 });
+    revealables.forEach((el) => {
+      if (el.matches(".dim, .frame, .chart")) el.setAttribute("data-reveal", "");
+      io.observe(el);
+    });
+  } else {
+    revealables.forEach((el) => el.classList.add("is-in"));
   }
 })();

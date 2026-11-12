@@ -41,9 +41,13 @@ events:
 links:
   - { label: Technical binder (PDF), url: "/assets/docs/2027-binder.pdf" }
   - { label: Code on GitHub, url: "https://github.com/teamresistance" }
+illustration: /assets/robots/2027.svg   # optional drawing of the robot (SVG, see src/assets/robots/)
 photos:
   build:
-    - { src: /assets/img/2027/kickoff.jpg, alt: "Students watching the game reveal at kickoff", caption: "Kickoff" }
+    # w and h (pixel size) are optional but stop the page jumping while photos load.
+    # Add tall: true for portrait photos.
+    - { src: /assets/img/2027/kickoff.jpg, alt: "Students watching the game reveal at kickoff", caption: "Kickoff", w: 1024, h: 768 }
+    - { src: /assets/img/2027/drivers.jpg, alt: "The drive team behind the glass", caption: "Drive team", tall: true, w: 768, h: 1024 }
 ---
 
 ## Build season

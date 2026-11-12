@@ -3,8 +3,9 @@
 -#}
 
 {#- Page title. The heading is the CAD origin; the note is drawn with a leader line. -#}
-{% macro pageHeader(title, note="", noteLead="", dimLabel="") %}
-<header class="page-header wrap">
+{% macro pageHeader(title, note="", noteLead="", dimLabel="", art="") %}
+<header class="page-header wrap{% if art %} page-header--art{% endif %}">
+  {%- if art %}<div class="page-header__art">{{ art | inlineSvg | safe }}</div>{% endif %}
   <h1 class="page-title" id="page-title" data-origin>{{ title }}</h1>
   {%- if note or noteLead %}
   <p class="note">
@@ -27,8 +28,8 @@
 {% endmacro %}
 
 {#- Single framed, auto-numbered figure. -#}
-{% macro figure(src, alt, caption="", lazy=true, cls="") %}
-<figure class="fig {{ cls }}">
+{% macro figure(src, alt, caption="", lazy=true, cls="", tall=false) %}
+<figure class="fig {{ cls }}{% if tall %} fig--tall{% endif %}">
   <div class="frame"><img src="{{ src }}" alt="{{ alt }}"{% if lazy %} loading="lazy"{% endif %} decoding="async"></div>
   {%- if caption %}<figcaption><span class="fig-no" aria-hidden="true"></span><span>{{ caption }}</span></figcaption>{% endif %}
 </figure>
@@ -37,8 +38,10 @@
 {#- Card for one robot season. -#}
 {% macro seasonCard(season) %}
 <article class="season-card">
-  <div class="frame">
-    {%- if season.data.hero %}<img src="{{ season.data.hero.src }}" alt="" loading="lazy" decoding="async">{% else %}<span class="season-card__blank" aria-hidden="true"></span>{% endif %}
+  <div class="frame{% if season.data.illustration %} frame--art{% endif %}">
+    {%- if season.data.illustration %}<img src="{{ season.data.illustration }}" alt="" loading="lazy" decoding="async">
+    {%- elif season.data.hero %}<img src="{{ season.data.hero.src }}" alt="" loading="lazy" decoding="async">
+    {%- else %}<span class="season-card__blank" aria-hidden="true"></span>{% endif %}
   </div>
   <p class="season-card__year" aria-hidden="true">{{ season.data.year }}</p>
   <h3><a href="{{ season.url }}"><span class="vh">{{ season.data.year }}: </span>{{ season.data.game }}</a></h3>

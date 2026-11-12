@@ -59,6 +59,7 @@ export default function (eleventyConfig) {
   eleventyConfig.addFilter("isoDate", (d) => new Date(d).toISOString().slice(0, 10));
   eleventyConfig.addFilter("byYear", (items, year) => (items || []).filter((a) => a.year === year));
   eleventyConfig.addFilter("where", (arr, key, val) => (arr || []).filter((x) => x[key] === val));
+  eleventyConfig.addFilter("withIllustration", (seasons) => (seasons || []).filter((s) => s.data.illustration));
   eleventyConfig.addFilter("limit", (arr, n) => (arr || []).slice(0, n));
   eleventyConfig.addFilter("skip", (arr, n) => (arr || []).slice(n));
   eleventyConfig.addFilter("last", (arr) => (arr || [])[arr.length - 1]);
@@ -68,6 +69,14 @@ export default function (eleventyConfig) {
   );
   eleventyConfig.addFilter("letter", (i) => String.fromCharCode(65 + i)); // 0 -> A
   eleventyConfig.addFilter("seasonsSince", (year) => new Date().getFullYear() - FIRST_YEAR);
+
+  // Inline an SVG from src/ so it can be animated (e.g. robot illustrations).
+  eleventyConfig.addFilter("inlineSvg", (url) => {
+    if (!url) return "";
+    const file = path.join("src", url);
+    if (!fs.existsSync(file)) return "";
+    return fs.readFileSync(file, "utf8").replace(/<\?xml[^>]*>/, "").replace("<svg ", '<svg class="robot-art" data-draw ');
+  });
 
   // "More than [50 events] and [5 wins]" -> gold emphasis on the bracketed parts.
   eleventyConfig.addFilter("emphasize", (text) =>
@@ -136,8 +145,9 @@ export default function (eleventyConfig) {
         if (img.alt === undefined) {
           console.warn(`[a11y] Missing alt text in gallery "${label}" on ${this.page.inputPath} (image ${i + 1})`);
         }
-        return `<li><figure class="fig">
-  <a class="frame gallery__link" href="${img.src}"><img src="${img.src}" alt="${img.alt ?? ""}" loading="lazy" decoding="async"></a>
+        const dims = img.w && img.h ? ` width="${img.w}" height="${img.h}" style="aspect-ratio:${img.w}/${img.h}"` : "";
+        return `<li${img.tall ? ' class="is-tall"' : ""}><figure class="fig">
+  <a class="frame gallery__link" href="${img.src}"><img src="${img.src}" alt="${img.alt ?? ""}"${dims} loading="lazy" decoding="async"></a>
   <figcaption><span class="fig-no" aria-hidden="true"></span><span>${img.caption || ""}</span></figcaption>
 </figure></li>`;
       })
